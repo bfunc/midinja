@@ -1,0 +1,8 @@
+build/
+builds/
+plugins/
+*.mid
+!tests/*.mid
+.vs/
+.vscode/
+.DS_Store

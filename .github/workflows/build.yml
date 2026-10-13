@@ -1,0 +1,94 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: windows
+          - os: macos-latest
+            name: macos
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        shell: bash
+        run: |
+          if [ "${{ matrix.name }}" = "macos" ]; then
+            cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13
+          else
+            cmake -B build -DCMAKE_BUILD_TYPE=Release
+          fi
+
+      - name: Build
+        run: cmake --build build --config Release --parallel 4
+
+      - name: Test
+        shell: bash
+        run: |
+          ctest --test-dir build -C Release --output-on-failure
+          T=$(find build -type f \( -name briffer_tests -o -name briffer_tests.exe \) | head -1)
+          "$T" demo-riff.mid
+
+      - name: Package (Windows)
+        if: matrix.name == 'windows'
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem build -Recurse -Filter bRiffer.exe | Where-Object FullName -like '*Standalone*' | Select-Object -First 1
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item $exe.FullName dist/bRiffer.exe
+          Compress-Archive -Path dist/bRiffer.exe -DestinationPath bRiffer-windows.zip
+
+      - name: Package (macOS)
+        if: matrix.name == 'macos'
+        shell: bash
+        run: |
+          APP=$(find build -type d -name bRiffer.app -path '*Standalone*' | head -1)
+          codesign --force --deep -s - "$APP"
+          lipo -info "$APP/Contents/MacOS/bRiffer"
+          ditto -c -k --keepParent "$APP" bRiffer-macos.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bRiffer-${{ matrix.name }}
+          path: |
+            bRiffer-${{ matrix.name }}.zip
+            demo-riff.mid
+          retention-days: 14
+
+  # Every push to main refreshes the "latest" pre-release; a v* tag makes a real release.
+  publish:
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: art
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p out
+          cp art/bRiffer-windows/bRiffer-windows.zip art/bRiffer-macos/bRiffer-macos.zip out/
+          cp art/bRiffer-windows/demo-riff.mid out/
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            gh release create "$GITHUB_REF_NAME" out/* --title "bRiffer $GITHUB_REF_NAME" --notes "Standalone app for Windows and macOS. See the README for install notes."
+          else
+            gh release delete latest --cleanup-tag -y || true
+            gh release create latest out/* --prerelease --target "$GITHUB_SHA" --title "Latest build (main)" --notes "Built from ${GITHUB_SHA::7}. Rolling build, replaced on every push to main."
+          fi
