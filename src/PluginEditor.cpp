@@ -346,7 +346,7 @@ void BrifferEditor::exportMidi()
 
     chooser = std::make_unique<juce::FileChooser> ("Export MIDI", dir.getChildFile (name), "*.mid");
     chooser->launchAsync (juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles
-                              | juce::FileBrowserComponent::warnAboutOverwritingExistingFiles,
+                              | juce::FileBrowserComponent::warnAboutOverwriting,
                           [this] (const juce::FileChooser& fc) {
                               auto file = fc.getResult();
                               if (file == juce::File())
