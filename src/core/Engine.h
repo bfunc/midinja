@@ -50,7 +50,13 @@ struct GenSettings
     int repMin = 2, repMax = 3;
     float repChance = 0.25f;
     uint32_t seed = 1;
+
+    int mode = 0;           // 0 = Random, 1 = Musician
+    float color = 0.4f;     // Musician: how often the mode's colour note sounds, 0..1
+    float surprise = 0.15f; // Musician: how often a rule is broken, 0..1
 };
+
+enum Mode { kRandom = 0, kMusician = 1 };
 
 enum class Rate { Eighth = 0, Sixteenth, ThirtySecond, SixteenthTriplet };
 const char* rateName (Rate r);
@@ -78,6 +84,22 @@ int moveByScaleSteps (int note, int steps, int root, int scale);
 
 // Re-rolls every unlocked step from the settings and settings.seed. Locked steps are kept.
 void generate (Pattern& p, const GenSettings& g);
+// New positions for the unlocked notes; their pitches keep their order.
+void generateRhythm (Pattern& p, const GenSettings& g);
+// New pitches for the unlocked notes; positions and lengths stay.
+void generateNotes (Pattern& p, const GenSettings& g);
+// Changes about `amount` (0..1) of the unlocked notes a little: a scale step or two, or a nudge.
+void mutate (Pattern& p, const GenSettings& g, float amount);
+
+// What Musician mode builds on, as pitch classes from the root (-1 = the scale has none).
+struct ModeInfo
+{
+    int third = -1, fifth = -1; // the tonic triad
+    int color = -1;             // the note that tells this mode from plain major / minor
+};
+ModeInfo modeInfo (int scale);
+// Musician phrases are built from equal cells (A A' A B); this is a cell's length in steps.
+int musicianCellLength (int numSteps);
 // Notes never overlap the next note (the riff is monophonic) or run past the pattern end.
 void fitLengths (Pattern& p);
 void transposeScaleSteps (Pattern& p, int steps, int root, int scale);

@@ -10,6 +10,7 @@
 #include <fstream>
 #include <map>
 #include <string>
+#include <vector>
 
 using namespace midinja;
 
@@ -201,6 +202,153 @@ static void testSequencerTiming()
         CHECK (count == 0); // every on has an off
 }
 
+
+static std::vector<int> onSteps (const Pattern& p)
+{
+    std::vector<int> v;
+    for (int i = 0; i < p.numSteps; ++i)
+        if (p.steps[(size_t) i].on) v.push_back (i);
+    return v;
+}
+
+static void checkBasics (const Pattern& p, const GenSettings& g)
+{
+    for (int i = 0; i < p.numSteps; ++i)
+    {
+        const auto& st = p.steps[(size_t) i];
+        if (! st.on) continue;
+        CHECK (inScale (st.note, g.root, g.scale));
+        CHECK (st.note >= g.lowNote && st.note <= g.highNote);
+        CHECK (st.velocity >= 1 && st.velocity <= 127);
+        int next = i + 1;
+        while (next < p.numSteps && ! p.steps[(size_t) next].on) ++next;
+        CHECK (i + st.length <= next);
+    }
+}
+
+static void testModeInfo()
+{
+    auto idx = [] (const char* name) {
+        for (size_t i = 0; i < scales().size(); ++i)
+            if (std::string (scales()[i].name) == name) return (int) i;
+        return -1;
+    };
+    CHECK (modeInfo (idx ("Dorian")).color == 9);
+    CHECK (modeInfo (idx ("Phrygian")).color == 1);
+    CHECK (modeInfo (idx ("Lydian")).color == 6);
+    CHECK (modeInfo (idx ("Mixolydian")).color == 10);
+    CHECK (modeInfo (idx ("Natural Minor")).color == 8);
+    CHECK (modeInfo (idx ("Major (Ionian)")).color == 11);
+    CHECK (modeInfo (idx ("Harmonic Minor")).color == 11);
+    CHECK (modeInfo (idx ("Locrian")).color == 1); // b5 is its fifth already
+    CHECK (modeInfo (idx ("Minor Pentatonic")).color == -1);
+    CHECK (modeInfo (idx ("Dorian")).third == 3 && modeInfo (idx ("Dorian")).fifth == 7);
+    CHECK (musicianCellLength (16) == 4 && musicianCellLength (32) == 8 && musicianCellLength (8) == 4);
+}
+
+static void testMusician()
+{
+    int strongTotal = 0, strongChord = 0, endsHome = 0, motifRepeats = 0, withColor = 0, runs = 0;
+    for (uint32_t seed = 1; seed <= 400; ++seed)
+    {
+        GenSettings g;
+        g.mode = kMusician;
+        g.seed = seed;
+        g.root = (int) (seed % 12);
+        g.scale = (int) (seed % 9); // the 7 modes + harmonic / melodic minor
+        g.notes = 6 + (int) (seed % 9);
+        g.surprise = 0.0f;
+        g.color = 0.5f;
+        Pattern p;
+        p.numSteps = 16;
+        generate (p, g);
+        checkBasics (p, g);
+        CHECK ((int) onSteps (p).size() == g.notes);
+
+        const auto mi = modeInfo (g.scale);
+        const auto on = onSteps (p);
+        for (int s : on)
+        {
+            const int pc = ((p.steps[(size_t) s].note - g.root) % 12 + 12) % 12;
+            if (s % 4 == 0)
+            {
+                ++strongTotal;
+                strongChord += (pc == 0 || pc == mi.third || pc == mi.fifth) ? 1 : 0;
+            }
+            withColor += pc == mi.color ? 1 : 0;
+        }
+        const int lastPc = ((p.steps[(size_t) on.back()].note - g.root) % 12 + 12) % 12;
+        endsHome += (lastPc == 0 || lastPc == mi.fifth) ? 1 : 0;
+        // A and the third cell (A again) share their rhythm.
+        bool same = true;
+        for (int o = 0; o < 4; ++o)
+            same &= p.steps[(size_t) o].on == p.steps[(size_t) (8 + o)].on;
+        motifRepeats += same ? 1 : 0;
+        ++runs;
+    }
+    CHECK (strongChord * 100 >= strongTotal * 85); // A' and the ending may leave the triad
+    CHECK (endsHome == runs);
+    CHECK (motifRepeats * 100 >= runs * 70);
+    CHECK (withColor > 0);
+
+    // Deterministic, and locks hold in Musician mode too.
+    GenSettings g;
+    g.mode = kMusician;
+    Pattern a, b;
+    generate (a, g);
+    generate (b, g);
+    for (int i = 0; i < kMaxSteps; ++i)
+        CHECK (a.steps[(size_t) i] == b.steps[(size_t) i]);
+    a.steps[3] = { true, 50, 1, 100, 1, true };
+    for (uint32_t s = 1; s <= 300; ++s)
+    {
+        g.seed = s;
+        generate (a, g);
+        CHECK (a.steps[3].note == 50 && a.steps[3].on && a.steps[3].locked);
+        CHECK ((int) onSteps (a).size() == g.notes);
+    }
+}
+
+static void testRhythmNotesMutate()
+{
+    for (int mode = 0; mode < 2; ++mode)
+        for (uint32_t seed = 1; seed <= 200; ++seed)
+        {
+            GenSettings g;
+            g.mode = mode;
+            g.seed = seed;
+            Pattern p;
+            generate (p, g);
+            const auto onBefore = onSteps (p);
+
+            // Notes only: same positions.
+            Pattern q = p;
+            g.seed = seed + 1000;
+            generateNotes (q, g);
+            CHECK (onSteps (q) == onBefore);
+            checkBasics (q, g);
+
+            // Rhythm only: same pitches in the same order, same count.
+            Pattern r = p;
+            generateRhythm (r, g);
+            const auto onR = onSteps (r);
+            CHECK (onR.size() == onBefore.size());
+            for (size_t k = 0; k < onR.size() && k < onBefore.size(); ++k)
+                CHECK (r.steps[(size_t) onR[k]].note == p.steps[(size_t) onBefore[k]].note);
+            checkBasics (r, g);
+
+            // Mutate: same count, stays in the scale and range; 0 changes nothing.
+            Pattern m = p;
+            mutate (m, g, 0.25f);
+            CHECK (onSteps (m).size() == onBefore.size());
+            checkBasics (m, g);
+            Pattern z = p;
+            mutate (z, g, 0.0f);
+            for (int i = 0; i < kMaxSteps; ++i)
+                CHECK (z.steps[(size_t) i] == p.steps[(size_t) i]);
+        }
+}
+
 static void testMidiFile (const char* path)
 {
     GenSettings g;
@@ -228,6 +376,9 @@ int main (int argc, char** argv)
     testLocksSurviveRerolls();
     testStepEventsAndSwing();
     testSequencerTiming();
+    testModeInfo();
+    testMusician();
+    testRhythmNotesMutate();
     testMidiFile (argc > 1 ? argv[1] : nullptr);
 
     if (failures == 0)

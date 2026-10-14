@@ -39,6 +39,12 @@ plugin. The project was called bRiffer up to v0.1.0.
 
 Settings and the pattern are saved when the app closes.
 
+## Web preview
+
+`web/` is a browser preview of the generator: the same C++ core compiled to WebAssembly
+(`web/build.sh`, needs Docker or emcc), with the app's interface and no sound. Live at
+https://bfunc.cc/static/midinja/ (`web/publish.sh` copies it into the bfunc.cc repo).
+
 ## Building
 
 Everything builds on GitHub Actions (see `.github/workflows/build.yml`). Locally:
