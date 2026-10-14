@@ -11,7 +11,7 @@
 #include <map>
 #include <string>
 
-using namespace briffer;
+using namespace midinja;
 
 static int failures = 0;
 #define CHECK(cond)                                                                 \
@@ -208,7 +208,7 @@ static void testMidiFile (const char* path)
     Pattern p;
     generate (p, g);
     const auto notes = renderCycle (p, 0.2f);
-    const auto bytes = writeMidiFile (notes, 4.0, 122.0, 1, "bRiffer demo", 16.0);
+    const auto bytes = writeMidiFile (notes, 4.0, 122.0, 1, "Midinja demo", 16.0);
     CHECK (bytes.size() > 30);
     CHECK (bytes[0] == 'M' && bytes[1] == 'T' && bytes[2] == 'h' && bytes[3] == 'd');
     CHECK (bytes[bytes.size() - 3] == 0xFF && bytes[bytes.size() - 2] == 0x2F);

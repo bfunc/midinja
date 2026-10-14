@@ -5,7 +5,7 @@
 #include <cmath>
 #include <cstdlib>
 
-namespace briffer
+namespace midinja
 {
 
 const char* rateName (Rate r)
@@ -318,4 +318,4 @@ void Sequencer::schedule (const Pattern& p, int stepIdx, float swing)
     }
 }
 
-} // namespace briffer
+} // namespace midinja

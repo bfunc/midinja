@@ -11,10 +11,10 @@
 class GridComponent : public juce::Component
 {
 public:
-    using Edit = std::function<void (BrifferProcessor::State&)>;
+    using Edit = std::function<void (MidinjaProcessor::State&)>;
     std::function<void (const Edit&)> onEdit;
 
-    void setState (const BrifferProcessor::State& s);
+    void setState (const MidinjaProcessor::State& s);
     void setPlayStep (int step);
 
     void paint (juce::Graphics& g) override;
@@ -31,7 +31,7 @@ private:
     float colWidth() const;
     float rowHeight() const;
 
-    BrifferProcessor::State state;
+    MidinjaProcessor::State state;
     std::vector<int> rows; // MIDI notes, top row first
     int playStep = -1;
     int dragStep = -1;

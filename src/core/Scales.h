@@ -3,7 +3,7 @@
 #include <array>
 #include <vector>
 
-namespace briffer
+namespace midinja
 {
 
 struct Scale
@@ -79,4 +79,4 @@ inline const std::array<const char*, 12>& noteNames()
     return names;
 }
 
-} // namespace briffer
+} // namespace midinja

@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace briffer
+namespace midinja
 {
 
 class MonoSynth
@@ -146,4 +146,4 @@ private:
     Stage stage = Stage::Idle;
 };
 
-} // namespace briffer
+} // namespace midinja

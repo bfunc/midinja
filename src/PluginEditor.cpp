@@ -7,7 +7,7 @@ constexpr int kW = 1120, kH = 680;
 constexpr int kTop = 72, kFoot = 76, kLeft = 220;
 } // namespace
 
-BrifferEditor::BrifferEditor (BrifferProcessor& p)
+MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     : AudioProcessorEditor (&p), proc (p)
 {
     setLookAndFeel (&look);
@@ -36,51 +36,51 @@ BrifferEditor::BrifferEditor (BrifferProcessor& p)
 
     setupCombo (rootBox, rootLabel, "Root");
     for (int i = 0; i < 12; ++i)
-        rootBox.addItem (briffer::noteNames()[(size_t) i], i + 1);
+        rootBox.addItem (midinja::noteNames()[(size_t) i], i + 1);
     rootBox.onChange = [this] {
         const int root = rootBox.getSelectedId() - 1;
-        applyEdit ([root] (BrifferProcessor::State& s) {
-            briffer::conformToScale (s.pattern, s.gen.root, root, s.gen.scale);
+        applyEdit ([root] (MidinjaProcessor::State& s) {
+            midinja::conformToScale (s.pattern, s.gen.root, root, s.gen.scale);
             s.gen.root = root;
         });
     };
 
     setupCombo (scaleBox, scaleLabel, "Scale");
-    for (size_t i = 0; i < briffer::scales().size(); ++i)
-        scaleBox.addItem (briffer::scales()[i].name, (int) i + 1);
+    for (size_t i = 0; i < midinja::scales().size(); ++i)
+        scaleBox.addItem (midinja::scales()[i].name, (int) i + 1);
     scaleBox.onChange = [this] {
         const int scale = scaleBox.getSelectedId() - 1;
-        applyEdit ([scale] (BrifferProcessor::State& s) {
-            briffer::conformToScale (s.pattern, s.gen.root, s.gen.root, scale);
+        applyEdit ([scale] (MidinjaProcessor::State& s) {
+            midinja::conformToScale (s.pattern, s.gen.root, s.gen.root, scale);
             s.gen.scale = scale;
         });
     };
 
     setupCombo (stepsBox, stepsLabel, "Steps");
-    for (int i = 2; i <= briffer::kMaxSteps; ++i)
+    for (int i = 2; i <= midinja::kMaxSteps; ++i)
         stepsBox.addItem (juce::String (i), i);
     stepsBox.onChange = [this] {
         const int n = stepsBox.getSelectedId();
-        applyEdit ([n] (BrifferProcessor::State& s) {
+        applyEdit ([n] (MidinjaProcessor::State& s) {
             s.pattern.numSteps = n;
-            briffer::fitLengths (s.pattern);
+            midinja::fitLengths (s.pattern);
         });
     };
 
     setupCombo (rateBox, rateLabel, "Rate");
     for (int i = 0; i < 4; ++i)
-        rateBox.addItem (briffer::rateName ((briffer::Rate) i), i + 1);
+        rateBox.addItem (midinja::rateName ((midinja::Rate) i), i + 1);
     rateBox.onChange = [this] { proc.rate = rateBox.getSelectedId() - 1; };
 
     setupKnob (swingKnob, swingLabel, "Swing", 0.0, 100.0, 1.0);
     swingKnob.setTextValueSuffix ("%");
     swingKnob.onValueChange = [this] { proc.swing = (float) swingKnob.getValue() / 100.0f; };
 
-    setupKnob (notesKnob, notesLabel, "Notes", 1.0, briffer::kMaxSteps, 1.0);
+    setupKnob (notesKnob, notesLabel, "Notes", 1.0, midinja::kMaxSteps, 1.0);
     notesKnob.setTooltip ("How many steps the dice fills");
     notesKnob.onValueChange = [this] {
         const int v = (int) notesKnob.getValue();
-        applyEdit ([v] (BrifferProcessor::State& s) { s.gen.notes = v; });
+        applyEdit ([v] (MidinjaProcessor::State& s) { s.gen.notes = v; });
     };
 
     transposeLabel.setText ("Transpose", juce::dontSendNotification);
@@ -88,8 +88,8 @@ BrifferEditor::BrifferEditor (BrifferProcessor& p)
     addAndMakeVisible (transposeLabel);
     transposeDown.setTooltip ("Whole riff one scale step down");
     transposeUp.setTooltip ("Whole riff one scale step up");
-    transposeDown.onClick = [this] { applyEdit ([] (BrifferProcessor::State& s) { briffer::transposeScaleSteps (s.pattern, -1, s.gen.root, s.gen.scale); }); };
-    transposeUp.onClick = [this] { applyEdit ([] (BrifferProcessor::State& s) { briffer::transposeScaleSteps (s.pattern, 1, s.gen.root, s.gen.scale); }); };
+    transposeDown.onClick = [this] { applyEdit ([] (MidinjaProcessor::State& s) { midinja::transposeScaleSteps (s.pattern, -1, s.gen.root, s.gen.scale); }); };
+    transposeUp.onClick = [this] { applyEdit ([] (MidinjaProcessor::State& s) { midinja::transposeScaleSteps (s.pattern, 1, s.gen.root, s.gen.scale); }); };
     addAndMakeVisible (transposeDown);
     addAndMakeVisible (transposeUp);
 
@@ -107,23 +107,23 @@ BrifferEditor::BrifferEditor (BrifferProcessor& p)
     setupRange (pitchRange, pitchLabel, "Pitch range", 24.0, 96.0);
     pitchRange.onValueChange = [this] {
         const int lo = (int) pitchRange.getMinValue(), hi = (int) pitchRange.getMaxValue();
-        applyEdit ([lo, hi] (BrifferProcessor::State& s) { s.gen.lowNote = lo; s.gen.highNote = hi; });
+        applyEdit ([lo, hi] (MidinjaProcessor::State& s) { s.gen.lowNote = lo; s.gen.highNote = hi; });
     };
-    setupRange (lengthRange, lengthLabel, "Length (steps)", 1.0, briffer::kMaxLength);
+    setupRange (lengthRange, lengthLabel, "Length (steps)", 1.0, midinja::kMaxLength);
     lengthRange.onValueChange = [this] {
         const int lo = (int) lengthRange.getMinValue(), hi = (int) lengthRange.getMaxValue();
-        applyEdit ([lo, hi] (BrifferProcessor::State& s) { s.gen.lenMin = lo; s.gen.lenMax = hi; });
+        applyEdit ([lo, hi] (MidinjaProcessor::State& s) { s.gen.lenMin = lo; s.gen.lenMax = hi; });
     };
     setupRange (velRange, velLabel, "Velocity", 1.0, 127.0);
     velRange.onValueChange = [this] {
         const int lo = (int) velRange.getMinValue(), hi = (int) velRange.getMaxValue();
-        applyEdit ([lo, hi] (BrifferProcessor::State& s) { s.gen.velMin = lo; s.gen.velMax = hi; });
+        applyEdit ([lo, hi] (MidinjaProcessor::State& s) { s.gen.velMin = lo; s.gen.velMax = hi; });
     };
 
     repeatsToggle.setTooltip ("Ratchets: a note repeated 1-4 times within its length");
     repeatsToggle.onClick = [this] {
         const bool on = repeatsToggle.getToggleState();
-        applyEdit ([on] (BrifferProcessor::State& s) {
+        applyEdit ([on] (MidinjaProcessor::State& s) {
             s.gen.repeatsOn = on;
             if (! on) // off means no ratchets play
                 for (auto& st : s.pattern.steps)
@@ -131,10 +131,10 @@ BrifferEditor::BrifferEditor (BrifferProcessor& p)
         });
     };
     addAndMakeVisible (repeatsToggle);
-    setupRange (repRange, repRangeLabel, "Repeats", 1.0, briffer::kMaxRepeats);
+    setupRange (repRange, repRangeLabel, "Repeats", 1.0, midinja::kMaxRepeats);
     repRange.onValueChange = [this] {
         const int lo = (int) repRange.getMinValue(), hi = (int) repRange.getMaxValue();
-        applyEdit ([lo, hi] (BrifferProcessor::State& s) { s.gen.repMin = lo; s.gen.repMax = hi; });
+        applyEdit ([lo, hi] (MidinjaProcessor::State& s) { s.gen.repMin = lo; s.gen.repMax = hi; });
     };
     repChanceLabel.setText ("Repeat chance", juce::dontSendNotification);
     repChanceLabel.setFont (juce::FontOptions (10.5f));
@@ -145,7 +145,7 @@ BrifferEditor::BrifferEditor (BrifferProcessor& p)
     repChance.setTextValueSuffix ("%");
     repChance.onValueChange = [this] {
         const float v = (float) repChance.getValue() / 100.0f;
-        applyEdit ([v] (BrifferProcessor::State& s) { s.gen.repChance = v; });
+        applyEdit ([v] (MidinjaProcessor::State& s) { s.gen.repChance = v; });
     };
     addAndMakeVisible (repChance);
 
@@ -221,13 +221,13 @@ BrifferEditor::BrifferEditor (BrifferProcessor& p)
     startTimerHz (30);
 }
 
-BrifferEditor::~BrifferEditor()
+MidinjaEditor::~MidinjaEditor()
 {
     stopTimer();
     setLookAndFeel (nullptr);
 }
 
-void BrifferEditor::setupCombo (juce::ComboBox& box, juce::Label& label, const juce::String& title)
+void MidinjaEditor::setupCombo (juce::ComboBox& box, juce::Label& label, const juce::String& title)
 {
     label.setText (title, juce::dontSendNotification);
     label.setFont (juce::FontOptions (10.5f));
@@ -235,7 +235,7 @@ void BrifferEditor::setupCombo (juce::ComboBox& box, juce::Label& label, const j
     addAndMakeVisible (box);
 }
 
-void BrifferEditor::setupKnob (juce::Slider& s, juce::Label& label, const juce::String& title, double lo, double hi, double step)
+void MidinjaEditor::setupKnob (juce::Slider& s, juce::Label& label, const juce::String& title, double lo, double hi, double step)
 {
     label.setText (title, juce::dontSendNotification);
     label.setFont (juce::FontOptions (10.5f));
@@ -247,7 +247,7 @@ void BrifferEditor::setupKnob (juce::Slider& s, juce::Label& label, const juce::
     addAndMakeVisible (s);
 }
 
-void BrifferEditor::setupRange (juce::Slider& s, juce::Label& label, const juce::String& title, double lo, double hi)
+void MidinjaEditor::setupRange (juce::Slider& s, juce::Label& label, const juce::String& title, double lo, double hi)
 {
     label.setText (title, juce::dontSendNotification);
     label.setFont (juce::FontOptions (10.5f));
@@ -260,13 +260,13 @@ void BrifferEditor::setupRange (juce::Slider& s, juce::Label& label, const juce:
 
 // ---------------------------------------------------------------------------------------------
 
-void BrifferEditor::applyEdit (const Edit& fn)
+void MidinjaEditor::applyEdit (const Edit& fn)
 {
     proc.editState (fn);
     refreshFromProcessor();
 }
 
-void BrifferEditor::refreshFromProcessor()
+void MidinjaEditor::refreshFromProcessor()
 {
     shownVersion = proc.stateVersion();
     view = proc.getState();
@@ -277,7 +277,7 @@ void BrifferEditor::refreshFromProcessor()
     syncControls();
 }
 
-void BrifferEditor::syncControls()
+void MidinjaEditor::syncControls()
 {
     const auto& g = view.gen;
     const auto ns = juce::dontSendNotification;
@@ -316,7 +316,7 @@ void BrifferEditor::syncControls()
     channelBox.setSelectedId (proc.channel.load(), ns);
 }
 
-void BrifferEditor::refreshMidiPorts()
+void MidinjaEditor::refreshMidiPorts()
 {
     midiOutBox.clear (juce::dontSendNotification);
     midiPortIds.clear();
@@ -334,13 +334,13 @@ void BrifferEditor::refreshMidiPorts()
     midiOutBox.setSelectedId (selected, juce::dontSendNotification);
 }
 
-void BrifferEditor::exportMidi()
+void MidinjaEditor::exportMidi()
 {
-    auto dir = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory).getChildFile ("bRiffer");
+    auto dir = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory).getChildFile ("Midinja");
     dir.createDirectory();
     const auto& g = view.gen;
-    const auto name = juce::String ("bRiffer-") + briffer::noteNames()[(size_t) g.root] + "-"
-                    + juce::String (briffer::scales()[(size_t) juce::jlimit (0, (int) briffer::scales().size() - 1, g.scale)].name)
+    const auto name = juce::String ("Midinja-") + midinja::noteNames()[(size_t) g.root] + "-"
+                    + juce::String (midinja::scales()[(size_t) juce::jlimit (0, (int) midinja::scales().size() - 1, g.scale)].name)
                           .removeCharacters (" ()#-.").toLowerCase()
                     + "-" + juce::String ((int) proc.bpm.load()) + "bpm-" + juce::String ((juce::int64) g.seed) + ".mid";
 
@@ -360,7 +360,7 @@ void BrifferEditor::exportMidi()
                           });
 }
 
-void BrifferEditor::timerCallback()
+void MidinjaEditor::timerCallback()
 {
     if (proc.stateVersion() != shownVersion)
         refreshFromProcessor(); // an Infinity re-roll, or a state restore
@@ -374,7 +374,7 @@ void BrifferEditor::timerCallback()
 
 // ---------------------------------------------------------------------------------------------
 
-void BrifferEditor::paint (juce::Graphics& g)
+void MidinjaEditor::paint (juce::Graphics& g)
 {
     g.fillAll (theme::bg);
 
@@ -400,12 +400,12 @@ void BrifferEditor::paint (juce::Graphics& g)
     g.drawText ("MIDI", 470, getHeight() - kFoot + 6, 80, 12, juce::Justification::left);
     g.setColour (theme::ink);
     g.setFont (juce::FontOptions (18.0f).withStyle ("Bold"));
-    g.drawText ("b", getWidth() - 110, getHeight() - kFoot + 26, 14, 24, juce::Justification::right);
+    g.drawText ("Midi", getWidth() - 140, getHeight() - kFoot + 26, 80, 24, juce::Justification::right);
     g.setColour (theme::accent);
-    g.drawText ("Riffer", getWidth() - 96, getHeight() - kFoot + 26, 80, 24, juce::Justification::left);
+    g.drawText ("nja", getWidth() - 60, getHeight() - kFoot + 26, 50, 24, juce::Justification::left);
 }
 
-void BrifferEditor::resized()
+void MidinjaEditor::resized()
 {
     const int W = getWidth(), H = getHeight();
 

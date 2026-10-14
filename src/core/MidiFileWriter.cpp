@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace briffer
+namespace midinja
 {
 
 namespace
@@ -99,4 +99,4 @@ std::vector<uint8_t> writeMidiFile (const std::vector<NoteEvent>& notes, double 
     return out;
 }
 
-} // namespace briffer
+} // namespace midinja

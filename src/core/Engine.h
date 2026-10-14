@@ -1,13 +1,13 @@
 #pragma once
 
-// bRiffer core: the pattern model, the riff generator and the step timing.
+// Midinja core: the pattern model, the riff generator and the step timing.
 // Plain C++17, no JUCE, so it is shared by the app and the tests.
 
 #include <array>
 #include <cstdint>
 #include <vector>
 
-namespace briffer
+namespace midinja
 {
 
 constexpr int kMaxSteps = 32;
@@ -203,4 +203,4 @@ void Sequencer::process (int numSamples, double bpm, Rate rate, float swing, Pat
     }
 }
 
-} // namespace briffer
+} // namespace midinja

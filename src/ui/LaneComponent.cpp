@@ -6,13 +6,13 @@ int LaneComponent::maxValue() const
     switch (kind)
     {
         case Kind::Velocity: return 127;
-        case Kind::Length:   return briffer::kMaxLength;
-        case Kind::Repeats:  return briffer::kMaxRepeats;
+        case Kind::Length:   return midinja::kMaxLength;
+        case Kind::Repeats:  return midinja::kMaxRepeats;
     }
     return 127;
 }
 
-int LaneComponent::valueOf (const briffer::Step& st) const
+int LaneComponent::valueOf (const midinja::Step& st) const
 {
     switch (kind)
     {
@@ -58,7 +58,7 @@ void LaneComponent::paint (juce::Graphics& g)
         {
             // Four segments, lit up to the step's repeat count.
             const float segH = (inner.getHeight() - 6.0f) / 4.0f;
-            for (int k = 0; k < briffer::kMaxRepeats; ++k)
+            for (int k = 0; k < midinja::kMaxRepeats; ++k)
             {
                 const bool lit = st.on && k < st.repeats;
                 g.setColour ((lit ? theme::purple : theme::off).withMultipliedAlpha (alpha));
@@ -107,10 +107,10 @@ void LaneComponent::setFrom (const juce::MouseEvent& e)
         return;
 
     const Kind k = kind;
-    Edit fn = [s, value, k] (BrifferProcessor::State& x) {
+    Edit fn = [s, value, k] (MidinjaProcessor::State& x) {
         auto& st = x.pattern.steps[(size_t) s];
         if (k == Kind::Velocity) st.velocity = value;
-        else if (k == Kind::Length) { st.length = value; briffer::fitLengths (x.pattern); }
+        else if (k == Kind::Length) { st.length = value; midinja::fitLengths (x.pattern); }
         else st.repeats = value;
     };
     fn (state);

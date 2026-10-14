@@ -1,20 +1,23 @@
-# bRiffer
+# Midinja
+
+**MIDI riff & chord generator** (pronounced *mi-DIN-ja*, MIDI + ninja).
 
 A riff generator in the spirit of Audiomodern Riffer 3: roll a random riff in any key and
 scale, lock the notes you like, re-roll the rest, play it through the built-in synth or a MIDI
 port, and save it as a `.mid` file.
 
-v0.1 is a **standalone app** for Windows and macOS. A VST3 / AU plugin comes next.
+v0.1 is a **standalone app** for Windows and macOS. Next: a Musician mode, chords, then a VST3 / AU
+plugin. The project was called bRiffer up to v0.1.0.
 
 ## Download
 
 - Latest build from `main`: [Releases → latest](../../releases/tag/latest)
-- `bRiffer-windows.zip`: `bRiffer.exe`, nothing to install.
-- `bRiffer-macos.zip`: `bRiffer.app` (Apple Silicon + Intel). It is not notarized, so macOS blocks
+- `Midinja-windows.zip`: `Midinja.exe`, nothing to install.
+- `Midinja-macos.zip`: `Midinja.app` (Apple Silicon + Intel). It is not notarized, so macOS blocks
   it the first time. After unzipping, run once in Terminal:
 
   ```sh
-  xattr -dr com.apple.quarantine /path/to/bRiffer.app
+  xattr -dr com.apple.quarantine /path/to/Midinja.app
   ```
 
 ## Using it

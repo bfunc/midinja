@@ -3,7 +3,7 @@
 
 #include <algorithm>
 
-void GridComponent::setState (const BrifferProcessor::State& s)
+void GridComponent::setState (const MidinjaProcessor::State& s)
 {
     state = s;
     rebuildRows();
@@ -31,7 +31,7 @@ void GridComponent::edit (const Edit& fn)
 void GridComponent::rebuildRows()
 {
     const auto& g = state.gen;
-    auto notes = briffer::scaleNotes (g.root, g.scale, std::min (g.lowNote, g.highNote), std::max (g.lowNote, g.highNote));
+    auto notes = midinja::scaleNotes (g.root, g.scale, std::min (g.lowNote, g.highNote), std::max (g.lowNote, g.highNote));
     for (int i = 0; i < state.pattern.numSteps; ++i)
         if (state.pattern.steps[(size_t) i].on)
             notes.push_back (state.pattern.steps[(size_t) i].note);
@@ -161,12 +161,12 @@ void GridComponent::mouseDown (const juce::MouseEvent& e)
     if (e.mods.isPopupMenu())
     {
         if (st.on)
-            edit ([s] (BrifferProcessor::State& x) {
+            edit ([s] (MidinjaProcessor::State& x) {
                 auto& p = x.pattern;
                 int next = s + 1;
                 while (next < p.numSteps && ! p.steps[(size_t) next].on)
                     ++next;
-                const int room = juce::jmin (briffer::kMaxLength, next - s);
+                const int room = juce::jmin (midinja::kMaxLength, next - s);
                 auto& len = p.steps[(size_t) s].length;
                 len = len + 1 > room ? 1 : len + 1;
             });
@@ -176,7 +176,7 @@ void GridComponent::mouseDown (const juce::MouseEvent& e)
     if (e.mods.isShiftDown())
     {
         if (st.on)
-            edit ([s] (BrifferProcessor::State& x) { x.pattern.steps[(size_t) s].locked = ! x.pattern.steps[(size_t) s].locked; });
+            edit ([s] (MidinjaProcessor::State& x) { x.pattern.steps[(size_t) s].locked = ! x.pattern.steps[(size_t) s].locked; });
         return;
     }
 
@@ -187,16 +187,16 @@ void GridComponent::mouseDown (const juce::MouseEvent& e)
     dragged = true;
     if (st.on)
     {
-        edit ([s, note] (BrifferProcessor::State& x) { x.pattern.steps[(size_t) s].note = note; });
+        edit ([s, note] (MidinjaProcessor::State& x) { x.pattern.steps[(size_t) s].note = note; });
     }
     else
     {
-        edit ([s, note] (BrifferProcessor::State& x) {
+        edit ([s, note] (MidinjaProcessor::State& x) {
             auto& t = x.pattern.steps[(size_t) s];
-            t = briffer::Step {};
+            t = midinja::Step {};
             t.on = true;
             t.note = note;
-            briffer::fitLengths (x.pattern); // an earlier long note now stops here
+            midinja::fitLengths (x.pattern); // an earlier long note now stops here
         });
     }
 }
@@ -209,7 +209,7 @@ void GridComponent::mouseDrag (const juce::MouseEvent& e)
     dragged = true;
     const int s = dragStep;
     if (state.pattern.steps[(size_t) s].note != note)
-        edit ([s, note] (BrifferProcessor::State& x) { x.pattern.steps[(size_t) s].note = note; });
+        edit ([s, note] (MidinjaProcessor::State& x) { x.pattern.steps[(size_t) s].note = note; });
 }
 
 void GridComponent::mouseUp (const juce::MouseEvent&)
@@ -217,7 +217,7 @@ void GridComponent::mouseUp (const juce::MouseEvent&)
     if (dragStep >= 0 && ! dragged)
     {
         const int s = dragStep;
-        edit ([s] (BrifferProcessor::State& x) {
+        edit ([s] (MidinjaProcessor::State& x) {
             x.pattern.steps[(size_t) s].on = false;
             x.pattern.steps[(size_t) s].locked = false;
         });

@@ -5,17 +5,17 @@
 #include "ui/LaneComponent.h"
 #include "ui/Theme.h"
 
-class BrifferEditor : public juce::AudioProcessorEditor, private juce::Timer
+class MidinjaEditor : public juce::AudioProcessorEditor, private juce::Timer
 {
 public:
-    explicit BrifferEditor (BrifferProcessor&);
-    ~BrifferEditor() override;
+    explicit MidinjaEditor (MidinjaProcessor&);
+    ~MidinjaEditor() override;
 
     void paint (juce::Graphics&) override;
     void resized() override;
 
 private:
-    using Edit = std::function<void (BrifferProcessor::State&)>;
+    using Edit = std::function<void (MidinjaProcessor::State&)>;
 
     void timerCallback() override;
     void applyEdit (const Edit& fn);
@@ -30,9 +30,9 @@ private:
     void setupKnob (juce::Slider& s, juce::Label& label, const juce::String& title, double lo, double hi, double step);
     void setupRange (juce::Slider& s, juce::Label& label, const juce::String& title, double lo, double hi);
 
-    BrifferProcessor& proc;
+    MidinjaProcessor& proc;
     theme::Look look;
-    BrifferProcessor::State view;
+    MidinjaProcessor::State view;
     int shownVersion = -1;
 
     // Top bar
@@ -67,5 +67,5 @@ private:
 
     std::unique_ptr<juce::FileChooser> chooser;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BrifferEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MidinjaEditor)
 };

@@ -40,32 +40,32 @@ jobs:
         shell: bash
         run: |
           ctest --test-dir build -C Release --output-on-failure
-          T=$(find build -type f \( -name briffer_tests -o -name briffer_tests.exe \) | head -1)
+          T=$(find build -type f \( -name midinja_tests -o -name midinja_tests.exe \) | head -1)
           "$T" demo-riff.mid
 
       - name: Package (Windows)
         if: matrix.name == 'windows'
         shell: pwsh
         run: |
-          $exe = Get-ChildItem build -Recurse -Filter bRiffer.exe | Where-Object FullName -like '*Standalone*' | Select-Object -First 1
+          $exe = Get-ChildItem build -Recurse -Filter Midinja.exe | Where-Object FullName -like '*Standalone*' | Select-Object -First 1
           New-Item -ItemType Directory -Force dist | Out-Null
-          Copy-Item $exe.FullName dist/bRiffer.exe
-          Compress-Archive -Path dist/bRiffer.exe -DestinationPath bRiffer-windows.zip
+          Copy-Item $exe.FullName dist/Midinja.exe
+          Compress-Archive -Path dist/Midinja.exe -DestinationPath Midinja-windows.zip
 
       - name: Package (macOS)
         if: matrix.name == 'macos'
         shell: bash
         run: |
-          APP=$(find build -type d -name bRiffer.app -path '*Standalone*' | head -1)
+          APP=$(find build -type d -name Midinja.app -path '*Standalone*' | head -1)
           codesign --force --deep -s - "$APP"
-          lipo -info "$APP/Contents/MacOS/bRiffer"
-          ditto -c -k --keepParent "$APP" bRiffer-macos.zip
+          lipo -info "$APP/Contents/MacOS/Midinja"
+          ditto -c -k --keepParent "$APP" Midinja-macos.zip
 
       - uses: actions/upload-artifact@v4
         with:
-          name: bRiffer-${{ matrix.name }}
+          name: Midinja-${{ matrix.name }}
           path: |
-            bRiffer-${{ matrix.name }}.zip
+            Midinja-${{ matrix.name }}.zip
             demo-riff.mid
           retention-days: 14
 
@@ -84,10 +84,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p out
-          cp art/bRiffer-windows/bRiffer-windows.zip art/bRiffer-macos/bRiffer-macos.zip out/
-          cp art/bRiffer-windows/demo-riff.mid out/
+          cp art/Midinja-windows/Midinja-windows.zip art/Midinja-macos/Midinja-macos.zip out/
+          cp art/Midinja-windows/demo-riff.mid out/
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            gh release create "$GITHUB_REF_NAME" out/* --title "bRiffer $GITHUB_REF_NAME" --notes "Standalone app for Windows and macOS. See the README for install notes."
+            gh release create "$GITHUB_REF_NAME" out/* --title "Midinja $GITHUB_REF_NAME" --notes "Standalone app for Windows and macOS. See the README for install notes."
           else
             gh release delete latest --cleanup-tag -y || true
             gh release create latest out/* --prerelease --target "$GITHUB_SHA" --title "Latest build (main)" --notes "Built from ${GITHUB_SHA::7}. Rolling build, replaced on every push to main."

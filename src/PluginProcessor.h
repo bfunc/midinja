@@ -9,19 +9,19 @@
 #include <atomic>
 #include <functional>
 
-class BrifferProcessor : public juce::AudioProcessor
+class MidinjaProcessor : public juce::AudioProcessor
 {
 public:
     // Everything the dice and the grid work on. Shared between the UI and the audio thread
     // under a spin lock; the audio thread only ever try-locks.
     struct State
     {
-        briffer::Pattern pattern;
-        briffer::GenSettings gen;
+        midinja::Pattern pattern;
+        midinja::GenSettings gen;
     };
 
-    BrifferProcessor();
-    ~BrifferProcessor() override;
+    MidinjaProcessor();
+    ~MidinjaProcessor() override;
 
     // ---- UI side (message thread) ----
     State getState() const;
@@ -43,7 +43,7 @@ public:
     // Playback and synth settings: plain atomics, read by the audio thread every block.
     std::atomic<bool> playing { false }, infinity { false }, synthOn { true };
     std::atomic<float> bpm { 120.0f }, swing { 0.0f };
-    std::atomic<int> rate { (int) briffer::Rate::Sixteenth }, channel { 1 };
+    std::atomic<int> rate { (int) midinja::Rate::Sixteenth }, channel { 1 };
     std::atomic<int> synthWave { 0 };
     std::atomic<float> cutoff { 1800.0f }, resonance { 0.3f }, decay { 250.0f }, volume { 0.6f };
 
@@ -84,9 +84,9 @@ private:
     int seenVersion = 0;
     bool pendingWriteBack = false;
 
-    briffer::Sequencer sequencer;
-    briffer::MonoSynth synth;
-    std::vector<briffer::MidiEvent> events;
+    midinja::Sequencer sequencer;
+    midinja::MonoSynth synth;
+    std::vector<midinja::MidiEvent> events;
     juce::MidiBuffer outBuffer;
     std::atomic<int> playStep { -1 };
     double currentSampleRate = 44100.0;
@@ -96,5 +96,5 @@ private:
     std::unique_ptr<juce::MidiOutput> midiOut;
     juce::String midiOutIdentifier;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BrifferProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MidinjaProcessor)
 };

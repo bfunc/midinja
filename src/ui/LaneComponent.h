@@ -9,13 +9,13 @@ class LaneComponent : public juce::Component
 {
 public:
     enum class Kind { Velocity, Length, Repeats };
-    using Edit = std::function<void (BrifferProcessor::State&)>;
+    using Edit = std::function<void (MidinjaProcessor::State&)>;
 
     explicit LaneComponent (Kind k) : kind (k) {}
 
     std::function<void (const Edit&)> onEdit;
 
-    void setState (const BrifferProcessor::State& s) { state = s; repaint(); }
+    void setState (const MidinjaProcessor::State& s) { state = s; repaint(); }
     void setPlayStep (int step) { if (step != playStep) { playStep = step; repaint(); } }
 
     void paint (juce::Graphics& g) override;
@@ -26,9 +26,9 @@ private:
     void setFrom (const juce::MouseEvent& e);
     bool enabled() const { return kind != Kind::Repeats || state.gen.repeatsOn; }
     int maxValue() const;
-    int valueOf (const briffer::Step& st) const;
+    int valueOf (const midinja::Step& st) const;
 
     Kind kind;
-    BrifferProcessor::State state;
+    MidinjaProcessor::State state;
     int playStep = -1;
 };

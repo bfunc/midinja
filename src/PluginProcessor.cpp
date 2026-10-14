@@ -2,14 +2,14 @@
 #include "PluginEditor.h"
 #include "core/MidiFileWriter.h"
 
-BrifferProcessor::BrifferProcessor()
+MidinjaProcessor::MidinjaProcessor()
     : AudioProcessor (BusesProperties().withOutput ("Output", juce::AudioChannelSet::stereo(), true))
 {
-    briffer::generate (shared.pattern, shared.gen);
+    midinja::generate (shared.pattern, shared.gen);
     events.reserve (512);
 }
 
-BrifferProcessor::~BrifferProcessor()
+MidinjaProcessor::~MidinjaProcessor()
 {
     sendAllNotesOffNow();
     openMidiOut ({});
@@ -18,29 +18,29 @@ BrifferProcessor::~BrifferProcessor()
 // ---------------------------------------------------------------------------------------------
 // UI side
 
-BrifferProcessor::State BrifferProcessor::getState() const
+MidinjaProcessor::State MidinjaProcessor::getState() const
 {
     const juce::SpinLock::ScopedLockType lock (stateLock);
     return shared;
 }
 
-void BrifferProcessor::editState (const std::function<void (State&)>& fn)
+void MidinjaProcessor::editState (const std::function<void (State&)>& fn)
 {
     const juce::SpinLock::ScopedLockType lock (stateLock);
     fn (shared);
     ++version;
 }
 
-void BrifferProcessor::roll()
+void MidinjaProcessor::roll()
 {
     const auto seed = (uint32_t) juce::Random::getSystemRandom().nextInt (0x7fffffff) + 1u;
     editState ([seed] (State& s) {
         s.gen.seed = seed;
-        briffer::generate (s.pattern, s.gen);
+        midinja::generate (s.pattern, s.gen);
     });
 }
 
-bool BrifferProcessor::openMidiOut (const juce::String& identifier)
+bool MidinjaProcessor::openMidiOut (const juce::String& identifier)
 {
     std::unique_ptr<juce::MidiOutput> next;
     if (identifier.isNotEmpty())
@@ -61,33 +61,33 @@ bool BrifferProcessor::openMidiOut (const juce::String& identifier)
     return true;
 }
 
-void BrifferProcessor::setChannel (int newChannel)
+void MidinjaProcessor::setChannel (int newChannel)
 {
     sendAllNotesOffNow(); // on the old channel
     channel = juce::jlimit (1, 16, newChannel);
 }
 
-void BrifferProcessor::sendAllNotesOffNow()
+void MidinjaProcessor::sendAllNotesOffNow()
 {
     const juce::SpinLock::ScopedLockType lock (midiOutLock);
     if (midiOut != nullptr)
         midiOut->sendMessageNow (juce::MidiMessage::allNotesOff (channel.load()));
 }
 
-juce::MemoryBlock BrifferProcessor::exportMidi() const
+juce::MemoryBlock MidinjaProcessor::exportMidi() const
 {
     const auto s = getState();
-    const auto r = (briffer::Rate) rate.load();
-    const auto notes = briffer::renderCycle (s.pattern, swing.load());
-    const auto bytes = briffer::writeMidiFile (notes, briffer::stepsPerBeat (r), bpm.load(), channel.load(),
-                                               "bRiffer", (double) s.pattern.numSteps);
+    const auto r = (midinja::Rate) rate.load();
+    const auto notes = midinja::renderCycle (s.pattern, swing.load());
+    const auto bytes = midinja::writeMidiFile (notes, midinja::stepsPerBeat (r), bpm.load(), channel.load(),
+                                               "Midinja", (double) s.pattern.numSteps);
     return juce::MemoryBlock (bytes.data(), bytes.size());
 }
 
 // ---------------------------------------------------------------------------------------------
 // Audio
 
-void BrifferProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void MidinjaProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     currentSampleRate = sampleRate;
     sequencer.prepare (sampleRate);
@@ -98,18 +98,18 @@ void BrifferProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     playStep = -1;
 }
 
-void BrifferProcessor::releaseResources()
+void MidinjaProcessor::releaseResources()
 {
     synth.reset();
 }
 
-bool BrifferProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool MidinjaProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
     const auto out = layouts.getMainOutputChannelSet();
     return out == juce::AudioChannelSet::stereo() || out == juce::AudioChannelSet::mono();
 }
 
-void BrifferProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
+void MidinjaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
 {
     juce::ScopedNoDenormals noDenormals;
     const int numSamples = buffer.getNumSamples();
@@ -143,19 +143,19 @@ void BrifferProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     else if (! wantPlay && sequencer.isPlaying())
         sequencer.stop (events);
 
-    sequencer.process (numSamples, (double) bpm.load(), (briffer::Rate) rate.load(), swing.load(),
-                       audio.pattern, events, [this] (briffer::Pattern& p) {
+    sequencer.process (numSamples, (double) bpm.load(), (midinja::Rate) rate.load(), swing.load(),
+                       audio.pattern, events, [this] (midinja::Pattern& p) {
                            if (! infinity.load())
                                return;
                            audio.gen.seed = audio.gen.seed * 1664525u + 1013904223u;
-                           briffer::generate (p, audio.gen);
+                           midinja::generate (p, audio.gen);
                            pendingWriteBack = true;
                        });
     playStep = sequencer.currentStep();
 
     // Synth settings for this block.
     const bool useSynth = synthOn.load();
-    synth.wave = synthWave.load() == 1 ? briffer::MonoSynth::Wave::Square : briffer::MonoSynth::Wave::Saw;
+    synth.wave = synthWave.load() == 1 ? midinja::MonoSynth::Wave::Square : midinja::MonoSynth::Wave::Saw;
     synth.cutoffHz = cutoff.load();
     synth.resonance = resonance.load();
     synth.decayMs = decay.load();
@@ -211,18 +211,18 @@ void BrifferProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     }
 }
 
-juce::AudioProcessorEditor* BrifferProcessor::createEditor()
+juce::AudioProcessorEditor* MidinjaProcessor::createEditor()
 {
-    return new BrifferEditor (*this);
+    return new MidinjaEditor (*this);
 }
 
 // ---------------------------------------------------------------------------------------------
 // Saved state (the standalone app keeps it between runs)
 
-void BrifferProcessor::getStateInformation (juce::MemoryBlock& destData)
+void MidinjaProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     const auto s = getState();
-    juce::XmlElement xml ("bRiffer");
+    juce::XmlElement xml ("Midinja");
     xml.setAttribute ("format", 1);
     xml.setAttribute ("bpm", (double) bpm.load());
     xml.setAttribute ("swing", (double) swing.load());
@@ -254,7 +254,7 @@ void BrifferProcessor::getStateInformation (juce::MemoryBlock& destData)
     xml.setAttribute ("repChance", (double) g.repChance);
     xml.setAttribute ("seed", juce::String ((juce::int64) g.seed));
 
-    for (int i = 0; i < briffer::kMaxSteps; ++i)
+    for (int i = 0; i < midinja::kMaxSteps; ++i)
     {
         const auto& st = s.pattern.steps[(size_t) i];
         auto* e = xml.createNewChildElement ("step");
@@ -268,10 +268,10 @@ void BrifferProcessor::getStateInformation (juce::MemoryBlock& destData)
     copyXmlToBinary (xml, destData);
 }
 
-void BrifferProcessor::setStateInformation (const void* data, int sizeInBytes)
+void MidinjaProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     const auto xml = getXmlFromBinary (data, sizeInBytes);
-    if (xml == nullptr || ! xml->hasTagName ("bRiffer"))
+    if (xml == nullptr || ! xml->hasTagName ("Midinja"))
         return;
 
     bpm = (float) juce::jlimit (40.0, 240.0, xml->getDoubleAttribute ("bpm", 120.0));
@@ -288,7 +288,7 @@ void BrifferProcessor::setStateInformation (const void* data, int sizeInBytes)
 
     State s;
     auto& g = s.gen;
-    s.pattern.numSteps = juce::jlimit (1, briffer::kMaxSteps, xml->getIntAttribute ("numSteps", 16));
+    s.pattern.numSteps = juce::jlimit (1, midinja::kMaxSteps, xml->getIntAttribute ("numSteps", 16));
     g.root = juce::jlimit (0, 11, xml->getIntAttribute ("root", g.root));
     g.scale = xml->getIntAttribute ("scale", g.scale);
     g.lowNote = xml->getIntAttribute ("low", g.lowNote);
@@ -307,14 +307,14 @@ void BrifferProcessor::setStateInformation (const void* data, int sizeInBytes)
     int i = 0;
     for (auto* e : xml->getChildWithTagNameIterator ("step"))
     {
-        if (i >= briffer::kMaxSteps)
+        if (i >= midinja::kMaxSteps)
             break;
         auto& st = s.pattern.steps[(size_t) i++];
         st.on = e->getBoolAttribute ("on");
         st.note = juce::jlimit (0, 127, e->getIntAttribute ("note", 60));
-        st.length = juce::jlimit (1, briffer::kMaxLength, e->getIntAttribute ("len", 1));
+        st.length = juce::jlimit (1, midinja::kMaxLength, e->getIntAttribute ("len", 1));
         st.velocity = juce::jlimit (1, 127, e->getIntAttribute ("vel", 100));
-        st.repeats = juce::jlimit (1, briffer::kMaxRepeats, e->getIntAttribute ("rep", 1));
+        st.repeats = juce::jlimit (1, midinja::kMaxRepeats, e->getIntAttribute ("rep", 1));
         st.locked = e->getBoolAttribute ("lock");
     }
     editState ([&s] (State& target) { target = s; });
@@ -326,5 +326,5 @@ void BrifferProcessor::setStateInformation (const void* data, int sizeInBytes)
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new BrifferProcessor();
+    return new MidinjaProcessor();
 }
