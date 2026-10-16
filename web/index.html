@@ -40,10 +40,7 @@ button{cursor:pointer}
 .knob.t{background:conic-gradient(var(--acc2) 0 var(--v),#333845 var(--v) 75%,transparent 75%)}
 .knob i{width:22px;height:22px;border-radius:50%;background:var(--panel2);display:block}
 .kv{display:flex;align-items:center;gap:6px}.kv span{color:var(--ink2);font-size:11px}.kv b{font-weight:600}
-.mus{display:flex;gap:12px;align-items:center;padding-left:12px;border-left:1px solid var(--line);position:relative}
-.musoff{display:none}
-.musician-off .mus .kv{opacity:.3;pointer-events:none}
-.musician-off .mus .musoff{display:block;position:absolute;left:12px;right:0;bottom:-11px;font-size:9.5px;color:var(--ink3);white-space:nowrap}
+.mus{display:flex;gap:12px;align-items:center;padding-left:12px;border-left:1px solid var(--line)}
 .hist{display:flex;align-items:center;gap:4px}
 .th{width:40px;height:26px;border-radius:5px;background:var(--panel);border:1px solid var(--line);position:relative;overflow:hidden;cursor:pointer}
 .th.cur{border-color:var(--acc)}
@@ -74,6 +71,25 @@ input.num{width:64px}
 .gridw{flex:1;padding:8px 12px 10px;min-width:0}
 .cols{display:grid;grid-template-columns:44px repeat(var(--n),1fr)}
 .tabs{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.arr,.pal{display:flex;align-items:center;gap:6px}
+.pal{margin-left:auto;padding-left:10px;border-left:1px solid var(--line)}
+.slot{display:flex;align-items:center;gap:6px;padding:4px 4px 4px 6px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink2);cursor:pointer;position:relative}
+.slot:hover{border-color:#4a5163}
+.slot.same{color:var(--ink)}
+.slot.on{background:#ff9f4322;border-color:var(--acc);color:var(--acc)}
+.slot.locked{border-color:var(--lock)}
+.slot .tn{font-weight:700;font-size:13px;min-width:16px}
+.slot .lk{font-size:11px;opacity:.3;padding:2px 3px;border-radius:4px;line-height:1}
+.slot .lk:hover{opacity:.9;background:#ffffff14}
+.slot.locked .lk{opacity:1}
+.slot .x{border:0;background:transparent;color:var(--ink3);font-size:14px;line-height:1;padding:2px 5px;border-radius:4px}
+.slot .x:hover{color:var(--ink);background:#ffffff14}
+.slot .pp{position:absolute;left:8px;right:8px;bottom:-1px;height:2px;background:var(--acc2);display:none;box-shadow:0 0 6px var(--acc2)}
+.slot.playing .pp{display:block}
+.slot.on .tt i{background:var(--acc)}
+.arrhint{color:var(--ink3);font-size:11px;padding:6px 2px}
+.tab.add:hover{border-color:var(--acc2)}
+.tab.full{cursor:default;opacity:.6}
 .tab{display:flex;align-items:center;gap:7px;padding:4px 7px 4px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink2);cursor:pointer;position:relative}
 .tab:hover{border-color:#4a5163}
 .tab.on{background:#ff9f4322;border-color:var(--acc);color:var(--acc)}
@@ -88,7 +104,7 @@ input.num{width:64px}
 .tt{width:44px;height:16px;border-radius:4px;background:#00000040;position:relative;overflow:hidden}
 .tt i{position:absolute;width:2px;height:2px;background:var(--ink2)}
 .tab.on .tt i{background:var(--acc)}
-.tabinfo{margin-left:auto;color:var(--ink3);font-size:10.5px}
+.tabinfo{flex:1;text-align:center;color:var(--ink3);font-size:10.5px;padding:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tabinfo.lockmsg{color:var(--lock)}
 .msg{color:var(--acc2);font-size:11px;margin:-2px 0 6px}
 .msg:empty{display:none}
@@ -99,14 +115,12 @@ input.num{width:64px}
 .key em{font-style:normal;font-size:8.5px;padding:0 3px;border-radius:3px}
 .key em.ct{color:var(--ink2);background:#ffffff0d}
 .key em.col{color:#15171c;background:var(--acc2);font-weight:700}
-.musician-off .key em{display:none}
 .cell{border-left:1px solid #ffffff08;border-bottom:1px solid #00000040;position:relative;cursor:pointer}
 .cell.beat{border-left-color:#ffffff1c}
 .cell.alt{background:#ffffff05}.cell.rootrow{background:#ff9f430d}.cell.outrow{background:#00000040}
 .cell.ph{background:#5ad1c714}
 .note{position:absolute;top:2px;bottom:2px;left:2px;border-radius:4px;background:var(--acc);box-shadow:inset 0 -2px 0 #0003;z-index:2;cursor:grab}
 .note.colr{background:var(--acc2)}
-.musician-off .note.colr{background:var(--acc)}
 .note.outn{background:#8a90a0}
 .note.locked{outline:2px solid var(--lock);outline-offset:-1px}
 .note .rat{position:absolute;inset:0;display:flex;gap:2px;padding:2px}
@@ -127,7 +141,6 @@ input.num{width:64px}
 .steps div{text-align:center;color:var(--ink3);font-size:9.5px}
 .legend{display:flex;gap:14px;align-items:center;color:var(--ink3);font-size:10.5px;margin-top:4px;flex-wrap:wrap}
 .legend i{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
-.musician-off .legend .mo{display:none}
 .foot{display:flex;align-items:center;gap:12px;padding:8px 14px;border-top:1px solid #000;background:#1a1d23;color:var(--ink2)}
 .playb{width:34px;height:34px;border-radius:50%;border:0;background:var(--acc2);color:#15171c;font-size:14px;display:grid;place-items:center}
 .playb.on{background:var(--acc)}
@@ -142,12 +155,11 @@ body.dragging .drop{display:grid}
 </style></head>
 <body>
 <div class="drop" id="drop">Drop the .mid file here<small>up to 4 bars → A A′ B C · monophonic · quantised to 1/16</small></div>
-<div id="wrap"><div class="plug musician-off adv-off" id="plug">
+<div id="wrap"><div class="plug adv-off" id="plug">
   <div class="row rowA">
     <div class="logo">Midi<b>nja</b></div>
     <div class="ctl"><small>Preset</small><div style="display:flex;gap:3px" class="inert" title="Presets come later"><button class="btn ghost sm">◂</button><div class="btn" style="min-width:80px">Init</div><button class="btn ghost sm">▸</button></div></div>
     <div class="vsep"></div>
-    <div class="ctl"><small>Mode</small><div class="seg" id="mode"><button data-m="0" title="Pure random: happy accidents">Random</button><button data-m="1" title="Motif, chord tones on the beat, the mode's colour note, ends at home">Musician</button></div></div>
     <div class="gen">
       <button class="dice" id="roll" title="Roll the part shown (Space). Locked notes stay">⚄</button>
       <div class="split">
@@ -157,7 +169,6 @@ body.dragging .drop{display:grid}
         <button class="btn" id="mut" title="Change some notes of the part shown, keep the riff. Click the % to change how much">Mutate <span class="dim" id="mutAmt">25%</span></button>
       </div>
     </div>
-    <button class="btn" id="inf" title="Change the riff at the end of every cycle while playing: the whole form or the part shown, as Play is set">∞ Infinity <span class="dim" id="infMode">· mutate</span></button>
     <div class="sp"></div>
     <div class="ctl"><small>History</small><div class="hist"><button class="pg" id="hPrev" title="Older">◂</button><div class="hist" id="hist"></div><button class="pg" id="hNext" title="Newer">▸</button></div></div>
     <div style="display:flex"><button class="btn ghost" id="undo" title="Undo (Ctrl+Z)">↶</button><button class="btn ghost" id="redo" title="Redo (Ctrl+Shift+Z)">↷</button></div>
@@ -166,14 +177,13 @@ body.dragging .drop{display:grid}
     <div class="ctl"><small>Key</small><div style="display:flex;gap:4px"><select class="sel" id="root"></select><select class="sel" id="scale"></select></div></div>
     <div class="ctl"><small>Rate · steps/bar</small><select class="sel" id="rate" title="One part is one bar of 4/4; the rate sets how many steps it has"><option value="2">1/8 · 8</option><option value="4" selected>1/16 · 16</option><option value="6">1/16T · 12</option></select></div>
     <div class="vsep"></div>
-    <div class="kv" title="How many steps get a note (next roll)"><div class="knob" id="kDensity"><i></i></div><div><span>Density</span><br><b id="vDensity"></b></div></div>
+    <div class="kv" title="How many steps get a note (next roll). Ctrl+click resets"><div class="knob" id="kDensity"><i></i></div><div><span>Density</span><br><b id="vDensity"></b></div></div>
     <div class="kv"><div class="knob" id="kSwing"><i></i></div><div><span>Swing</span><br><b id="vSwing"></b></div></div>
-    <div class="kv" title="How close A′ stays to A (next roll of A′): near A changes the last beat, a distant relative keeps only the shape"><div class="knob" id="kSimilarity"><i></i></div><div><span>Similarity</span><br><b id="vSimilarity"></b></div></div>
+    <div class="kv" title="How close A′ stays to A (next roll of A′): high changes only the last beat, low keeps just the shape. Ctrl+click resets"><div class="knob" id="kSimilarity"><i></i></div><div><span>Similarity</span><br><b id="vSimilarity"></b></div></div>
     <div class="ctl"><small>Transpose</small><div style="display:flex;gap:3px;align-items:center"><button class="btn sm" id="trD" title="All four parts down a scale step">−</button><span class="num" id="vTr">0</span><button class="btn sm" id="trU" title="All four parts up a scale step">+</button></div></div>
     <div class="mus" id="mus">
       <div class="kv" id="colorWrap"><div class="knob t" id="kColor"><i></i></div><div><span>Color</span><br><b id="vColor"></b></div></div>
       <div class="kv" title="How often the riff breaks the rules (next roll)"><div class="knob t" id="kSurprise"><i></i></div><div><span>Surprise</span><br><b id="vSurprise"></b></div></div>
-      <div class="musoff">switch Mode to Musician</div>
     </div>
     <div class="sp"></div>
     <div class="ctl"><small>View</small><div class="seg small" id="view"><button data-v="riff" title="Only the pitches the riff uses">Riff</button><button data-v="scale" title="All notes of the scale in the pitch range">Scale</button><button data-v="all" title="Every semitone in the pitch range">All</button></div></div>
@@ -189,19 +199,18 @@ body.dragging .drop{display:grid}
       <div><h4>Seed</h4><input class="num" id="seed" style="width:100%" title="The seed of the last roll. Type one and press Enter to roll the whole form from it"></div>
     </div>
     <div class="gridw">
-      <div class="tabs" id="tabs"></div>
+      <div class="tabs" id="tabs"><div class="arr" id="arr"></div><span class="tabinfo" id="tabinfo"></span><div class="pal" id="pal"></div></div>
       <div class="msg" id="msg"></div>
       <div class="roll cols" id="grid"></div>
       <div class="cols play" id="play"></div>
       <div class="lanes" id="lanes"></div>
       <div class="cols steps" id="stepn"></div>
-      <div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the mode</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span>click = add / remove · drag = pitch · Shift+click = lock note · right-click = longer · 🔒 on a tab = lock the part · keys 1–4 = part</span></div>
+      <div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the mode</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span>click = add / remove · drag = pitch · Shift+click = lock note · right-click = longer · bars (left): click = select and edit, click again or Esc = deselect, 🔒 = keep the part out of rolls, × = remove · parts (right): click = add a bar · keys 1–4 = part</span></div>
     </div>
   </div>
 
   <div class="foot">
-    <button class="playb" id="pl" title="Play / Stop: moves the playhead (no sound in the preview)">▶</button>
-    <div class="seg small" id="scope"><button data-s="form" title="Play the four bars A A′ B C in a loop">Form</button><button data-s="part" title="Loop only the part shown">Part</button></div>
+    <button class="playb" id="pl" title="Play / Stop: loops the arrangement, or only the selected bar (no sound in the preview)">▶</button>
     <div class="grp"><span class="lbl">BPM</span><input class="num" id="bpm" value="122" type="number" min="40" max="240"></div>
     <div class="vsep"></div>
     <div class="grp inert" title="In the app only"><div class="tog on"><div class="sw"></div>Synth</div><span class="btn sm">Saw</span></div>
@@ -210,14 +219,14 @@ body.dragging .drop{display:grid}
     <div class="vsep"></div>
     <button class="btn" id="imp" title="Import a .mid file (or drop one on the page): up to 4 bars become A A′ B C">⤒ Import MIDI</button>
     <input type="file" id="impFile" accept=".mid,.midi,audio/midi" hidden>
-    <button class="btn" id="exp" title="Save the four bars as one .mid file">⤓ Export MIDI</button>
+    <button class="btn" id="exp" title="Save the arrangement as one .mid file">⤓ Export MIDI</button>
   </div>
 </div></div>
 
 <div class="notes" id="notes">
-  <p><b>Midinja web preview.</b> The generator is the app's own C++ engine compiled to WebAssembly; there is no sound here (export the .mid to listen). Synth, MIDI Out and presets are in the app.</p>
-  <p><b>Form A A′ B C.</b> One part is one bar; the tabs above the grid switch between them. A is the motif, A′ a variation of it (the <b>Similarity</b> knob says how close), B a contrasting bar on the IV degree, C a bar that cadences to the root so the loop closes. The dice roll the part shown, <b>🎲 All</b> rolls the whole form, and 🔒 on a tab keeps that part out of every roll. Play loops the form or the part shown. History and Undo hold the whole form.</p>
-  <p><b>Import.</b> Drop a .mid on the page (or use Import MIDI): up to 4 bars become A A′ B C, quantised to 1/16, lowest note where notes overlap, velocities kept. Missing bars are generated from what was loaded. The key is guessed and can be corrected in Key, which regenerates the generated bars. <b>Export</b> saves the four bars as one .mid.</p>
+  <p><b>Midinja web preview.</b> The generator is the app's own C++ engine compiled to WebAssembly; there is no sound here (export the .mid to listen). Synth, MIDI Out and presets are in the app. Every roll uses the Musician logic: a motif, chord tones on the beat, the mode's colour note, an ending at home.</p>
+  <p><b>Parts and arrangement.</b> One part is one bar. The palette on the right holds the four parts: A is the motif, A′ a variation of it (the <b>Similarity</b> knob says how close), B a contrasting bar on the IV degree, C a bar that cadences to the root. Click a part to add it as a bar to the arrangement on the left (up to 4 bars, for example A B or A A A C); × removes a bar. Click a bar to select it: it opens in the grid and Play loops only that bar; click it again (or Esc) to deselect, and Play goes through the whole arrangement with the grid following the playing bar. Editing A changes every A bar. The dice roll the part shown, <b>🎲 All</b> rolls all four parts, and 🔒 on a bar keeps its part out of every roll. History and Undo hold everything.</p>
+  <p><b>Import.</b> Drop a .mid on the page (or use Import MIDI): up to 4 bars become A A′ B C, quantised to 1/16, lowest note where notes overlap, velocities kept. Missing bars are generated from what was loaded. The key is guessed and can be corrected in Key, which regenerates the generated bars. <b>Export</b> saves the arrangement as one .mid.</p>
 </div>
 
 <script src="midinja-core.js"></script>
@@ -234,16 +243,18 @@ const plug = $('plug');
 
 // ---- state -------------------------------------------------------------------------------
 const S = {
-  mode: 0, root: 4, scale: 2, numSteps: 16, rate: 4, notes: 10, swing: 0.18,
+  mode: 1, root: 4, scale: 2, numSteps: 16, rate: 4, notes: 10, swing: 0.18,
   lowNote: 40, highNote: 64, lenMin: 1, lenMax: 2, velMin: 70, velMax: 120,
   repeatsOn: false, repMin: 2, repMax: 3, repChance: 0.25, color: 0.4, surprise: 0.15, similarity: 0.65,
-  seed: 4821, transpose: 0, view: 'riff', adv: false, mutAmt: 0.25, infinity: false, infMode: 'mutate',
-  cur: 0, scope: 'form',
+  seed: 4821, transpose: 0, view: 'riff', adv: false, mutAmt: 0.25,
+  cur: 0, sel: -1,
 };
+const MAX_BARS = 4;
 const newPat = () => ({ numSteps: S.numSteps, steps: Array.from({ length: 32 }, () => ({ on: false, note: 60, length: 1, velocity: 100, repeats: 1, locked: false })) });
 let parts = [0, 1, 2, 3].map(newPat);
 let locks = [false, false, false, false];
 let src = ['roll', 'roll', 'roll', 'roll']; // roll | import | derived (generated from an import)
+let arr = [0, 1, 2, 3]; // the arrangement: part indices, up to MAX_BARS bars; S.sel is the selected bar or -1
 let pat = parts[0]; // the part shown; always parts[S.cur]
 let hist = [], hi = -1, histEnd = 0; // the history strip shows hist[histEnd-3 .. histEnd)
 const PER_PAGE = 3, MAX_HIST = 60;
@@ -254,6 +265,7 @@ const newSeed = () => (Math.random() * 0xffffffff) >>> 0 || 1;
 const lockMask = () => locks.reduce((m, l, k) => m | (l ? 1 << k : 0), 0);
 function setPart(k, p) { parts[k] = p; if (k === S.cur) pat = p; }
 function selectPart(k) { S.cur = k; pat = parts[k]; render(); }
+function selectSlot(i) { S.sel = S.sel === i ? -1 : i; if (S.sel >= 0) { S.cur = arr[i]; pat = parts[S.cur]; } stepIdx = 0; playPos = 0; render(); }
 
 // the dice on the part shown
 function apply(op) {
@@ -278,7 +290,7 @@ function applyAll(op, keepSeed) {
   }
   push();
 }
-function snapshot() { return { parts: clone(parts), locks: [...locks], src: [...src], cur: S.cur, root: S.root, scale: S.scale, rate: S.rate, star: false }; }
+function snapshot() { return { parts: clone(parts), locks: [...locks], src: [...src], arr: [...arr], sel: S.sel, cur: S.cur, root: S.root, scale: S.scale, rate: S.rate, star: false }; }
 function push() {
   hist = hist.slice(0, hi + 1);
   hist.push(snapshot());
@@ -293,7 +305,7 @@ function push() {
 function goto(i) {
   hi = i;
   const h = hist[i];
-  parts = clone(h.parts); locks = [...h.locks]; src = [...h.src];
+  parts = clone(h.parts); locks = [...h.locks]; src = [...h.src]; arr = [...h.arr]; S.sel = h.sel;
   S.cur = h.cur; S.root = h.root; S.scale = h.scale; S.rate = h.rate; S.numSteps = parts[0].numSteps;
   $('root').value = S.root; $('scale').value = S.scale; $('rate').value = S.rate;
   pat = parts[S.cur];
@@ -302,10 +314,13 @@ function goto(i) {
 function msg(t) { $('msg').textContent = t; }
 
 // ---- knobs and ranges ----------------------------------------------------------------------
+// drag up/down or scroll to change; Ctrl+click resets to the value it started with
 function knob(id, get, set, min, max, step, fmt, onEnd) {
-  const el = $(id);
+  const el = $(id), def = get();
   const draw = () => { el.style.setProperty('--v', ((get() - min) / (max - min) * 75) + '%'); $(id.replace('k', 'v')).textContent = fmt(get()); };
+  const reset = () => { set(def); draw(); onEnd && onEnd(); };
   el.addEventListener('pointerdown', e => {
+    if (e.ctrlKey || e.metaKey) { reset(); return; }
     el.setPointerCapture(e.pointerId);
     const y0 = e.clientY, v0 = get();
     const mv = ev => { let v = v0 + (y0 - ev.clientY) / 150 * (max - min); v = Math.round(v / step) * step; set(Math.min(max, Math.max(min, v))); draw(); };
@@ -346,7 +361,7 @@ const lenName = l => ({ 1: '1 step', 2: '2 steps', 4: '1 beat', 8: '2 beats' })[
 const drawers = [
   knob('kDensity', () => S.notes, v => S.notes = v, 1, 16, 1, v => Math.min(v, S.numSteps) + ' / ' + S.numSteps),
   knob('kSwing', () => S.swing, v => S.swing = v, 0, 1, 0.01, v => Math.round(v * 100) + '%'),
-  knob('kSimilarity', () => S.similarity, v => S.similarity = v, 0, 1, 0.05, v => (v < 0.33 ? 'distant' : v < 0.66 ? 'relative' : 'near A') + ' · ' + Math.round(v * 100) + '%'),
+  knob('kSimilarity', () => S.similarity, v => S.similarity = v, 0, 1, 0.05, v => Math.round(v * 100) + '%'),
   knob('kColor', () => S.color, v => S.color = v, 0, 1, 0.05, v => colorLabel() + ' · ' + Math.round(v * 100) + '%'),
   knob('kSurprise', () => S.surprise, v => S.surprise = v, 0, 1, 0.05, v => Math.round(v * 100) + '%'),
   range('rgPitch', 24, 96, () => [S.lowNote, S.highNote], ([a, b]) => { S.lowNote = a; S.highNote = Math.max(b, a + 5); }, nn),
@@ -380,7 +395,11 @@ function degreeBadge(n) {
   return null;
 }
 let playStep = -1, playPos = 0;
-const playingPart = () => S.scope === 'form' ? Math.floor(playPos / S.numSteps) % 4 : S.cur;
+// what Play goes through: the selected bar, else the arrangement, else the part shown
+const playSeq = () => S.sel >= 0 && S.sel < arr.length ? [arr[S.sel]] : arr.length ? arr : [S.cur];
+const playingBar = () => Math.floor(playPos / S.numSteps) % playSeq().length;
+const playingPart = () => playSeq()[playingBar()];
+const playingSlot = () => !timer || !arr.length ? -1 : S.sel >= 0 ? S.sel : playingBar();
 const shownPlayStep = () => timer && playingPart() === S.cur ? playStep : -1;
 
 // small picture of one or more parts, side by side
@@ -406,14 +425,9 @@ function thumb(el, ps, w, h) {
 }
 
 function render() {
-  plug.classList.toggle('musician-off', S.mode !== 1);
   plug.classList.toggle('adv-off', !S.adv);
-  document.querySelectorAll('#mode button').forEach(b => b.classList.toggle('on', +b.dataset.m === S.mode));
   document.querySelectorAll('#view button').forEach(b => b.classList.toggle('on', b.dataset.v === S.view));
-  document.querySelectorAll('#scope button').forEach(b => b.classList.toggle('on', b.dataset.s === S.scope));
   $('adv').classList.toggle('on', S.adv);
-  $('inf').classList.toggle('on', S.infinity);
-  $('infMode').textContent = '· ' + S.infMode;
   $('mutAmt').textContent = Math.round(S.mutAmt * 100) + '%';
   $('vTr').textContent = (S.transpose > 0 ? '+' : '') + S.transpose;
   $('seed').value = S.seed;
@@ -424,22 +438,37 @@ function render() {
   const n = pat.numSteps;
   document.querySelectorAll('.cols').forEach(c => c.style.setProperty('--n', n));
 
-  // part tabs
-  const T = $('tabs'); T.innerHTML = '';
+  // arrangement (left: bars with lock and remove) and palette (right: the four parts, click adds a bar)
+  const A = $('arr'); A.innerHTML = '';
+  const ps = playingSlot();
+  arr.forEach((k, i) => {
+    const t = document.createElement('div');
+    t.className = 'slot' + (i === S.sel ? ' on' : k === S.cur ? ' same' : '') + (locks[k] ? ' locked' : '') + (i === ps ? ' playing' : '');
+    t.title = `Bar ${i + 1}: ${PARTS[k]} · ${i === S.sel ? 'selected: Play loops this bar; click again to deselect' : 'click to select it and edit ' + PARTS[k]} (every ${PARTS[k]} bar changes with it)`;
+    t.innerHTML = `<span class="lk" title="${locks[k] ? PARTS[k] + ' is locked: the dice and Roll all skip it. Click to unlock' : 'Lock ' + PARTS[k] + ': the dice and Roll all keep it as it is'}">${locks[k] ? '🔒' : '🔓'}</span><span class="tn">${PARTS[k]}</span><div class="tt"></div><button class="x" title="Remove this bar from the arrangement">×</button><i class="pp"></i>`;
+    thumb(t.querySelector('.tt'), [parts[k]], 44, 16);
+    t.onclick = () => selectSlot(i);
+    t.querySelector('.lk').onclick = e => { e.stopPropagation(); locks[k] = !locks[k]; push(); };
+    t.querySelector('.x').onclick = e => { e.stopPropagation(); arr.splice(i, 1); if (S.sel === i) S.sel = -1; else if (S.sel > i) S.sel--; push(); };
+    A.appendChild(t);
+  });
+  if (!arr.length) { const h = document.createElement('span'); h.className = 'arrhint'; h.textContent = 'No bars yet: click a part on the right to add it'; A.appendChild(h); }
+  const info = $('tabinfo');
+  info.className = 'tabinfo' + (locks[S.cur] ? ' lockmsg' : '');
+  info.title = `Editing ${PARTS[S.cur]} (${PART_HINT[S.cur]}); 1 bar = ${n} steps`;
+  info.textContent = locks[S.cur] ? `🔒 ${PARTS[S.cur]} locked: dice skip it`
+    : `editing ${PARTS[S.cur]} · ${S.sel >= 0 ? 'Play: bar ' + (S.sel + 1) : arr.length ? 'Play: ' + arr.length + ' bar' + (arr.length > 1 ? 's' : '') : 'Play: this part'}`;
+  const P = $('pal'); P.innerHTML = '';
+  const full = arr.length >= MAX_BARS;
   parts.forEach((p, k) => {
     const t = document.createElement('div');
-    t.className = 'tab' + (k === S.cur ? ' on' : '') + (locks[k] ? ' locked' : '') + (timer && S.scope === 'form' && playingPart() === k ? ' playing' : '');
-    t.title = `${PARTS[k]} · ${PART_HINT[k]}` + (src[k] === 'import' ? ' · imported' : src[k] === 'derived' ? ' · generated from the import' : '') + (locks[k] ? ' · locked' : '');
-    t.innerHTML = `<span class="tn">${PARTS[k]}</span><div class="tt"></div><span class="lk" title="${locks[k] ? 'Locked: the dice and Roll all skip this part. Click to unlock' : 'Lock this part: the dice and Roll all keep it as it is'}">${locks[k] ? '🔒' : '🔓'}</span><i class="pp"></i>`;
+    t.className = 'tab' + (k === S.cur ? ' on' : '') + (full ? ' full' : ' add');
+    t.title = `${PARTS[k]} · ${PART_HINT[k]}` + (src[k] === 'import' ? ' · imported' : src[k] === 'derived' ? ' · generated from the import' : '') + (full ? ' · the arrangement is full (4 bars)' : ' · click to add a bar to the arrangement');
+    t.innerHTML = `<span class="tn">${PARTS[k]}</span><div class="tt"></div>`;
     thumb(t.querySelector('.tt'), [p], 44, 16);
-    t.onclick = () => selectPart(k);
-    t.querySelector('.lk').onclick = e => { e.stopPropagation(); locks[k] = !locks[k]; push(); };
-    T.appendChild(t);
+    t.onclick = () => { S.cur = k; pat = parts[k]; if (!full) { arr.push(k); S.sel = -1; push(); } else render(); };
+    P.appendChild(t);
   });
-  const info = document.createElement('span');
-  info.className = 'tabinfo' + (locks[S.cur] ? ' lockmsg' : '');
-  info.textContent = locks[S.cur] ? `🔒 ${PARTS[S.cur]} is locked: the dice skip it, editing by hand still works` : `${PARTS[S.cur]} · ${PART_HINT[S.cur]} · 1 bar = ${n} steps`;
-  T.appendChild(info);
 
   // piano roll
   const R = rows();
@@ -511,7 +540,7 @@ function render() {
     if (!h) { t.className = 'th empty'; H.appendChild(t); continue; }
     t.className = 'th' + (i === hi ? ' cur' : '');
     t.title = `#${i + 1}: the whole form. Click to go back, double-click to star (starred ones are kept)`;
-    thumb(t, h.parts, 40, 26);
+    thumb(t, (h.arr.length ? h.arr : [h.cur]).map(k => h.parts[k]), 40, 26);
     if (h.star) { const s = document.createElement('span'); s.className = 'star'; s.textContent = '★'; t.appendChild(s); }
     t.onclick = () => goto(i);
     t.ondblclick = () => { h.star = !h.star; render(); };
@@ -590,9 +619,7 @@ const rekey = () => {
 };
 $('root').onchange = rekey; $('scale').onchange = rekey;
 $('rate').onchange = () => { S.rate = +$('rate').value; S.numSteps = { 2: 8, 4: 16, 6: 12 }[S.rate]; parts.forEach(p => { p.numSteps = S.numSteps; fitP(p); }); push(); };
-document.querySelectorAll('#mode button').forEach(b => b.onclick = () => { S.mode = +b.dataset.m; applyAll('roll'); });
 document.querySelectorAll('#view button').forEach(b => b.onclick = () => { S.view = b.dataset.v; render(); });
-document.querySelectorAll('#scope button').forEach(b => b.onclick = () => { S.scope = b.dataset.s; stepIdx = 0; playPos = 0; render(); });
 $('roll').onclick = () => apply('roll');
 $('rollAll').onclick = () => applyAll('roll');
 $('rollR').onclick = () => apply('rhythm');
@@ -600,10 +627,6 @@ $('rollN').onclick = () => apply('notes');
 $('mut').onclick = e => {
   if (e.target.id === 'mutAmt') { const a = [0.1, 0.25, 0.5]; S.mutAmt = a[(a.indexOf(S.mutAmt) + 1) % a.length]; render(); return; }
   apply('mutate');
-};
-$('inf').onclick = e => {
-  if (e.target.id === 'infMode') { S.infMode = S.infMode === 'mutate' ? 'roll' : 'mutate'; render(); return; }
-  S.infinity = !S.infinity; render();
 };
 $('trU').onclick = () => { parts.forEach((p, k) => setPart(k, core.transpose(p, 1, S.root, S.scale))); S.transpose++; push(); };
 $('trD').onclick = () => { parts.forEach((p, k) => setPart(k, core.transpose(p, -1, S.root, S.scale))); S.transpose--; push(); };
@@ -619,22 +642,19 @@ addEventListener('keydown', e => {
   if (e.code === 'Space') { e.preventDefault(); e.shiftKey ? applyAll('roll') : apply('roll'); }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? $('redo').click() : $('undo').click(); }
   if (!e.ctrlKey && !e.metaKey && !e.altKey && ['1', '2', '3', '4'].includes(e.key)) selectPart(+e.key - 1);
+  if (e.key === 'Escape' && S.sel >= 0) selectSlot(S.sel);
 });
 
-// playhead (no sound): BPM, rate and swing; loops the form or the part shown; Infinity changes
-// the riff at each cycle start
+// playhead (no sound): BPM, rate and swing; loops the selected bar, else the arrangement
 let timer = null, nextAt = 0, stepIdx = 0;
-const cycleLen = () => S.scope === 'form' ? 4 * S.numSteps : S.numSteps;
+const cycleLen = () => playSeq().length * S.numSteps;
 function tick() {
   const now = performance.now();
   if (now >= nextAt) {
     const n = S.numSteps, len = cycleLen();
-    if (stepIdx > 0 && stepIdx % len === 0 && S.infinity) {
-      const op = S.infMode === 'roll' ? 'roll' : 'mutate';
-      S.scope === 'form' ? applyAll(op) : apply(op);
-    }
     playPos = stepIdx % len;
     playStep = playPos % n;
+    if (S.sel < 0 && arr.length && playingPart() !== S.cur) { S.cur = playingPart(); pat = parts[S.cur]; }
     const stepMs = 60000 / (+$('bpm').value || 120) / S.rate;
     const swing = (playStep % 2 === 0 ? 1 : -1) * S.swing * 0.5 * stepMs;
     nextAt = (nextAt || now) + stepMs + swing;
@@ -712,7 +732,7 @@ function importMidi(u8, name) {
 
   const fresh = [0, 1, 2, 3].map(newPat);
   placed.forEach(x => { const b = Math.floor(x.s / N); fresh[b].steps[x.s - b * N] = { on: true, note: x.note, length: Math.min(8, x.e - x.s), velocity: Math.max(1, Math.min(127, x.vel)), repeats: 1, locked: false }; });
-  parts = fresh; locks = [false, false, false, false]; src = [0, 1, 2, 3].map(b => b < nBars ? 'import' : 'derived');
+  parts = fresh; locks = [false, false, false, false]; src = [0, 1, 2, 3].map(b => b < nBars ? 'import' : 'derived'); arr = [0, 1, 2, 3]; S.sel = -1;
   parts.forEach(fitP);
   S.cur = 0; pat = parts[0];
   S.seed = newSeed();
@@ -735,7 +755,7 @@ addEventListener('dragleave', e => { if (!e.relatedTarget) document.body.classLi
 addEventListener('drop', e => { e.preventDefault(); document.body.classList.remove('dragging'); readFile(e.dataTransfer.files[0]); });
 
 $('exp').onclick = () => {
-  const bytes = core.midiFile(parts, S.rate, +$('bpm').value || 120, S.swing);
+  const bytes = core.midiFile((arr.length ? arr : [S.cur]).map(k => parts[k]), S.rate, +$('bpm').value || 120, S.swing);
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([bytes], { type: 'audio/midi' }));
   a.download = `midinja-${NAMES[S.root].replace('#', 's')}-${SCALES[S.scale].name.replace(/[^A-Za-z0-9]+/g, '')}.mid`;
@@ -755,7 +775,6 @@ function fitW() {
 addEventListener('resize', fitW);
 
 const h = location.hash;
-if (h.includes('musician')) S.mode = 1;
 if (h.includes('advanced')) S.adv = true;
 if (h.includes('scale')) S.view = 'scale';
 if (h.includes('all')) S.view = 'all';

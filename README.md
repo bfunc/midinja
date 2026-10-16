@@ -45,11 +45,13 @@ Settings and the pattern are saved when the app closes.
 (`web/build.sh`, needs Docker or emcc), with the app's interface and no sound. Live at
 https://bfunc.cc/static/midinja/ (`web/publish.sh` copies it into the bfunc.cc repo).
 
-The preview is ahead of the app: it has the Musician mode, the split dice, Mutate, a history of
-whole forms, and the **form A A′ B C** (one part is one bar, tabs above the grid; A′ is a
-variation of A with a Similarity knob, B leans on the IV degree, C cadences to the root). Lock a
-part with the padlock on its tab. A `.mid` dropped on the page is imported (up to 4 bars → A A′ B C,
-monophonic, 1/16 grid, key guessed), and Export writes the four bars as one `.mid`.
+The preview is ahead of the app: Musician generation only (no Random mode, no Infinity), the
+split dice, Mutate, a history of whole arrangements, and **parts A A′ B C** in a palette on the
+right (one part is one bar; A′ is a variation of A with a Similarity knob, B leans on the IV
+degree, C cadences to the root). Click a part to add it as a bar to the **arrangement** on the
+left (up to 4 bars); a bar has a padlock (keeps its part out of rolls) and a ×. Select a bar to loop
+only it. Ctrl+click resets a knob. A `.mid` dropped on the page is imported (up to 4 bars → A A′ B C,
+monophonic, 1/16 grid, key guessed), and Export writes the arrangement as one `.mid`.
 
 ## Building
 
