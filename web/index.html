@@ -206,7 +206,7 @@ body.dragging .drop{display:grid}
       <div class="cols play" id="play"></div>
       <div class="lanes" id="lanes"></div>
       <div class="cols steps" id="stepn"></div>
-      <div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the mode</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span>click = add / remove · drag = pitch · Shift+click = lock note · right-click = longer · bars (left): click = select and edit, click again or Esc = deselect, 🔒 or Shift+click = lock the part, × = remove · parts (right): click = add a bar · keys 1–4 = part</span></div>
+      <div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span>click = add / remove · drag = pitch · Shift+click = lock note · right-click = longer · bars (left): click = select and edit, click again or Esc = deselect, 🔒 or Shift+click = lock the part, × = remove · parts (right): click = add a bar · keys 1–4 = part</span></div>
     </div>
   </div>
 
@@ -238,6 +238,7 @@ const SCALES = core.scales();
 const NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const PARTS = ['A', 'A′', 'B', 'C'];
 const PART_HINT = ['the motif', 'variation of A', 'contrast on the IV degree', 'cadence to the root'];
+const DEG = { 0: '1', 1: '♭2', 2: '2', 3: '♭3', 4: '3', 5: '4', 6: '♯4', 7: '5', 8: '♭6', 9: '6', 10: '♭7', 11: '7' };
 const nn = n => NAMES[n % 12] + (Math.floor(n / 12) - 1);
 const $ = id => document.getElementById(id);
 const plug = $('plug');
@@ -403,10 +404,25 @@ const drawers = [
   range('rgVel', 1, 127, () => [S.velMin, S.velMax], ([a, b]) => { S.velMin = a; S.velMax = b; }, v => v),
   range('rgRep', 1, 4, () => [S.repMin, S.repMax], ([a, b]) => { S.repMin = a; S.repMax = b; }, v => '×' + v),
 ];
-function colorLabel() {
-  const c = SCALES[S.scale].color;
-  if (c < 0) return 'none';
-  return { 1: '♭2', 2: '2', 3: '♭3', 4: '3', 5: '4', 6: '♭5', 7: '5', 8: '♭6', 9: '6', 10: '♭7', 11: '7' }[c];
+// The colour notes of the scale, main one first; a note that is part of a signature move is
+// shown as the move ("♭2→3"). What the Color knob label and the key badges use.
+function colorParts() {
+  const sc = SCALES[S.scale], out = [], used = new Set();
+  for (const pc of sc.colors) {
+    if (used.has(pc)) continue;
+    const mv = sc.moves.find(([lo, hi]) => lo === pc || hi === pc);
+    if (mv) { out.push(DEG[mv[0]] + '→' + DEG[mv[1]]); used.add(mv[0]); used.add(mv[1]); }
+    else { out.push(DEG[pc]); used.add(pc); }
+  }
+  return out;
+}
+function colorLabel() { const p = colorParts(); return p.length ? p.join(' ') : 'none'; }
+function colorWords() {
+  const sc = SCALES[S.scale];
+  if (!sc.colors.length) return sc.name + ' has no colour note';
+  let t = 'Colour notes of ' + sc.name + ': ' + sc.colors.map(pc => DEG[pc]).join(', ') + ' (the first gets about half the colour)';
+  if (sc.moves.length) t += '. Signature move' + (sc.moves.length > 1 ? 's' : '') + ': ' + sc.moves.map(([lo, hi]) => DEG[lo] + '→' + DEG[hi]).join(', ') + ', played as two notes in a row into a strong step';
+  return t + '. The knob is the total amount of colour on the next roll. Ctrl+click resets';
 }
 
 // ---- grid ----------------------------------------------------------------------------------
@@ -425,7 +441,7 @@ function degreeBadge(n) {
   if (pc === 0) return ['1', 'ct'];
   if (pc === sc.third) return [{ 3: '♭3', 4: '3', 2: '2', 5: '4' }[pc], 'ct'];
   if (pc === sc.fifth) return [{ 7: '5', 6: '♭5', 8: '♯5' }[pc], 'ct'];
-  if (pc === sc.color) return [colorLabel(), 'col'];
+  if (sc.colors.includes(pc)) return [DEG[pc], 'col'];
   return null;
 }
 let playStep = -1, playPos = 0;
@@ -465,7 +481,7 @@ function render() {
   $('mutAmt').textContent = Math.round(S.mutAmt * 100) + '%';
   $('vTr').textContent = (S.transpose > 0 ? '+' : '') + S.transpose;
   $('seed').value = S.seed;
-  $('colorWrap').title = 'How often the colour note of ' + SCALES[S.scale].name + ' (' + colorLabel() + ') sounds (next roll)';
+  $('colorWrap').title = colorWords();
   ['roll', 'rollR', 'rollN', 'mut'].forEach(id => $(id).disabled = locks[S.cur]);
   $('roll').title = locks[S.cur] ? PARTS[S.cur] + ' is locked: unlock it on its tab to roll' : 'Roll the part shown (Space). Locked notes stay';
   drawers.forEach(d => d());
@@ -525,7 +541,7 @@ function render() {
       const st = pat.steps[s];
       if (st.on && st.note === note) {
         const d = document.createElement('div');
-        d.className = 'note' + (st.locked ? ' locked' : '') + (pc === SCALES[S.scale].color && inS ? ' colr' : '') + (inS ? '' : ' outn');
+        d.className = 'note' + (st.locked ? ' locked' : '') + (SCALES[S.scale].colors.includes(pc) && inS ? ' colr' : '') + (inS ? '' : ' outn');
         d.style.width = `calc(${st.length * 100}% + ${st.length - 1}px - 4px)`;
         d.style.opacity = 0.55 + 0.45 * st.velocity / 127;
         if (st.repeats > 1) { const rt = document.createElement('div'); rt.className = 'rat'; for (let i = 0; i < st.repeats; i++) rt.appendChild(document.createElement('i')); d.appendChild(rt); }

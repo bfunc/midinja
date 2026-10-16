@@ -5,6 +5,7 @@
 
 #include <array>
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 namespace midinja
@@ -98,7 +99,13 @@ void mutate (Pattern& p, const GenSettings& g, float amount);
 struct ModeInfo
 {
     int third = -1, fifth = -1; // the tonic triad
-    int color = -1;             // the note that tells this mode from plain major / minor
+    int color = -1;             // the main colour note: the first of colors, or -1
+    // Every note that tells this scale from plain major / minor (by its third), best first. The
+    // main colour gets about half the colour weight, the rest share the other half.
+    std::vector<int> colors;
+    // Signature moves: two neighbouring scale notes an augmented second apart, as (lower, upper)
+    // pitch classes, played as a pair of consecutive notes (b2 -> 3 in Phrygian Dominant).
+    std::vector<std::pair<int, int>> moves;
 };
 ModeInfo modeInfo (int scale);
 // Musician phrases are built from equal cells (A A' A B); this is a cell's length in steps.

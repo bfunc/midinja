@@ -190,6 +190,19 @@ val scaleList()
         o.set ("third", mi.third);
         o.set ("fifth", mi.fifth);
         o.set ("color", mi.color);
+        val colors = val::array();
+        for (int pc : mi.colors)
+            colors.call<void> ("push", pc);
+        o.set ("colors", colors);
+        val moves = val::array();
+        for (const auto& mv : mi.moves)
+        {
+            val pair = val::array();
+            pair.call<void> ("push", mv.first);
+            pair.call<void> ("push", mv.second);
+            moves.call<void> ("push", pair);
+        }
+        o.set ("moves", moves);
         out.call<void> ("push", o);
     }
     return out;

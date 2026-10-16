@@ -31,14 +31,25 @@ ModeInfo modeInfo (int scale)
     static const int preference[] = { 6, 1, 9, 11, 10, 8, 2, 3, 4, 5, 7 };
     for (int pc : preference)
         if (has (pc) && ! inRef (pc) && pc != m.fifth && pc != m.third)
-        {
-            m.color = pc;
-            return m;
-        }
+            m.colors.push_back (pc);
     // Plain major and minor: the major 7th and the minor 6th give them their colour.
-    const int fallback = m.third == 4 ? 11 : 8;
-    if (has (fallback))
-        m.color = fallback;
+    if (m.colors.empty())
+    {
+        const int fallback = m.third == 4 ? 11 : 8;
+        if (has (fallback))
+            m.colors.push_back (fallback);
+    }
+    m.color = m.colors.empty() ? -1 : m.colors.front();
+
+    // An augmented second between neighbours is the mark of the exotic seven-note scales; the
+    // minor thirds inside a pentatonic or blues scale are not that.
+    if (iv.size() >= 7)
+        for (size_t i = 0; i < iv.size(); ++i)
+        {
+            const int lo = iv[i], hi = i + 1 < iv.size() ? iv[i + 1] : iv[0] + 12;
+            if (hi - lo == 3)
+                m.moves.push_back ({ lo, hi % 12 });
+        }
     return m;
 }
 
@@ -85,6 +96,7 @@ struct Ctx
     const GenSettings& g;
     int n;
     std::vector<int> pool, roots, fifths, chord, colors;
+    std::vector<std::vector<int>> colorNotes; // the pool's notes per colour, main colour first
     ModeInfo mi;
 
     Ctx (const GenSettings& gs, int numSteps) : g (gs), n (numSteps)
@@ -104,14 +116,22 @@ struct Ctx
             thirdPc = iv[(size_t) ((d + 2) % size)];
             fifthPc = iv[(size_t) ((d + 4) % size)];
         }
+        colorNotes.resize (mi.colors.size());
         for (int note : pool)
         {
             const int pc = pcOf (note, g.root);
             if (pc == rootPc) roots.push_back (note);
             if (pc == fifthPc) fifths.push_back (note);
             if (pc == rootPc || pc == thirdPc || pc == fifthPc) chord.push_back (note);
-            if (pc == mi.color) colors.push_back (note);
+            for (size_t k = 0; k < mi.colors.size(); ++k)
+                if (pc == mi.colors[k])
+                {
+                    colors.push_back (note);
+                    colorNotes[k].push_back (note);
+                }
         }
+        for (size_t k = 0; k < colorNotes.size();)
+            if (colorNotes[k].empty()) { colorNotes.erase (colorNotes.begin() + (long) k); } else ++k;
         if (chord.empty())
             chord = pool;
     }
@@ -139,6 +159,34 @@ struct Ctx
             if (std::abs (x - note) < std::abs (best - note))
                 best = x;
         return best;
+    }
+
+    // A colour note near `note`: the main colour about half the time, the others share the rest.
+    int colourNear (int note, Rng& rng) const
+    {
+        if (colorNotes.empty())
+            return note;
+        size_t k = 0;
+        if (colorNotes.size() > 1 && rng.unit() >= 0.5f)
+            k = 1 + (size_t) rng.range (0, (int) colorNotes.size() - 2);
+        return nearestIn (colorNotes[k], note);
+    }
+
+    // The nearest note of pitch class `pc` strictly above (dir > 0) or below (dir < 0) `from`,
+    // or the nearest at all (dir 0, or when there is none that way).
+    int nextOfClass (int pc, int from, int dir) const
+    {
+        int best = -1;
+        if (dir != 0)
+            for (int x : pool)
+                if (pcOf (x, g.root) == pc && ((dir > 0 && x > from) || (dir < 0 && x < from)) && (best < 0 || std::abs (x - from) < std::abs (best - from)))
+                    best = x;
+        if (best >= 0)
+            return best;
+        for (int x : pool)
+            if (pcOf (x, g.root) == pc && (best < 0 || std::abs (x - from) < std::abs (best - from)))
+                best = x;
+        return best < 0 ? from : best;
     }
 };
 
@@ -367,8 +415,8 @@ void musicianPitches (Pattern& p, const std::vector<int>& positions, const Ctx& 
         }
         if (strong (off))
             note = Ctx::nearestIn (c.chord, note);
-        else if (! c.colors.empty() && rng.unit() < g.color)
-            note = Ctx::nearestIn (c.colors, note);
+        else if (! c.colorNotes.empty() && rng.unit() < g.color)
+            note = c.colourNear (note, rng);
         motif.push_back (note);
         prev = note;
     }
@@ -392,6 +440,25 @@ void musicianPitches (Pattern& p, const std::vector<int>& positions, const Ctx& 
             p.steps[(size_t) s].note = note;
         }
     }
+
+    // Signature moves: a cell's last note leads into the next cell's first (strong) step as the
+    // two notes of an augmented second, mostly rising. Part of the colour budget.
+    if (! c.mi.moves.empty())
+        for (int k = 0; k + 1 < cells; ++k)
+        {
+            const auto& cur = byCell[(size_t) k];
+            const auto& next = byCell[(size_t) k + 1];
+            if (cur.empty() || next.empty() || ! strong (next.front()) || cur.back() % cell == 0)
+                continue;
+            if (rng.unit() >= g.color * 0.5f)
+                continue;
+            const auto mv = c.mi.moves[(size_t) rng.range (0, (int) c.mi.moves.size() - 1)];
+            const bool up = rng.unit() < 0.75f;
+            auto& first = p.steps[(size_t) cur.back()];
+            auto& second = p.steps[(size_t) next.front()];
+            first.note = c.nextOfClass (up ? mv.first : mv.second, first.note, 0);
+            second.note = c.nextOfClass (up ? mv.second : mv.first, first.note, up ? 1 : -1);
+        }
 
     // The cycle ends at home, unless a locked note comes after.
     const int last = positions.back();

@@ -244,6 +244,73 @@ static void testModeInfo()
     CHECK (modeInfo (idx ("Minor Pentatonic")).color == -1);
     CHECK (modeInfo (idx ("Dorian")).third == 3 && modeInfo (idx ("Dorian")).fifth == 7);
     CHECK (musicianCellLength (16) == 4 && musicianCellLength (32) == 8 && musicianCellLength (8) == 4);
+
+    // Colour sets and signature moves.
+    using PC = std::vector<int>;
+    using MV = std::vector<std::pair<int, int>>;
+    CHECK (modeInfo (idx ("Phrygian Dominant")).colors == PC ({ 1, 10, 8 }));
+    CHECK (modeInfo (idx ("Phrygian Dominant")).moves == MV ({ { 1, 4 } }));
+    CHECK (modeInfo (idx ("Lydian Dominant")).colors == PC ({ 6, 10 }));
+    CHECK (modeInfo (idx ("Hungarian Minor")).colors == PC ({ 6, 11 }));
+    CHECK (modeInfo (idx ("Hungarian Minor")).moves == MV ({ { 3, 6 }, { 8, 11 } }));
+    CHECK (modeInfo (idx ("Harmonic Minor")).moves == MV ({ { 8, 11 } }));
+    CHECK (modeInfo (idx ("Double Harmonic")).moves == MV ({ { 1, 4 }, { 8, 11 } }));
+    CHECK (modeInfo (idx ("Locrian")).colors == PC ({ 1 }));
+    CHECK (modeInfo (idx ("Minor Pentatonic")).colors.empty() && modeInfo (idx ("Minor Pentatonic")).moves.empty());
+    CHECK (modeInfo (idx ("Blues")).moves.empty());
+    for (size_t s = 0; s < scales().size(); ++s)
+    {
+        const auto mi = modeInfo ((int) s);
+        CHECK (mi.color == (mi.colors.empty() ? -1 : mi.colors.front()));
+        for (int pc : mi.colors)
+            CHECK (inScale (pc, 0, (int) s) && pc != mi.third && pc != mi.fifth);
+        for (const auto& mv : mi.moves)
+            CHECK (inScale (mv.first, 0, (int) s) && inScale (mv.second, 0, (int) s) && (mv.second - mv.first + 12) % 12 == 3);
+    }
+}
+
+// With enough Color, the scales with an augmented second get their signature move in a fair
+// share of riffs: two consecutive notes that are the move's two pitch classes.
+static void testSignatureMoves()
+{
+    auto idx = [] (const char* name) {
+        for (size_t i = 0; i < scales().size(); ++i)
+            if (std::string (scales()[i].name) == name) return (int) i;
+        return -1;
+    };
+    for (const char* name : { "Phrygian Dominant", "Harmonic Minor", "Hungarian Minor", "Double Harmonic" })
+    {
+        const int scale = idx (name);
+        const auto mi = modeInfo (scale);
+        int withMove = 0, runs = 0;
+        for (uint32_t seed = 1; seed <= 200; ++seed)
+        {
+            GenSettings g;
+            g.mode = kMusician;
+            g.seed = seed;
+            g.root = (int) (seed % 12);
+            g.scale = scale;
+            g.notes = 10;
+            g.color = 0.5f;
+            g.surprise = 0.0f;
+            Pattern p;
+            p.numSteps = 16;
+            generate (p, g);
+            checkBasics (p, g);
+            const auto on = onSteps (p);
+            bool found = false;
+            for (size_t j = 0; j + 1 < on.size(); ++j)
+            {
+                const int a = ((p.steps[(size_t) on[j]].note - g.root) % 12 + 12) % 12;
+                const int b = ((p.steps[(size_t) on[j + 1]].note - g.root) % 12 + 12) % 12;
+                for (const auto& mv : mi.moves)
+                    found |= (a == mv.first && b == mv.second) || (a == mv.second && b == mv.first);
+            }
+            withMove += found ? 1 : 0;
+            ++runs;
+        }
+        CHECK (withMove * 100 >= runs * 35);
+    }
 }
 
 static void testMusician()
@@ -551,6 +618,7 @@ int main (int argc, char** argv)
     testStepEventsAndSwing();
     testSequencerTiming();
     testModeInfo();
+    testSignatureMoves();
     testMusician();
     testRhythmNotesMutate();
     testForm();
