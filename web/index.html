@@ -146,8 +146,6 @@ input.num{width:64px}
 .grp{display:flex;align-items:center;gap:8px}
 .inert{opacity:.45;pointer-events:none}
 .mini .knob{width:24px;height:24px}.mini .knob i{width:16px;height:16px}
-.notes{width:1120px;margin-top:16px;color:#8a90a0;font-size:12.5px;line-height:1.55}
-.notes b{color:#e6e8ee}
 .drop{position:fixed;inset:12px;border:3px dashed var(--acc2);border-radius:14px;background:#0d0e11d9;display:none;place-items:center;z-index:50;color:var(--ink);font-size:18px;text-align:center;line-height:1.6}
 .drop small{display:block;color:var(--ink2);font-size:13px}
 body.dragging .drop{display:grid}
@@ -196,6 +194,7 @@ body.dragging .drop{display:grid}
       <div><h4>Length</h4><div class="range" id="rgLen"></div><div class="rl"><span id="lLenLo"></span><span id="lLenHi"></span></div></div>
       <div><h4>Velocity</h4><div class="range" id="rgVel"></div><div class="rl"><span id="lVelLo"></span><span id="lVelHi"></span></div></div>
       <div id="rptbox"><h4>Ratchets <span class="pill" id="rptpill">OFF</span></h4><div class="range" id="rgRep"></div><div class="rl"><span id="lRepLo"></span><span id="lRepHi"></span></div></div>
+      <div><h4>Start on chord root <span class="pill on" id="rootpill" title="Every bar begins with the root of its chord on step 1: I for A and A′, IV for B, V for C (ii or vii when the scale has no fifth). Imported bars are left as they are">ON</span></h4></div>
       <div><h4>Seed</h4><input class="num" id="seed" style="width:100%" title="The seed of the last roll. Type one and press Enter to roll the whole form from it"></div>
     </div>
     <div class="gridw">
@@ -223,12 +222,6 @@ body.dragging .drop{display:grid}
   </div>
 </div></div>
 
-<div class="notes" id="notes">
-  <p><b>Midinja web preview.</b> The generator is the app's own C++ engine compiled to WebAssembly; there is no sound here (export the .mid to listen). Synth, MIDI Out and presets are in the app. Every roll uses the Musician logic: a motif, chord tones on the beat, the mode's colour note, an ending at home.</p>
-  <p><b>Parts and arrangement.</b> One part is one bar. The palette on the right holds the four parts: A is the motif, A′ a variation of it (the <b>Similarity</b> knob says how close), B a contrasting bar on the IV degree, C a bar that cadences to the root. Click a part to add it as a bar to the arrangement on the left (up to 4 bars, for example A B or A A A C); × removes a bar. Click a bar to select it: it opens in the grid and Play loops only that bar; click it again (or Esc) to deselect, and Play goes through the whole arrangement with the grid following the playing bar. Editing A changes every A bar. The dice roll the part shown the way the selector next to them says (Both, Rhythm only, Notes only, or Mutate a little); <b>🎲 All</b> does the same to all four parts, and 🔒 on a bar keeps its part out of every roll. The <b>Versions</b> strip gets a new entry on every roll and import; hand edits change the current version in place, so switching back to a version keeps what you did to it. Ctrl+Z / Ctrl+Shift+Z undo and redo every action (the ↶ ↷ buttons show with Advanced).</p>
-  <p><b>Import.</b> Drop a .mid on the page (or use Import MIDI): up to 4 bars become A A′ B C, quantised to 1/16, lowest note where notes overlap, velocities kept. Missing bars are generated from what was loaded. The key is guessed and can be corrected in Key, which regenerates the generated bars. <b>Export</b> saves the arrangement as one .mid.</p>
-</div>
-
 <script src="midinja-core.js"></script>
 <script>
 (async () => {
@@ -236,7 +229,7 @@ const core = await MidinjaCore();
 const SCALES = core.scales();
 const NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const PARTS = ['A', 'A′', 'B', 'C'];
-const PART_HINT = ['the motif', 'variation of A', 'contrast on the IV degree', 'cadence to the root'];
+const PART_HINT = ['the motif on I', 'variation of A', 'contrast on IV', 'on V, cadence to the root'];
 const DEG = { 0: '1', 1: '♭2', 2: '2', 3: '♭3', 4: '3', 5: '4', 6: '♯4', 7: '5', 8: '♭6', 9: '6', 10: '♭7', 11: '7' };
 const nn = n => NAMES[n % 12] + (Math.floor(n / 12) - 1);
 const $ = id => document.getElementById(id);
@@ -247,7 +240,7 @@ const S = {
   mode: 1, root: 4, scale: 2, numSteps: 16, rate: 4, notes: 10, swing: 0.18,
   lowNote: 40, highNote: 64, lenMin: 1, lenMax: 2, velMin: 70, velMax: 120,
   repeatsOn: false, repMin: 2, repMax: 3, repChance: 0.25, color: 0.4, surprise: 0.15, similarity: 0.65,
-  seed: 4821, transpose: 0, view: 'riff', adv: false, what: 'roll', mutAmt: 0.15,
+  seed: 4821, transpose: 0, view: 'scale', adv: false, what: 'roll', mutAmt: 0.15, startOnRoot: true,
   cur: 0, sel: -1,
 };
 const MAX_BARS = 4;
@@ -277,6 +270,7 @@ function apply(op) {
   S.seed = newSeed();
   pat.numSteps = S.numSteps;
   const g = settings();
+  g.degree = core.partDegree(S.cur, S.scale);
   setPart(S.cur, op === 'roll' && S.cur > 0 ? core.part(S.cur, pat, parts[0], g) : core.run(op, pat, g, S.mutAmt));
   src[S.cur] = 'roll';
   commitVersion();
@@ -290,7 +284,7 @@ function applyAll(op, keepSeed) {
     core.form(parts, lockMask(), g).forEach((p, k) => { if (!locks[k]) { setPart(k, p); src[k] = 'roll'; } });
     if (!locks.some(Boolean)) msg('');
   } else {
-    parts.forEach((p, k) => { if (!locks[k]) { g.seed = newSeed(); setPart(k, core.run(op, p, g, S.mutAmt)); } });
+    parts.forEach((p, k) => { if (!locks[k]) { g.seed = newSeed(); g.degree = core.partDegree(k, S.scale); setPart(k, core.run(op, p, g, S.mutAmt)); } });
   }
   commitVersion();
 }
@@ -602,6 +596,7 @@ function render() {
   $('hPrev').disabled = histEnd <= PER_PAGE; $('hNext').disabled = histEnd >= versions.length;
   $('undo').disabled = ui <= 0; $('redo').disabled = ui >= undoStack.length - 1;
   $('rptpill').textContent = S.repeatsOn ? 'ON' : 'OFF'; $('rptpill').classList.toggle('on', S.repeatsOn); $('rptbox').classList.toggle('offbox', !S.repeatsOn);
+  $('rootpill').textContent = S.startOnRoot ? 'ON' : 'OFF'; $('rootpill').classList.toggle('on', S.startOnRoot);
   fitW();
 }
 
@@ -683,6 +678,7 @@ $('trU').onclick = () => { parts.forEach((p, k) => setPart(k, core.transpose(p, 
 $('trD').onclick = () => { parts.forEach((p, k) => setPart(k, core.transpose(p, -1, S.root, S.scale))); S.transpose--; push(); };
 $('adv').onclick = () => { S.adv = !S.adv; render(); };
 $('rptpill').onclick = () => { S.repeatsOn = !S.repeatsOn; render(); };
+$('rootpill').onclick = () => { S.startOnRoot = !S.startOnRoot; render(); };
 $('seed').onkeydown = e => { if (e.key === 'Enter') { S.seed = (+$('seed').value >>> 0) || 1; applyAll('roll', true); } };
 $('undo').onclick = () => ui > 0 && undoTo(ui - 1);
 $('redo').onclick = () => ui < undoStack.length - 1 && undoTo(ui + 1);
@@ -820,7 +816,6 @@ function fitW() {
   const k = plugScale(), w = document.documentElement.clientWidth;
   plug.style.transformOrigin = '0 0'; plug.style.transform = k < 1 ? `scale(${k})` : '';
   $('wrap').style.height = (plug.offsetHeight * k) + 'px';
-  $('notes').style.width = Math.min(1120, w - 24) + 'px';
   document.body.style.padding = k < 1 ? '12px' : '20px';
 }
 addEventListener('resize', fitW);

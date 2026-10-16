@@ -492,6 +492,37 @@ int clampSteps (Pattern& p)
     return p.numSteps;
 }
 
+// With startOnRoot, step 1 is the root of the bar's chord and the dice treat it as locked. A
+// step the user locked is left alone.
+struct StartPin
+{
+    Pattern& p;
+    bool active = false;
+
+    StartPin (Pattern& pat, const GenSettings& g, const Ctx& c, Rng& rng) : p (pat)
+    {
+        auto& st = p.steps[0];
+        if (! g.startOnRoot || st.locked || c.roots.empty())
+            return;
+        const int ref = st.on ? st.note : c.pool[c.pool.size() / 2];
+        if (! st.on)
+        {
+            st = Step {};
+            st.on = true;
+            fillShape (st, 0, g, rng);
+        }
+        st.note = Ctx::nearestIn (c.roots, ref);
+        st.locked = true;
+        active = true;
+    }
+
+    ~StartPin()
+    {
+        if (active)
+            p.steps[0].locked = false;
+    }
+};
+
 } // namespace
 
 void generate (Pattern& p, const GenSettings& g)
@@ -499,6 +530,7 @@ void generate (Pattern& p, const GenSettings& g)
     Rng rng (g.seed);
     const int n = clampSteps (p);
     const Ctx c (g, n);
+    const StartPin pin (p, g, c, rng);
     int lockedOn = 0;
     const auto free = clearUnlocked (p, n, lockedOn);
     const int target = std::clamp (std::clamp (g.notes, 0, n) - lockedOn, 0, (int) free.size());
@@ -517,12 +549,16 @@ void generateRhythm (Pattern& p, const GenSettings& g)
     Rng rng (g.seed ^ 0x52485954u);
     const int n = clampSteps (p);
     const Ctx c (g, n);
+    const StartPin pin (p, g, c, rng);
     std::vector<int> notes;
     for (int i = 0; i < n; ++i)
         if (p.steps[(size_t) i].on && ! p.steps[(size_t) i].locked)
             notes.push_back (p.steps[(size_t) i].note);
     if (notes.empty())
+    {
+        fitLengths (p);
         return;
+    }
 
     int lockedOn = 0;
     const auto free = clearUnlocked (p, n, lockedOn);
@@ -542,6 +578,7 @@ void generateNotes (Pattern& p, const GenSettings& g)
     Rng rng (g.seed ^ 0x4E4F5445u);
     const int n = clampSteps (p);
     const Ctx c (g, n);
+    const StartPin pin (p, g, c, rng);
     std::vector<int> positions;
     for (int i = 0; i < n; ++i)
         if (p.steps[(size_t) i].on && ! p.steps[(size_t) i].locked)
@@ -554,6 +591,7 @@ void mutate (Pattern& p, const GenSettings& g, float amount)
     Rng rng (g.seed ^ 0x4D555441u);
     const int n = clampSteps (p);
     const Ctx c (g, n);
+    const StartPin pin (p, g, c, rng);
     amount = std::clamp (amount, 0.0f, 1.0f);
     for (int i = 0; i < n; ++i)
     {

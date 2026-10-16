@@ -538,6 +538,78 @@ static void testForm()
     CHECK (p.steps[15].note == 47);
 }
 
+// Every bar starts with the root of its chord: I for A and A', IV for B, V (or the fallback)
+// for C; the rule holds through rhythm / notes rolls and Mutate, and C still ends on the tonic.
+static void testStartOnRoot()
+{
+    auto pcAt = [] (const Pattern& p, int step, int root) { return ((p.steps[(size_t) step].note - root) % 12 + 12) % 12; };
+    for (uint32_t seed = 1; seed <= 300; ++seed)
+    {
+        GenSettings g;
+        g.mode = kMusician;
+        g.seed = seed;
+        g.root = (int) (seed % 12);
+        g.scale = (int) (seed % scales().size());
+        g.notes = 1 + (int) (seed % 12);
+        g.surprise = 0.6f;
+        const auto& iv = scales()[(size_t) g.scale].intervals;
+        const int want[kNumParts] = { 0, 0, iv[(size_t) fourthDegree (g.scale)], iv[(size_t) fifthDegree (g.scale)] };
+        std::array<Pattern, kNumParts> parts;
+        for (auto& p : parts) p.numSteps = 16;
+        generateForm (parts, 0, g);
+        for (int k = 0; k < kNumParts; ++k)
+        {
+            CHECK (parts[(size_t) k].steps[0].on);
+            CHECK (pcAt (parts[(size_t) k], 0, g.root) == want[k]);
+            if (k != kPartB) // B shifts its density by two on purpose
+                CHECK (countOn (parts[(size_t) k]) == std::max (1, g.notes));
+            checkBasics (parts[(size_t) k], g);
+
+            GenSettings gk = g;
+            gk.degree = k == kPartB ? fourthDegree (g.scale) : k == kPartC ? fifthDegree (g.scale) : 0;
+            gk.seed = seed + 7;
+            Pattern q = parts[(size_t) k];
+            generateRhythm (q, gk);
+            CHECK (q.steps[0].on && pcAt (q, 0, g.root) == want[k]);
+            generateNotes (q, gk);
+            CHECK (q.steps[0].on && pcAt (q, 0, g.root) == want[k]);
+            mutate (q, gk, 1.0f);
+            CHECK (q.steps[0].on && pcAt (q, 0, g.root) == want[k]);
+        }
+        const auto onC = onSteps (parts[kPartC]);
+        if (onC.back() != 0)
+            CHECK (pcAt (parts[kPartC], onC.back(), g.root) == 0);
+    }
+    // The fallback for C: Locrian has no fifth, so C sits on ii; so does Whole Tone (its ii is 2).
+    auto idx = [] (const char* name) {
+        for (size_t i = 0; i < scales().size(); ++i)
+            if (std::string (scales()[i].name) == name) return (int) i;
+        return -1;
+    };
+    CHECK (scales()[(size_t) idx ("Major (Ionian)")].intervals[(size_t) fifthDegree (idx ("Major (Ionian)"))] == 7);
+    CHECK (scales()[(size_t) idx ("Locrian")].intervals[(size_t) fifthDegree (idx ("Locrian"))] == 1);
+    CHECK (scales()[(size_t) idx ("Whole Tone")].intervals[(size_t) fifthDegree (idx ("Whole Tone"))] == 2);
+    // Off: the first step may be anything, and a user lock on step 1 always wins.
+    GenSettings g;
+    g.startOnRoot = false;
+    bool anyRest = false;
+    for (uint32_t seed = 1; seed <= 100; ++seed)
+    {
+        g.seed = seed;
+        Pattern p;
+        p.numSteps = 16;
+        generate (p, g);
+        anyRest |= ! p.steps[0].on;
+    }
+    CHECK (anyRest);
+    g.startOnRoot = true;
+    Pattern p;
+    p.numSteps = 16;
+    p.steps[0] = { true, 50, 1, 100, 1, true }; // D, not the root E
+    generate (p, g);
+    CHECK (p.steps[0].note == 50 && p.steps[0].locked);
+}
+
 static void testDetectKey()
 {
     int rootOk = 0, setOk = 0, compatible = 0, runs = 0;
@@ -622,6 +694,7 @@ int main (int argc, char** argv)
     testMusician();
     testRhythmNotesMutate();
     testForm();
+    testStartOnRoot();
     testDetectKey();
     testMidiFile (argc > 1 ? argv[1] : nullptr);
 

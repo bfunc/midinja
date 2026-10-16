@@ -43,6 +43,7 @@ GenSettings toSettings (const val& o)
     g.surprise = get (o, "surprise", g.surprise);
     g.similarity = get (o, "similarity", g.similarity);
     g.degree = get (o, "degree", g.degree);
+    g.startOnRoot = get (o, "startOnRoot", g.startOnRoot);
     return g;
 }
 
@@ -221,4 +222,5 @@ EMSCRIPTEN_BINDINGS (midinja)
     emscripten::function ("midiFile", &midiFile);
     emscripten::function ("scales", &scaleList);
     emscripten::function ("cellLength", &musicianCellLength);
+    emscripten::function ("partDegree", &partDegree);
 }

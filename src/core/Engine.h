@@ -57,7 +57,8 @@ struct GenSettings
     float surprise = 0.15f; // Musician: how often a rule is broken, 0..1
 
     float similarity = 0.65f; // Form: how close A' stays to A, 0 = distant relative .. 1 = near A
-    int degree = 0;           // the scale degree the chord tones are built on (0 = I; B uses IV)
+    int degree = 0;           // the scale degree the chord tones are built on (0 = I; B uses IV, C uses V)
+    bool startOnRoot = true;  // every bar starts with the root of its chord on step 1 (a locked step wins)
 };
 
 enum Mode { kRandom = 0, kMusician = 1 };
@@ -125,6 +126,10 @@ enum Part { kPartA = 0, kPartAPrime = 1, kPartB = 2, kPartC = 3 };
 
 // The scale degree (index into the scale) closest to a perfect fourth above the root.
 int fourthDegree (int scale);
+// The degree a perfect fifth above the root (the V chord), or ii, or vii when the scale has none.
+int fifthDegree (int scale);
+// The chord degree a part sits on: I for A and A', IV for B, V for C.
+int partDegree (int part, int scale);
 // Re-rolls one part from settings.seed. A is a plain roll; A' is a variation of `a` (similarity
 // decides how far); B is a contrasting bar on the IV degree; C is A's rhythm or a new bar with a
 // cadence to the root. Locked steps are kept.

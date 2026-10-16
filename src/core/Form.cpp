@@ -27,6 +27,35 @@ int fourthDegree (int scale)
     return best;
 }
 
+int fifthDegree (int scale)
+{
+    const auto& list = scales();
+    if (scale < 0 || scale >= (int) list.size())
+        scale = 0;
+    const auto& iv = list[(size_t) scale].intervals;
+    if (iv.size() < 2)
+        return 0;
+    auto closest = [&] (int target) {
+        int best = 1;
+        for (size_t d = 1; d < iv.size(); ++d)
+            if (std::abs (iv[d] - target) < std::abs (iv[(size_t) best] - target))
+                best = (int) d;
+        return best;
+    };
+    const int v = closest (7);
+    if (iv[(size_t) v] == 7)
+        return v;
+    const int ii = closest (2);
+    if (std::abs (iv[(size_t) ii] - 2) <= 1)
+        return ii;
+    return closest (11);
+}
+
+int partDegree (int part, int scale)
+{
+    return part == kPartB ? fourthDegree (scale) : part == kPartC ? fifthDegree (scale) : 0;
+}
+
 namespace
 {
 
@@ -97,6 +126,22 @@ void variation (Pattern& p, const Pattern& a, const GenSettings& g)
     const int low = std::min (g.lowNote, g.highNote), high = std::max (g.lowNote, g.highNote);
     copyFrom (p, a, n);
     const float s = std::clamp (g.similarity, 0.0f, 1.0f);
+
+    // Step 1 keeps the tonic through every technique below.
+    bool pinned = false;
+    if (g.startOnRoot && ! p.steps[0].locked)
+    {
+        auto& st = p.steps[0];
+        if (! st.on)
+        {
+            st = Step {};
+            st.on = true;
+            st.velocity = std::clamp (std::max (g.velMin, g.velMax), 1, 127);
+        }
+        st.note = nearestOfClass (st.note, 0, g.root, low, high);
+        st.locked = true;
+        pinned = true;
+    }
 
     enum { kNewTail, kSequence, kNewNotes };
     const float r = rng.unit();
@@ -197,6 +242,8 @@ void variation (Pattern& p, const Pattern& a, const GenSettings& g)
     GenSettings g3 = g;
     g3.seed = rng.next();
     mutate (p, g3, (1.0f - s) * 0.5f);
+    if (pinned)
+        p.steps[0].locked = false;
     fitLengths (p);
 }
 
@@ -204,7 +251,7 @@ void variation (Pattern& p, const Pattern& a, const GenSettings& g)
 void contrast (Pattern& p, const Pattern& a, const GenSettings& g)
 {
     GenSettings g2 = g;
-    g2.degree = fourthDegree (g.scale);
+    g2.degree = partDegree (kPartB, g.scale);
     Rng rng (g.seed ^ 0x42424242u);
     const int n = std::clamp (p.numSteps, 1, kMaxSteps);
     const int shift = rng.unit() < 0.5f ? -2 : 2;
@@ -218,7 +265,8 @@ void contrast (Pattern& p, const Pattern& a, const GenSettings& g)
     }
 }
 
-// C: A's rhythm with new notes (so the loop feels whole) or a new bar, then the cadence.
+// C: on the V chord (or ii / vii when the scale has no fifth), with A's rhythm and new notes so
+// the loop feels whole, or a new bar; then the cadence to the tonic.
 void closing (Pattern& p, const Pattern& a, const GenSettings& g)
 {
     Rng rng (g.seed ^ 0x43434343u);
@@ -226,6 +274,7 @@ void closing (Pattern& p, const Pattern& a, const GenSettings& g)
     p.numSteps = n;
     GenSettings g2 = g;
     g2.seed = rng.next();
+    g2.degree = partDegree (kPartC, g.scale);
     if (rng.unit() < 0.6f && lastOn (a) >= 0)
     {
         copyFrom (p, a, n);
@@ -242,8 +291,8 @@ void closing (Pattern& p, const Pattern& a, const GenSettings& g)
 void cadence (Pattern& p, const GenSettings& g)
 {
     const int last = lastOn (p);
-    if (last < 0 || p.steps[(size_t) last].locked)
-        return;
+    if (last < 0 || p.steps[(size_t) last].locked || (last == 0 && g.startOnRoot))
+        return; // a one-note bar keeps its chord root
     const int low = std::min (g.lowNote, g.highNote), high = std::max (g.lowNote, g.highNote);
     auto& l = p.steps[(size_t) last];
     l.note = nearestOfClass (l.note, 0, g.root, low, high);
