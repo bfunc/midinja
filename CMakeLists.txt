@@ -18,6 +18,7 @@ FetchContent_MakeAvailable(JUCE)
 add_library(midinja_core STATIC
     src/core/Engine.cpp
     src/core/Generate.cpp
+    src/core/Form.cpp
     src/core/MidiFileWriter.cpp)
 target_include_directories(midinja_core PUBLIC src/core)
 

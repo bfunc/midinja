@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-SRC="src/core/Engine.cpp src/core/Generate.cpp web/Bindings.cpp"
+SRC="src/core/Engine.cpp src/core/Generate.cpp src/core/Form.cpp src/core/MidiFileWriter.cpp web/Bindings.cpp"
 FLAGS="-std=c++17 -O2 -Isrc/core -lembind -sMODULARIZE=1 -sEXPORT_NAME=MidinjaCore -sSINGLE_FILE=1 -sENVIRONMENT=web -sALLOW_MEMORY_GROWTH=1"
 
 if command -v emcc > /dev/null; then

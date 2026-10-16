@@ -349,6 +349,180 @@ static void testRhythmNotesMutate()
         }
 }
 
+
+static int fourthPc (int scale)
+{
+    return scales()[(size_t) scale].intervals[(size_t) fourthDegree (scale)];
+}
+
+static void testForm()
+{
+    int runs = 0, aPrimeDiffers = 0, aPrimeClose = 0, bStrongTotal = 0, bStrongIV = 0, bRhythmDiffers = 0, cRoot = 0;
+    for (uint32_t seed = 1; seed <= 300; ++seed)
+    {
+        GenSettings g;
+        g.mode = (int) (seed % 2);
+        g.seed = seed;
+        g.root = (int) (seed % 12);
+        g.scale = (int) (seed % 9);
+        g.notes = 6 + (int) (seed % 8);
+        g.similarity = 0.85f;
+        g.surprise = 0.0f;
+        std::array<Pattern, kNumParts> parts;
+        for (auto& p : parts)
+            p.numSteps = 16;
+        generateForm (parts, 0, g);
+        for (const auto& p : parts)
+        {
+            checkBasics (p, g);
+            CHECK (countOn (p) > 0);
+        }
+        const Pattern& a = parts[0];
+        const Pattern& a2 = parts[1];
+        const Pattern& b = parts[2];
+        const Pattern& c = parts[3];
+
+        int same = 0, onA = 0;
+        bool differs = false;
+        for (int i = 0; i < 16; ++i)
+        {
+            if (a.steps[(size_t) i].on) { ++onA; same += (a2.steps[(size_t) i].on && a2.steps[(size_t) i].note == a.steps[(size_t) i].note) ? 1 : 0; }
+            differs |= ! (a.steps[(size_t) i] == a2.steps[(size_t) i]);
+        }
+        aPrimeClose += same * 2 >= onA ? 1 : 0;
+        aPrimeDiffers += differs ? 1 : 0;
+
+        if (g.mode == kMusician)
+        {
+            const auto& iv = scales()[(size_t) g.scale].intervals;
+            const int d = fourthDegree (g.scale), sz = (int) iv.size();
+            const int pcs[3] = { iv[(size_t) d], iv[(size_t) ((d + 2) % sz)], iv[(size_t) ((d + 4) % sz)] };
+            for (int s : onSteps (b))
+                if (s % 4 == 0)
+                {
+                    ++bStrongTotal;
+                    const int pc = ((b.steps[(size_t) s].note - g.root) % 12 + 12) % 12;
+                    bStrongIV += (pc == pcs[0] || pc == pcs[1] || pc == pcs[2]) ? 1 : 0;
+                }
+        }
+        bool sameRhythm = true;
+        for (int i = 0; i < 16; ++i)
+            sameRhythm &= a.steps[(size_t) i].on == b.steps[(size_t) i].on;
+        bRhythmDiffers += sameRhythm ? 0 : 1;
+
+        const auto onC = onSteps (c);
+        cRoot += ((c.steps[(size_t) onC.back()].note - g.root) % 12 + 12) % 12 == 0 ? 1 : 0;
+        ++runs;
+    }
+    CHECK (cRoot == runs);
+    CHECK (aPrimeDiffers * 100 >= runs * 85);
+    CHECK (aPrimeClose * 100 >= runs * 60);
+    CHECK (bRhythmDiffers * 100 >= runs * 90);
+    CHECK (bStrongIV * 100 >= bStrongTotal * 60);
+    CHECK (fourthPc (0) == 5 && fourthPc (9) == 5 && fourthPc (13) == 5); // major, minor pentatonic, chromatic
+
+    // Lower similarity moves A' further from A.
+    auto closeness = [] (float similarity) {
+        double sum = 0.0;
+        for (uint32_t seed = 1; seed <= 200; ++seed)
+        {
+            GenSettings g;
+            g.mode = kMusician;
+            g.seed = seed;
+            g.similarity = similarity;
+            std::array<Pattern, kNumParts> parts;
+            for (auto& p : parts) p.numSteps = 16;
+            generateForm (parts, 0, g);
+            int same = 0, onA = 0;
+            for (int i = 0; i < 16; ++i)
+                if (parts[0].steps[(size_t) i].on) { ++onA; same += (parts[1].steps[(size_t) i].on && parts[1].steps[(size_t) i].note == parts[0].steps[(size_t) i].note) ? 1 : 0; }
+            sum += onA > 0 ? (double) same / onA : 1.0;
+        }
+        return sum / 200.0;
+    };
+    CHECK (closeness (0.9f) > closeness (0.1f) + 0.15);
+
+    // Deterministic; locked parts and locked steps are kept.
+    GenSettings g;
+    g.seed = 77;
+    std::array<Pattern, kNumParts> x, y;
+    for (auto& p : x) p.numSteps = 16;
+    for (auto& p : y) p.numSteps = 16;
+    generateForm (x, 0, g);
+    generateForm (y, 0, g);
+    for (int k = 0; k < kNumParts; ++k)
+        for (int i = 0; i < kMaxSteps; ++i)
+            CHECK (x[(size_t) k].steps[(size_t) i] == y[(size_t) k].steps[(size_t) i]);
+    const Pattern keepA = x[0];
+    x[3].steps[2] = { true, 45, 1, 99, 1, true };
+    for (uint32_t seed = 1; seed <= 100; ++seed)
+    {
+        g.seed = seed;
+        generateForm (x, 1u << kPartA, g);
+        for (int i = 0; i < kMaxSteps; ++i)
+            CHECK (x[0].steps[(size_t) i] == keepA.steps[(size_t) i]);
+        CHECK (x[3].steps[2].on && x[3].steps[2].note == 45 && x[3].steps[2].locked);
+    }
+    // A locked last note is not moved by the cadence.
+    Pattern p;
+    p.numSteps = 16;
+    p.steps[15] = { true, 47, 1, 100, 1, true };
+    cadence (p, g);
+    CHECK (p.steps[15].note == 47);
+}
+
+static void testDetectKey()
+{
+    int rootOk = 0, setOk = 0, compatible = 0, runs = 0;
+    for (uint32_t seed = 1; seed <= 200; ++seed)
+    {
+        GenSettings g;
+        g.mode = kMusician;
+        g.seed = seed;
+        g.root = (int) (seed % 12);
+        g.scale = (int) (seed % 7);
+        g.notes = 12;
+        g.surprise = 0.0f;
+        Pattern p;
+        p.numSteps = 16;
+        generate (p, g);
+        std::vector<WeightedNote> w;
+        const auto on = onSteps (p);
+        for (size_t j = 0; j < on.size(); ++j)
+        {
+            const auto& st = p.steps[(size_t) on[j]];
+            float weight = (float) st.length * (on[j] % 4 == 0 ? 2.0f : 1.0f);
+            if (j == 0) weight += 1.0f;
+            if (j + 1 == on.size()) weight += 2.0f;
+            w.push_back ({ st.note, weight });
+        }
+        const KeyGuess k = detectKey (w);
+        rootOk += k.root == g.root ? 1 : 0;
+        bool same = true;
+        for (int pc = 0; pc < 12; ++pc)
+            same &= inScale (pc, g.root, g.scale) == inScale (pc, k.root, k.scale);
+        setOk += same ? 1 : 0;
+        bool explains = true;
+        for (int s : on)
+            explains &= inScale (p.steps[(size_t) s].note, k.root, k.scale);
+        compatible += explains ? 1 : 0;
+        CHECK (k.confidence > 0.0f && k.confidence <= 1.0f);
+        ++runs;
+    }
+    // Short riffs often leave out the note that tells two modes apart, so the pitch set is only a
+    // guess; the root should mostly be right and the guess must explain the notes.
+    CHECK (rootOk * 100 >= runs * 60);
+    CHECK (setOk * 100 >= runs * 55);
+    CHECK (compatible * 100 >= runs * 95);
+    CHECK (detectKey ({}).confidence == 0.0f);
+    // A plain C major scale with C emphasised.
+    std::vector<WeightedNote> cmaj;
+    for (int n : { 60, 62, 64, 65, 67, 69, 71, 72 })
+        cmaj.push_back ({ n, n % 12 == 0 ? 3.0f : 1.0f });
+    const KeyGuess k = detectKey (cmaj);
+    CHECK (k.root == 0 && k.scale == 0);
+}
+
 static void testMidiFile (const char* path)
 {
     GenSettings g;
@@ -379,6 +553,8 @@ int main (int argc, char** argv)
     testModeInfo();
     testMusician();
     testRhythmNotesMutate();
+    testForm();
+    testDetectKey();
     testMidiFile (argc > 1 ? argv[1] : nullptr);
 
     if (failures == 0)

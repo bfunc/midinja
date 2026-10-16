@@ -94,12 +94,22 @@ struct Ctx
         if (pool.empty())
             pool.push_back (snapToScale (low, g.root, g.scale));
         mi = modeInfo (g.scale);
+        // The chord tones: the tonic triad, or the triad on another degree (B leans on IV).
+        int rootPc = 0, thirdPc = mi.third, fifthPc = mi.fifth;
+        if (g.degree > 0)
+        {
+            const auto& iv = scales()[(size_t) std::clamp (g.scale, 0, (int) scales().size() - 1)].intervals;
+            const int size = (int) iv.size(), d = g.degree % size;
+            rootPc = iv[(size_t) d];
+            thirdPc = iv[(size_t) ((d + 2) % size)];
+            fifthPc = iv[(size_t) ((d + 4) % size)];
+        }
         for (int note : pool)
         {
             const int pc = pcOf (note, g.root);
-            if (pc == 0) roots.push_back (note);
-            if (pc == mi.fifth) fifths.push_back (note);
-            if (pc == 0 || pc == mi.third || pc == mi.fifth) chord.push_back (note);
+            if (pc == rootPc) roots.push_back (note);
+            if (pc == fifthPc) fifths.push_back (note);
+            if (pc == rootPc || pc == thirdPc || pc == fifthPc) chord.push_back (note);
             if (pc == mi.color) colors.push_back (note);
         }
         if (chord.empty())

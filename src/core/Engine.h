@@ -54,6 +54,9 @@ struct GenSettings
     int mode = 0;           // 0 = Random, 1 = Musician
     float color = 0.4f;     // Musician: how often the mode's colour note sounds, 0..1
     float surprise = 0.15f; // Musician: how often a rule is broken, 0..1
+
+    float similarity = 0.65f; // Form: how close A' stays to A, 0 = distant relative .. 1 = near A
+    int degree = 0;           // the scale degree the chord tones are built on (0 = I; B uses IV)
 };
 
 enum Mode { kRandom = 0, kMusician = 1 };
@@ -106,6 +109,38 @@ void transposeScaleSteps (Pattern& p, int steps, int root, int scale);
 void transposeSemitones (Pattern& p, int semitones);
 // After a root/scale change: every note moves into the new scale.
 void conformToScale (Pattern& p, int oldRoot, int newRoot, int newScale);
+
+// ---------------------------------------------------------------------------------------------
+// Form A A' B C: one part is one bar.
+
+constexpr int kNumParts = 4;
+enum Part { kPartA = 0, kPartAPrime = 1, kPartB = 2, kPartC = 3 };
+
+// The scale degree (index into the scale) closest to a perfect fourth above the root.
+int fourthDegree (int scale);
+// Re-rolls one part from settings.seed. A is a plain roll; A' is a variation of `a` (similarity
+// decides how far); B is a contrasting bar on the IV degree; C is A's rhythm or a new bar with a
+// cadence to the root. Locked steps are kept.
+void generatePart (Pattern& p, int part, const Pattern& a, const GenSettings& g);
+// Re-rolls every part whose bit in lockedParts is clear, A first so the others follow it.
+void generateForm (std::array<Pattern, kNumParts>& parts, unsigned lockedParts, const GenSettings& g);
+// The bar's last unlocked note goes to the root and the one before it a scale step away.
+void cadence (Pattern& p, const GenSettings& g);
+
+// Root and scale guessed from a melody. The caller weights each note (duration, strong beats,
+// first and last note); confidence is 0..1.
+struct WeightedNote
+{
+    int note;
+    float weight;
+};
+struct KeyGuess
+{
+    int root = 0;
+    int scale = 0;
+    float confidence = 0.0f;
+};
+KeyGuess detectKey (const std::vector<WeightedNote>& notes);
 
 struct NoteEvent
 {

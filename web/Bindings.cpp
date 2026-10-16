@@ -2,6 +2,7 @@
 // Patterns and settings travel as plain JS objects.
 
 #include "Engine.h"
+#include "MidiFileWriter.h"
 #include "Scales.h"
 
 #include <emscripten/bind.h>
@@ -40,6 +41,8 @@ GenSettings toSettings (const val& o)
     g.mode = get (o, "mode", g.mode);
     g.color = get (o, "color", g.color);
     g.surprise = get (o, "surprise", g.surprise);
+    g.similarity = get (o, "similarity", g.similarity);
+    g.degree = get (o, "degree", g.degree);
     return g;
 }
 
@@ -99,6 +102,28 @@ val run (std::string op, val pattern, val settings, float amount)
     return fromPattern (p);
 }
 
+// One part of the form (0 = A, 1 = A', 2 = B, 3 = C); `a` is part A, which A', B and C follow.
+val part (int which, val pattern, val a, val settings)
+{
+    Pattern p = toPattern (pattern);
+    const Pattern pa = toPattern (a);
+    generatePart (p, which, pa, toSettings (settings));
+    return fromPattern (p);
+}
+
+// The whole form: an array of 4 patterns in, 4 out. Bits of lockedParts keep a part as it is.
+val form (val parts, int lockedParts, val settings)
+{
+    std::array<Pattern, kNumParts> ps;
+    for (int k = 0; k < kNumParts; ++k)
+        ps[(size_t) k] = toPattern (parts[k]);
+    generateForm (ps, (unsigned) lockedParts, toSettings (settings));
+    val out = val::array();
+    for (const auto& p : ps)
+        out.call<void> ("push", fromPattern (p));
+    return out;
+}
+
 val transpose (val pattern, int scaleSteps, int root, int scale)
 {
     Pattern p = toPattern (pattern);
@@ -112,6 +137,41 @@ val conform (val pattern, int oldRoot, int newRoot, int newScale)
     conformToScale (p, oldRoot, newRoot, newScale);
     fitLengths (p);
     return fromPattern (p);
+}
+
+// notes: [{ note, weight }] -> { root, scale, confidence }
+val detect (val notes)
+{
+    std::vector<WeightedNote> v;
+    const int len = notes["length"].as<int>();
+    for (int i = 0; i < len; ++i)
+        v.push_back ({ get (notes[i], "note", 60), get (notes[i], "weight", 1.0f) });
+    const KeyGuess k = detectKey (v);
+    val o = val::object();
+    o.set ("root", k.root);
+    o.set ("scale", k.scale);
+    o.set ("confidence", k.confidence);
+    return o;
+}
+
+// The parts one after another as one Standard MIDI File; returns a Uint8Array.
+val midiFile (val parts, double stepsPerBeat, double bpm, float swing)
+{
+    std::vector<NoteEvent> all;
+    double offset = 0.0;
+    const int len = parts["length"].as<int>();
+    for (int k = 0; k < len; ++k)
+    {
+        const Pattern p = toPattern (parts[k]);
+        for (auto e : renderCycle (p, swing))
+        {
+            e.start += offset;
+            all.push_back (e);
+        }
+        offset += p.numSteps;
+    }
+    const auto bytes = writeMidiFile (all, stepsPerBeat, bpm, 1, "Midinja", offset);
+    return val (emscripten::typed_memory_view (bytes.size(), bytes.data())).call<val> ("slice");
 }
 
 val scaleList()
@@ -140,8 +200,12 @@ val scaleList()
 EMSCRIPTEN_BINDINGS (midinja)
 {
     emscripten::function ("run", &run);
+    emscripten::function ("part", &part);
+    emscripten::function ("form", &form);
     emscripten::function ("transpose", &transpose);
     emscripten::function ("conform", &conform);
+    emscripten::function ("detectKey", &detect);
+    emscripten::function ("midiFile", &midiFile);
     emscripten::function ("scales", &scaleList);
     emscripten::function ("cellLength", &musicianCellLength);
 }
