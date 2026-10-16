@@ -59,7 +59,7 @@ button{cursor:pointer}
 input.num{width:64px}
 .main{display:flex}
 .side{width:156px;padding:12px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:13px}
-.adv-off .side,.adv-off .lanes{display:none}
+.adv-off .side,.adv-off .lanes,.adv-off .undoredo{display:none}
 .side h4{margin:0;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px;display:flex;justify-content:space-between;align-items:center}
 .range{position:relative;height:6px;border-radius:3px;background:#333845;margin:9px 6px 5px}
 .range b{position:absolute;top:0;bottom:0;background:var(--acc2);border-radius:3px}
@@ -171,7 +171,7 @@ body.dragging .drop{display:grid}
     </div>
     <div class="sp"></div>
     <div class="ctl"><small>History</small><div class="hist"><button class="pg" id="hPrev" title="Older">◂</button><div class="hist" id="hist"></div><button class="pg" id="hNext" title="Newer">▸</button></div></div>
-    <div style="display:flex"><button class="btn ghost" id="undo" title="Undo (Ctrl+Z)">↶</button><button class="btn ghost" id="redo" title="Redo (Ctrl+Shift+Z)">↷</button></div>
+    <div class="undoredo" style="display:flex"><button class="btn ghost" id="undo" title="Undo (Ctrl+Z)">↶</button><button class="btn ghost" id="redo" title="Redo (Ctrl+Shift+Z)">↷</button></div>
   </div>
   <div class="row rowB">
     <div class="ctl"><small>Key</small><div style="display:flex;gap:4px"><select class="sel" id="root"></select><select class="sel" id="scale"></select></div></div>
@@ -187,7 +187,7 @@ body.dragging .drop{display:grid}
     </div>
     <div class="sp"></div>
     <div class="ctl"><small>View</small><div class="seg small" id="view"><button data-v="riff" title="Only the pitches the riff uses">Riff</button><button data-v="scale" title="All notes of the scale in the pitch range">Scale</button><button data-v="all" title="Every semitone in the pitch range">All</button></div></div>
-    <div class="tog" id="adv" title="Ranges, velocity, length and ratchets"><div class="sw"></div>Advanced</div>
+    <div class="tog" id="adv" title="Ranges, velocity, length, ratchets, seed and the undo buttons"><div class="sw"></div>Advanced</div>
   </div>
 
   <div class="main">
