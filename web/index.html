@@ -26,12 +26,9 @@ button{cursor:pointer}
 .seg button.on{background:#ff9f4322;color:var(--acc);font-weight:700}
 .seg.small button{padding:5px 9px}
 .gen{display:flex;align-items:center;gap:6px}
-.dice{width:46px;height:46px;border-radius:10px;border:0;background:var(--acc);color:#1a1206;font-size:25px;box-shadow:0 0 0 3px #ff9f4333;display:grid;place-items:center}
+.dice{width:38px;height:38px;border-radius:9px;border:0;background:var(--acc);color:#1a1206;font-size:31px;line-height:1;box-shadow:0 0 0 3px #ff9f4333;display:grid;place-items:center}
 .dice:active{transform:translateY(1px)}
 .dice[disabled]{opacity:.35;cursor:default;box-shadow:none}
-.split{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.split .btn{border:0;border-radius:0;border-right:1px solid var(--line);padding:8px 9px}
-.split .btn:last-child{border-right:0}
 .ctl{display:flex;flex-direction:column;gap:3px}
 .ctl small,.lbl{color:var(--ink3);font-size:10px;text-transform:uppercase;letter-spacing:.8px}
 .sel{padding:6px 9px;border-radius:7px;background:var(--panel2);border:1px solid var(--line);white-space:nowrap;appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:22px;background-image:linear-gradient(45deg,transparent 50%,#626a7c 50%),linear-gradient(135deg,#626a7c 50%,transparent 50%);background-position:calc(100% - 12px) 50%,calc(100% - 8px) 50%;background-size:4px 4px;background-repeat:no-repeat}
@@ -90,7 +87,8 @@ input.num{width:64px}
 .slot.on .tt i{background:var(--acc)}
 .arrhint{color:var(--ink3);font-size:11px;padding:6px 2px}
 .tab.add:hover{border-color:var(--acc2)}
-.tab.full{cursor:default;opacity:.6}
+.tab.full{cursor:default;opacity:.4}
+.tab.full:hover{border-color:var(--line)}
 .tab{display:flex;align-items:center;gap:7px;padding:4px 7px 4px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink2);cursor:pointer;position:relative}
 .tab:hover{border-color:#4a5163}
 .tab.on{background:#ff9f4322;border-color:var(--acc);color:var(--acc)}
@@ -163,12 +161,13 @@ body.dragging .drop{display:grid}
     <div class="vsep"></div>
     <div class="gen">
       <button class="dice" id="roll" title="Roll the part shown (Space). Locked notes stay">⚄</button>
-      <div class="split">
-        <button class="btn" id="rollAll" title="Roll all four parts: A, then A′ B C from it (Shift+Space). Locked parts stay">🎲 All</button>
-        <button class="btn" id="rollR" title="New rhythm for the part shown, keep its pitches">♩ Rhythm</button>
-        <button class="btn" id="rollN" title="New pitches for the part shown, keep its rhythm">♪ Notes</button>
-        <button class="btn" id="mut" title="Change some notes of the part shown, keep the riff. Click the % to change how much">Mutate <span class="dim" id="mutAmt">25%</span></button>
+      <div class="seg small" id="what" title="What the dice change">
+        <button data-w="roll" title="New rhythm and new notes">Both</button>
+        <button data-w="rhythm" title="New rhythm, keep the pitches">♩ Rhythm</button>
+        <button data-w="notes" title="New pitches, keep the rhythm">♪ Notes</button>
+        <button data-w="mutate" title="Change some notes, keep the riff. Click the % to change how much">~ Mutate <span class="dim" id="mutAmt">15%</span></button>
       </div>
+      <button class="btn sm" id="rollAll" title="Roll all four parts the same way: A, then A′ B C from it (Shift+Space). Locked parts stay">🎲 All</button>
     </div>
     <div class="sp"></div>
     <div class="ctl"><small>Versions</small><div class="hist"><button class="pg" id="hPrev" title="Older">◂</button><div class="hist" id="hist"></div><button class="pg" id="hNext" title="Newer">▸</button></div></div>
@@ -226,7 +225,7 @@ body.dragging .drop{display:grid}
 
 <div class="notes" id="notes">
   <p><b>Midinja web preview.</b> The generator is the app's own C++ engine compiled to WebAssembly; there is no sound here (export the .mid to listen). Synth, MIDI Out and presets are in the app. Every roll uses the Musician logic: a motif, chord tones on the beat, the mode's colour note, an ending at home.</p>
-  <p><b>Parts and arrangement.</b> One part is one bar. The palette on the right holds the four parts: A is the motif, A′ a variation of it (the <b>Similarity</b> knob says how close), B a contrasting bar on the IV degree, C a bar that cadences to the root. Click a part to add it as a bar to the arrangement on the left (up to 4 bars, for example A B or A A A C); × removes a bar. Click a bar to select it: it opens in the grid and Play loops only that bar; click it again (or Esc) to deselect, and Play goes through the whole arrangement with the grid following the playing bar. Editing A changes every A bar. The dice roll the part shown, <b>🎲 All</b> rolls all four parts, and 🔒 on a bar keeps its part out of every roll. The <b>Versions</b> strip gets a new entry on every roll and import; hand edits change the current version in place, so switching back to a version keeps what you did to it. Ctrl+Z / Ctrl+Shift+Z undo and redo every action (the ↶ ↷ buttons show with Advanced).</p>
+  <p><b>Parts and arrangement.</b> One part is one bar. The palette on the right holds the four parts: A is the motif, A′ a variation of it (the <b>Similarity</b> knob says how close), B a contrasting bar on the IV degree, C a bar that cadences to the root. Click a part to add it as a bar to the arrangement on the left (up to 4 bars, for example A B or A A A C); × removes a bar. Click a bar to select it: it opens in the grid and Play loops only that bar; click it again (or Esc) to deselect, and Play goes through the whole arrangement with the grid following the playing bar. Editing A changes every A bar. The dice roll the part shown the way the selector next to them says (Both, Rhythm only, Notes only, or Mutate a little); <b>🎲 All</b> does the same to all four parts, and 🔒 on a bar keeps its part out of every roll. The <b>Versions</b> strip gets a new entry on every roll and import; hand edits change the current version in place, so switching back to a version keeps what you did to it. Ctrl+Z / Ctrl+Shift+Z undo and redo every action (the ↶ ↷ buttons show with Advanced).</p>
   <p><b>Import.</b> Drop a .mid on the page (or use Import MIDI): up to 4 bars become A A′ B C, quantised to 1/16, lowest note where notes overlap, velocities kept. Missing bars are generated from what was loaded. The key is guessed and can be corrected in Key, which regenerates the generated bars. <b>Export</b> saves the arrangement as one .mid.</p>
 </div>
 
@@ -248,7 +247,7 @@ const S = {
   mode: 1, root: 4, scale: 2, numSteps: 16, rate: 4, notes: 10, swing: 0.18,
   lowNote: 40, highNote: 64, lenMin: 1, lenMax: 2, velMin: 70, velMax: 120,
   repeatsOn: false, repMin: 2, repMax: 3, repChance: 0.25, color: 0.4, surprise: 0.15, similarity: 0.65,
-  seed: 4821, transpose: 0, view: 'riff', adv: false, mutAmt: 0.25,
+  seed: 4821, transpose: 0, view: 'riff', adv: false, what: 'roll', mutAmt: 0.15,
   cur: 0, sel: -1,
 };
 const MAX_BARS = 4;
@@ -482,8 +481,10 @@ function render() {
   $('vTr').textContent = (S.transpose > 0 ? '+' : '') + S.transpose;
   $('seed').value = S.seed;
   $('colorWrap').title = colorWords();
-  ['roll', 'rollR', 'rollN', 'mut'].forEach(id => $(id).disabled = locks[S.cur]);
-  $('roll').title = locks[S.cur] ? PARTS[S.cur] + ' is locked: unlock it on its tab to roll' : 'Roll the part shown (Space). Locked notes stay';
+  $('roll').disabled = locks[S.cur];
+  const WHAT = { roll: 'Roll the part shown: new rhythm and notes', rhythm: 'Roll a new rhythm for the part shown, keep its pitches', notes: 'Roll new pitches for the part shown, keep its rhythm', mutate: 'Mutate the part shown: change some notes, keep the riff' };
+  $('roll').title = locks[S.cur] ? PARTS[S.cur] + ' is locked: unlock it on its bar to roll' : WHAT[S.what] + ' (Space). Locked notes stay';
+  document.querySelectorAll('#what button').forEach(b => b.classList.toggle('on', b.dataset.w === S.what));
   drawers.forEach(d => d());
   const n = pat.numSteps;
   document.querySelectorAll('.cols').forEach(c => c.style.setProperty('--n', n));
@@ -514,10 +515,10 @@ function render() {
   parts.forEach((p, k) => {
     const t = document.createElement('div');
     t.className = 'tab' + (k === S.cur ? ' on' : '') + (full ? ' full' : ' add');
-    t.title = `${PARTS[k]} · ${PART_HINT[k]}` + (src[k] === 'import' ? ' · imported' : src[k] === 'derived' ? ' · generated from the import' : '') + (full ? ' · the arrangement is full (4 bars)' : ' · click to add a bar to the arrangement');
+    t.title = full ? 'Arrangement is full (4 bars) — remove a bar with ×' : `${PARTS[k]} · ${PART_HINT[k]}` + (src[k] === 'import' ? ' · imported' : src[k] === 'derived' ? ' · generated from the import' : '') + ' · click to add a bar to the arrangement';
     t.innerHTML = `<span class="tn">${PARTS[k]}</span><div class="tt"></div>`;
     thumb(t.querySelector('.tt'), [p], 44, 16);
-    t.onclick = () => { S.cur = k; pat = parts[k]; if (!full) { arr.push(k); S.sel = -1; push(); } else render(); };
+    if (!full) t.onclick = () => { S.cur = k; pat = parts[k]; arr.push(k); S.sel = -1; push(); };
     P.appendChild(t);
   });
 
@@ -672,14 +673,12 @@ const rekey = () => {
 $('root').onchange = rekey; $('scale').onchange = rekey;
 $('rate').onchange = () => { S.rate = +$('rate').value; S.numSteps = { 2: 8, 4: 16, 6: 12 }[S.rate]; parts.forEach(p => { p.numSteps = S.numSteps; fitP(p); }); push(); };
 document.querySelectorAll('#view button').forEach(b => b.onclick = () => { S.view = b.dataset.v; render(); });
-$('roll').onclick = () => apply('roll');
-$('rollAll').onclick = () => applyAll('roll');
-$('rollR').onclick = () => apply('rhythm');
-$('rollN').onclick = () => apply('notes');
-$('mut').onclick = e => {
-  if (e.target.id === 'mutAmt') { const a = [0.1, 0.25, 0.5]; S.mutAmt = a[(a.indexOf(S.mutAmt) + 1) % a.length]; render(); return; }
-  apply('mutate');
-};
+$('roll').onclick = () => apply(S.what);
+$('rollAll').onclick = () => applyAll(S.what);
+document.querySelectorAll('#what button').forEach(b => b.onclick = e => {
+  if (e.target.id === 'mutAmt') { const a = [0.15, 0.33, 0.5]; S.mutAmt = a[(a.indexOf(S.mutAmt) + 1) % a.length]; }
+  S.what = b.dataset.w; render();
+});
 $('trU').onclick = () => { parts.forEach((p, k) => setPart(k, core.transpose(p, 1, S.root, S.scale))); S.transpose++; push(); };
 $('trD').onclick = () => { parts.forEach((p, k) => setPart(k, core.transpose(p, -1, S.root, S.scale))); S.transpose--; push(); };
 $('adv').onclick = () => { S.adv = !S.adv; render(); };
@@ -691,7 +690,7 @@ $('hPrev').onclick = () => { histEnd -= PER_PAGE; render(); };
 $('hNext').onclick = () => { histEnd += PER_PAGE; render(); };
 addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-  if (e.code === 'Space') { e.preventDefault(); e.shiftKey ? applyAll('roll') : apply('roll'); }
+  if (e.code === 'Space') { e.preventDefault(); e.shiftKey ? applyAll(S.what) : apply(S.what); }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? $('redo').click() : $('undo').click(); }
   if (!e.ctrlKey && !e.metaKey && !e.altKey && ['1', '2', '3', '4'].includes(e.key)) selectPart(+e.key - 1);
   if (e.key === 'Escape' && S.sel >= 0) selectSlot(S.sel);
