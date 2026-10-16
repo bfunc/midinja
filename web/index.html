@@ -59,6 +59,7 @@ button{cursor:pointer}
 input.num{width:64px}
 .main{display:flex}
 .side{width:156px;padding:12px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:13px}
+.undoredo{display:flex}
 .adv-off .side,.adv-off .lanes,.adv-off .undoredo{display:none}
 .side h4{margin:0;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px;display:flex;justify-content:space-between;align-items:center}
 .range{position:relative;height:6px;border-radius:3px;background:#333845;margin:9px 6px 5px}
@@ -170,8 +171,8 @@ body.dragging .drop{display:grid}
       </div>
     </div>
     <div class="sp"></div>
-    <div class="ctl"><small>History</small><div class="hist"><button class="pg" id="hPrev" title="Older">◂</button><div class="hist" id="hist"></div><button class="pg" id="hNext" title="Newer">▸</button></div></div>
-    <div class="undoredo" style="display:flex"><button class="btn ghost" id="undo" title="Undo (Ctrl+Z)">↶</button><button class="btn ghost" id="redo" title="Redo (Ctrl+Shift+Z)">↷</button></div>
+    <div class="ctl"><small>Versions</small><div class="hist"><button class="pg" id="hPrev" title="Older">◂</button><div class="hist" id="hist"></div><button class="pg" id="hNext" title="Newer">▸</button></div></div>
+    <div class="undoredo"><button class="btn ghost" id="undo" title="Undo (Ctrl+Z)">↶</button><button class="btn ghost" id="redo" title="Redo (Ctrl+Shift+Z)">↷</button></div>
   </div>
   <div class="row rowB">
     <div class="ctl"><small>Key</small><div style="display:flex;gap:4px"><select class="sel" id="root"></select><select class="sel" id="scale"></select></div></div>
@@ -205,7 +206,7 @@ body.dragging .drop{display:grid}
       <div class="cols play" id="play"></div>
       <div class="lanes" id="lanes"></div>
       <div class="cols steps" id="stepn"></div>
-      <div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the mode</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span>click = add / remove · drag = pitch · Shift+click = lock note · right-click = longer · bars (left): click = select and edit, click again or Esc = deselect, 🔒 = keep the part out of rolls, × = remove · parts (right): click = add a bar · keys 1–4 = part</span></div>
+      <div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the mode</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span>click = add / remove · drag = pitch · Shift+click = lock note · right-click = longer · bars (left): click = select and edit, click again or Esc = deselect, 🔒 or Shift+click = lock the part, × = remove · parts (right): click = add a bar · keys 1–4 = part</span></div>
     </div>
   </div>
 
@@ -225,7 +226,7 @@ body.dragging .drop{display:grid}
 
 <div class="notes" id="notes">
   <p><b>Midinja web preview.</b> The generator is the app's own C++ engine compiled to WebAssembly; there is no sound here (export the .mid to listen). Synth, MIDI Out and presets are in the app. Every roll uses the Musician logic: a motif, chord tones on the beat, the mode's colour note, an ending at home.</p>
-  <p><b>Parts and arrangement.</b> One part is one bar. The palette on the right holds the four parts: A is the motif, A′ a variation of it (the <b>Similarity</b> knob says how close), B a contrasting bar on the IV degree, C a bar that cadences to the root. Click a part to add it as a bar to the arrangement on the left (up to 4 bars, for example A B or A A A C); × removes a bar. Click a bar to select it: it opens in the grid and Play loops only that bar; click it again (or Esc) to deselect, and Play goes through the whole arrangement with the grid following the playing bar. Editing A changes every A bar. The dice roll the part shown, <b>🎲 All</b> rolls all four parts, and 🔒 on a bar keeps its part out of every roll. History and Undo hold everything.</p>
+  <p><b>Parts and arrangement.</b> One part is one bar. The palette on the right holds the four parts: A is the motif, A′ a variation of it (the <b>Similarity</b> knob says how close), B a contrasting bar on the IV degree, C a bar that cadences to the root. Click a part to add it as a bar to the arrangement on the left (up to 4 bars, for example A B or A A A C); × removes a bar. Click a bar to select it: it opens in the grid and Play loops only that bar; click it again (or Esc) to deselect, and Play goes through the whole arrangement with the grid following the playing bar. Editing A changes every A bar. The dice roll the part shown, <b>🎲 All</b> rolls all four parts, and 🔒 on a bar keeps its part out of every roll. The <b>Versions</b> strip gets a new entry on every roll and import; hand edits change the current version in place, so switching back to a version keeps what you did to it. Ctrl+Z / Ctrl+Shift+Z undo and redo every action (the ↶ ↷ buttons show with Advanced).</p>
   <p><b>Import.</b> Drop a .mid on the page (or use Import MIDI): up to 4 bars become A A′ B C, quantised to 1/16, lowest note where notes overlap, velocities kept. Missing bars are generated from what was loaded. The key is guessed and can be corrected in Key, which regenerates the generated bars. <b>Export</b> saves the arrangement as one .mid.</p>
 </div>
 
@@ -256,7 +257,10 @@ let locks = [false, false, false, false];
 let src = ['roll', 'roll', 'roll', 'roll']; // roll | import | derived (generated from an import)
 let arr = [0, 1, 2, 3]; // the arrangement: part indices, up to MAX_BARS bars; S.sel is the selected bar or -1
 let pat = parts[0]; // the part shown; always parts[S.cur]
-let hist = [], hi = -1, histEnd = 0; // the history strip shows hist[histEnd-3 .. histEnd)
+// Two records. The history strip holds versions: a new one on every roll and import, and manual
+// edits change the current version in place. The undo stack holds every action, edits included.
+let versions = [], vi = -1, histEnd = 0; // the strip shows versions[histEnd-3 .. histEnd)
+let undoStack = [], ui = -1;
 const PER_PAGE = 3, MAX_HIST = 60;
 
 const settings = () => ({ ...S });
@@ -275,7 +279,7 @@ function apply(op) {
   const g = settings();
   setPart(S.cur, op === 'roll' && S.cur > 0 ? core.part(S.cur, pat, parts[0], g) : core.run(op, pat, g, S.mutAmt));
   src[S.cur] = 'roll';
-  push();
+  commitVersion();
 }
 // the dice on every unlocked part
 function applyAll(op, keepSeed) {
@@ -288,27 +292,57 @@ function applyAll(op, keepSeed) {
   } else {
     parts.forEach((p, k) => { if (!locks[k]) { g.seed = newSeed(); setPart(k, core.run(op, p, g, S.mutAmt)); } });
   }
-  push();
+  commitVersion();
 }
 function snapshot() { return { parts: clone(parts), locks: [...locks], src: [...src], arr: [...arr], sel: S.sel, cur: S.cur, root: S.root, scale: S.scale, rate: S.rate, star: false }; }
-function push() {
-  hist = hist.slice(0, hi + 1);
-  hist.push(snapshot());
-  while (hist.length > MAX_HIST) {
-    const k = hist.findIndex(h => !h.star);
-    hist.splice(k < 0 ? 0 : k, 1);
-  }
-  hi = hist.length - 1;
-  histEnd = hist.length;
-  render();
-}
-function goto(i) {
-  hi = i;
-  const h = hist[i];
+function restore(h) {
   parts = clone(h.parts); locks = [...h.locks]; src = [...h.src]; arr = [...h.arr]; S.sel = h.sel;
   S.cur = h.cur; S.root = h.root; S.scale = h.scale; S.rate = h.rate; S.numSteps = parts[0].numSteps;
   $('root').value = S.root; $('scale').value = S.scale; $('rate').value = S.rate;
   pat = parts[S.cur];
+}
+function pushUndo(snap) {
+  undoStack = undoStack.slice(0, ui + 1);
+  undoStack.push({ snap, vi });
+  if (undoStack.length > 200) undoStack.shift();
+  ui = undoStack.length - 1;
+}
+// a roll or an import: a new version in the strip
+function commitVersion() {
+  const snap = snapshot();
+  versions.push({ snap, star: false });
+  while (versions.length > MAX_HIST) {
+    let k = versions.findIndex(v => !v.star);
+    if (k < 0) k = 0;
+    versions.splice(k, 1);
+    undoStack.forEach(u => { if (u.vi === k) u.vi = -1; else if (u.vi > k) u.vi--; });
+  }
+  vi = versions.length - 1;
+  histEnd = versions.length;
+  pushUndo(snap);
+  render();
+}
+// a manual edit: the current version changes in place
+function push() {
+  const snap = snapshot();
+  if (vi >= 0 && versions[vi]) versions[vi].snap = snap;
+  pushUndo(snap);
+  render();
+}
+// the strip: switch to a version
+function goto(i) {
+  vi = i;
+  restore(versions[i].snap);
+  pushUndo(snapshot());
+  render();
+}
+// undo / redo: step through every action
+function undoTo(j) {
+  ui = j;
+  const u = undoStack[j];
+  restore(u.snap);
+  vi = u.vi;
+  if (vi >= 0 && versions[vi]) versions[vi].snap = clone(u.snap);
   render();
 }
 function msg(t) { $('msg').textContent = t; }
@@ -445,10 +479,11 @@ function render() {
     const t = document.createElement('div');
     t.className = 'slot' + (i === S.sel ? ' on' : k === S.cur ? ' same' : '') + (locks[k] ? ' locked' : '') + (i === ps ? ' playing' : '');
     t.title = `Bar ${i + 1}: ${PARTS[k]} · ${i === S.sel ? 'selected: Play loops this bar; click again to deselect' : 'click to select it and edit ' + PARTS[k]} (every ${PARTS[k]} bar changes with it)`;
-    t.innerHTML = `<span class="lk" title="${locks[k] ? PARTS[k] + ' is locked: the dice and Roll all skip it. Click to unlock' : 'Lock ' + PARTS[k] + ': the dice and Roll all keep it as it is'}">${locks[k] ? '🔒' : '🔓'}</span><span class="tn">${PARTS[k]}</span><div class="tt"></div><button class="x" title="Remove this bar from the arrangement">×</button><i class="pp"></i>`;
+    t.innerHTML = `<span class="lk" title="${locks[k] ? 'Unlock (Shift+click): ' + PARTS[k] + ' is locked, the dice and Roll all skip it' : 'Lock (Shift+click): the dice and Roll all keep ' + PARTS[k] + ' as it is'}">${locks[k] ? '🔒' : '🔓'}</span><span class="tn">${PARTS[k]}</span><div class="tt"></div><button class="x" title="Remove this bar from the arrangement">×</button><i class="pp"></i>`;
     thumb(t.querySelector('.tt'), [parts[k]], 44, 16);
-    t.onclick = () => selectSlot(i);
-    t.querySelector('.lk').onclick = e => { e.stopPropagation(); locks[k] = !locks[k]; push(); };
+    const toggleLock = () => { locks[k] = !locks[k]; push(); };
+    t.onclick = e => e.shiftKey ? toggleLock() : selectSlot(i);
+    t.querySelector('.lk').onclick = e => { e.stopPropagation(); toggleLock(); };
     t.querySelector('.x').onclick = e => { e.stopPropagation(); arr.splice(i, 1); if (S.sel === i) S.sel = -1; else if (S.sel > i) S.sel--; push(); };
     A.appendChild(t);
   });
@@ -531,23 +566,24 @@ function render() {
   const sn = $('stepn'); sn.innerHTML = '<div></div>';
   for (let s = 0; s < n; s++) { const d = document.createElement('div'); d.textContent = s % 4 === 0 ? s / 4 + 1 : '·'; sn.appendChild(d); }
 
-  // history: 3 per page, each entry is the whole form
+  // the version strip: 3 per page, each entry is a whole arrangement
   const H = $('hist'); H.innerHTML = '';
-  histEnd = Math.min(hist.length, Math.max(Math.min(PER_PAGE, hist.length), histEnd));
+  histEnd = Math.min(versions.length, Math.max(Math.min(PER_PAGE, versions.length), histEnd));
   for (let k = 0; k < PER_PAGE; k++) {
-    const i = histEnd - PER_PAGE + k, h = hist[i];
+    const i = histEnd - PER_PAGE + k, v = versions[i];
     const t = document.createElement('div');
-    if (!h) { t.className = 'th empty'; H.appendChild(t); continue; }
-    t.className = 'th' + (i === hi ? ' cur' : '');
-    t.title = `#${i + 1}: the whole form. Click to go back, double-click to star (starred ones are kept)`;
+    if (!v) { t.className = 'th empty'; H.appendChild(t); continue; }
+    const h = v.snap;
+    t.className = 'th' + (i === vi ? ' cur' : '');
+    t.title = `Version ${i + 1} of ${versions.length}: a roll or an import, with your edits to it. Click to switch to it, double-click to star (starred ones are kept)`;
     thumb(t, (h.arr.length ? h.arr : [h.cur]).map(k => h.parts[k]), 40, 26);
-    if (h.star) { const s = document.createElement('span'); s.className = 'star'; s.textContent = '★'; t.appendChild(s); }
-    t.onclick = () => goto(i);
-    t.ondblclick = () => { h.star = !h.star; render(); };
+    if (v.star) { const s = document.createElement('span'); s.className = 'star'; s.textContent = '★'; t.appendChild(s); }
+    t.onclick = () => { if (i !== vi) goto(i); };
+    t.ondblclick = () => { v.star = !v.star; render(); };
     H.appendChild(t);
   }
-  $('hPrev').disabled = histEnd <= PER_PAGE; $('hNext').disabled = histEnd >= hist.length;
-  $('undo').disabled = hi <= 0; $('redo').disabled = hi >= hist.length - 1;
+  $('hPrev').disabled = histEnd <= PER_PAGE; $('hNext').disabled = histEnd >= versions.length;
+  $('undo').disabled = ui <= 0; $('redo').disabled = ui >= undoStack.length - 1;
   $('rptpill').textContent = S.repeatsOn ? 'ON' : 'OFF'; $('rptpill').classList.toggle('on', S.repeatsOn); $('rptbox').classList.toggle('offbox', !S.repeatsOn);
   fitW();
 }
@@ -633,8 +669,8 @@ $('trD').onclick = () => { parts.forEach((p, k) => setPart(k, core.transpose(p, 
 $('adv').onclick = () => { S.adv = !S.adv; render(); };
 $('rptpill').onclick = () => { S.repeatsOn = !S.repeatsOn; render(); };
 $('seed').onkeydown = e => { if (e.key === 'Enter') { S.seed = (+$('seed').value >>> 0) || 1; applyAll('roll', true); } };
-$('undo').onclick = () => hi > 0 && goto(hi - 1);
-$('redo').onclick = () => hi < hist.length - 1 && goto(hi + 1);
+$('undo').onclick = () => ui > 0 && undoTo(ui - 1);
+$('redo').onclick = () => ui < undoStack.length - 1 && undoTo(ui + 1);
 $('hPrev').onclick = () => { histEnd -= PER_PAGE; render(); };
 $('hNext').onclick = () => { histEnd += PER_PAGE; render(); };
 addEventListener('keydown', e => {
@@ -745,7 +781,7 @@ function importMidi(u8, name) {
       ` · key guess ${NAMES[k.root]} ${SCALES[k.scale].name} (${Math.round(k.confidence * 100)}% sure; change Key to correct it)` +
       (gen.length ? ` · ${gen.join(', ')} generated from it` : '') +
       (dropped > 0 ? ` · ${dropped} overlapping or late note${dropped > 1 ? 's' : ''} dropped` : ''));
-  push();
+  commitVersion();
 }
 const readFile = async f => { if (!f) return; importMidi(new Uint8Array(await f.arrayBuffer()), f.name); };
 $('imp').onclick = () => $('impFile').click();
