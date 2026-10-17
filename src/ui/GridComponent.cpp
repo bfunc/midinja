@@ -121,7 +121,7 @@ void GridComponent::paint (juce::Graphics& g)
     {
         g.setColour (theme::ink3);
         g.setFont (theme::font (12.0f));
-        g.drawText (juce::String (midinja::partName (d.cur)) + " has no notes yet: roll the dice or switch View to Scale and click the grid",
+        g.drawText (juce::String (juce::CharPointer_UTF8 (midinja::partName (d.cur))) + " has no notes yet: roll the dice or switch View to Scale and click the grid",
                     getLocalBounds(), juce::Justification::centred);
         g.setColour (theme::line);
         g.drawRoundedRectangle (getLocalBounds().toFloat().reduced (0.5f), 6.0f, 1.0f);
@@ -155,9 +155,9 @@ void GridComponent::paint (juce::Graphics& g)
             juce::String badge;
             bool col = false;
             if (pc == 0) badge = "1";
-            else if (pc == mi.third) badge = midinja::degreeName (pc);
-            else if (pc == mi.fifth) badge = midinja::degreeName (pc);
-            else if (isColour (pc)) { badge = midinja::degreeName (pc); col = true; }
+            else if (pc == mi.third) badge = juce::CharPointer_UTF8 (midinja::degreeName (pc));
+            else if (pc == mi.fifth) badge = juce::CharPointer_UTF8 (midinja::degreeName (pc));
+            else if (isColour (pc)) { badge = juce::CharPointer_UTF8 (midinja::degreeName (pc)); col = true; }
             if (badge.isNotEmpty())
             {
                 const auto f = theme::font (8.5f, col);

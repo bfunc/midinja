@@ -29,7 +29,7 @@ constexpr int keyWidth = 44; // the note-name column of the grid; the lanes line
 
 inline juce::Font font (float size, bool bold = false)
 {
-    return juce::Font (juce::FontOptions (size).withStyle (bold ? "Bold" : "Regular"));
+    return juce::Font (juce::FontOptions (size, bold ? juce::Font::bold : juce::Font::plain));
 }
 
 inline float textWidth (const juce::Font& f, const juce::String& s)
@@ -43,7 +43,7 @@ inline void drawLabel (juce::Graphics& g, const juce::String& text, juce::Rectan
 {
     g.setColour (ink3);
     g.setFont (font (10.0f));
-    g.drawText (text.toUpperCase(), r, just);
+    g.drawFittedText (text.toUpperCase(), r, just, r.getHeight() > 16 ? 2 : 1, 0.8f);
 }
 
 class Look : public juce::LookAndFeel_V4

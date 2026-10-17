@@ -54,6 +54,7 @@ private:
     midinja::Session& sess;
     theme::Look look;
     int shownVersion = -1;
+    int portTick = 0;
     bool dragOver = false;
     bool dragging = false;
 

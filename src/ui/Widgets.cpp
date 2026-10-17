@@ -47,6 +47,7 @@ void paintThumb (juce::Graphics& g, juce::Rectangle<float> r, const std::vector<
 Knob::Knob (const juce::String& n, double min, double max, double st, bool t, int d)
     : name (n), lo (min), hi (max), step (st), teal (t), diameter (d)
 {
+    setName (n);
     setMouseCursor (juce::MouseCursor::UpDownResizeCursor);
 }
 

@@ -337,6 +337,7 @@ void MidinjaEditor::preview()
 {
     proc.publish();
     grid.refresh();
+    resized();
     velLane.repaint();
     lenLane.repaint();
     repLane.repaint();
@@ -508,6 +509,16 @@ void MidinjaEditor::timerCallback()
     else if (proc.isHosted() && proc.hostBpm.load() > 0.0f && ! dirty)
         bpmBox.setText (juce::String ((int) std::lround (proc.hostBpm.load())), juce::dontSendNotification);
 
+    if (++portTick >= 90) // every 3 s: the MIDI port list follows plugging and unplugging
+    {
+        portTick = 0;
+        juce::StringArray ids;
+        for (const auto& dev : proc.midiOutputs())
+            ids.add (dev.identifier);
+        if (ids != midiPortIds && juce::Component::getCurrentlyModalComponent() == nullptr)
+            refreshMidiPorts();
+    }
+
     // Space, Ctrl+Z and the number keys work without clicking the window first.
     if (auto* peer = getPeer())
         if (peer->isFocused() && ! hasKeyboardFocus (true) && ! dragging && juce::Component::getCurrentlyModalComponent() == nullptr)
@@ -524,7 +535,9 @@ bool MidinjaEditor::keyPressed (const juce::KeyPress& k)
         changed();
         return true;
     }
-    if (mods.isCommandDown() && juce::CharacterFunctions::toLowerCase ((juce::juce_wchar) k.getKeyCode()) == 'z')
+    // Ctrl+Z arrives as the key code Z, or as the control character 26 when the scan code is missing
+    const bool isZ = juce::CharacterFunctions::toLowerCase ((juce::juce_wchar) k.getKeyCode()) == 'z' || k.getKeyCode() == 26 || k.getTextCharacter() == 26;
+    if (mods.isCommandDown() && isZ)
     {
         if (mods.isShiftDown()) redoB.triggerClick();
         else undoB.triggerClick();
@@ -682,36 +695,48 @@ void MidinjaEditor::resized()
     rRowB = { 0, kRowA, W, kRowB };
     const int lblY = kRowA + 7, ctlY = lblY + 15, ctlH = 28;
     const int knobY = kRowA + 7, knobH = 43;
-    x = 14;
-    labels.push_back ({ { x, lblY, 100, 12 }, "Key" });
-    rootBox.setBounds (x, ctlY, 48, ctlH);
-    scaleBox.setBounds (rootBox.getRight() + 4, ctlY, 124, ctlH);
-    x = scaleBox.getRight() + 10;
-    labels.push_back ({ { x, lblY, 120, 12 }, u8 ("Rate \xC2\xB7 steps/bar") });
-    rateBox.setBounds (x, ctlY, 84, ctlH);
-    x = rateBox.getRight() + 10;
-    vseps.push_back ({ x, kRowA + 8, 1, kRowB - 16 });
-    x += 1 + 10;
-    for (auto* k : { &density, &swingK, &similarity })
-    {
-        k->setBounds (x, knobY, k->preferredWidth(), knobH);
-        x = k->getRight() + 10;
-    }
-    labels.push_back ({ { x, lblY, 100, 12 }, "Transpose" });
-    trD.setBounds (x, ctlY, 24, ctlH);
-    trVal.setBounds (trD.getRight() + 3, ctlY, 44, ctlH);
-    trU.setBounds (trVal.getRight() + 3, ctlY, 24, ctlH);
-    x = trU.getRight() + 10;
-    vseps.push_back ({ x, kRowA + 8, 1, kRowB - 16 });
-    x += 1 + 12;
-    color.setBounds (x, knobY, std::min (color.preferredWidth(), 150), knobH);
-    x = color.getRight() + 12;
-    surprise.setBounds (x, knobY, surprise.preferredWidth(), knobH);
     rx = W - 14;
     advSw.setBounds (rx - advSw.preferredWidth(), kRowA + (kRowB - 20) / 2, advSw.preferredWidth(), 20);
     rx = advSw.getX() - 10;
     viewSeg.setBounds (rx - viewSeg.preferredWidth(), ctlY, viewSeg.preferredWidth(), 26);
     labels.push_back ({ { viewSeg.getX(), lblY, viewSeg.getWidth(), 12 }, "View" });
+    const int rowBEnd = viewSeg.getX() - 8;
+    // Two passes: the natural spacing first; if the knobs run into View, tighter gaps and a
+    // shorter Color label.
+    for (int pass = 0; pass < 2; ++pass)
+    {
+        const int gap = pass == 0 ? 10 : 6, scaleW = pass == 0 ? 124 : 112, colorMax = pass == 0 ? 150 : 104;
+        const size_t nLabels = labels.size(), nSeps = vseps.size();
+        x = 14;
+        labels.push_back ({ { x, lblY, 100, 12 }, "Key" });
+        rootBox.setBounds (x, ctlY, 48, ctlH);
+        scaleBox.setBounds (rootBox.getRight() + 4, ctlY, scaleW, ctlH);
+        x = scaleBox.getRight() + gap;
+        labels.push_back ({ { x, lblY, 120, 12 }, u8 ("Rate \xC2\xB7 steps/bar") });
+        rateBox.setBounds (x, ctlY, 82, ctlH);
+        x = rateBox.getRight() + gap;
+        vseps.push_back ({ x, kRowA + 8, 1, kRowB - 16 });
+        x += 1 + gap;
+        for (auto* k : { &density, &swingK, &similarity })
+        {
+            k->setBounds (x, knobY, k->preferredWidth(), knobH);
+            x = k->getRight() + gap;
+        }
+        labels.push_back ({ { x, lblY, 100, 12 }, "Transpose" });
+        trD.setBounds (x, ctlY, 24, ctlH);
+        trVal.setBounds (trD.getRight() + 3, ctlY, 40, ctlH);
+        trU.setBounds (trVal.getRight() + 3, ctlY, 24, ctlH);
+        x = trU.getRight() + gap;
+        vseps.push_back ({ x, kRowA + 8, 1, kRowB - 16 });
+        x += 1 + gap + 2;
+        color.setBounds (x, knobY, std::min (color.preferredWidth(), colorMax), knobH);
+        x = color.getRight() + gap + 2;
+        surprise.setBounds (x, knobY, surprise.preferredWidth(), knobH);
+        if (surprise.getRight() <= rowBEnd || pass == 1)
+            break;
+        labels.resize (nLabels);
+        vseps.resize (nSeps);
+    }
 
     // ---- Footer ----
     rFoot = { 0, H - kFoot, W, kFoot };
@@ -756,7 +781,7 @@ void MidinjaEditor::resized()
         int y = mainY + 12;
         const int sx = 12, sw = kSide - 24;
         const auto block = [&] (const juce::String& title, ui::RangeSlider& r, ui::Pill* pill) {
-            sideTitles.push_back ({ { sx, y, sw, 12 }, title });
+            sideTitles.push_back ({ { sx, y, pill != nullptr ? sw - 40 : sw, 12 }, title });
             if (pill != nullptr)
                 pill->setBounds (sx + sw - 34, y - 2, 34, 15);
             r.setBounds (sx, y + 12, sw, ui::RangeSlider::height);
@@ -766,9 +791,9 @@ void MidinjaEditor::resized()
         block ("Length", lenR, nullptr);
         block ("Velocity", velR, nullptr);
         block ("Ratchets", repR, &repPill);
-        sideTitles.push_back ({ { sx, y, sw, 12 }, "Start on chord root" });
-        rootPill.setBounds (sx + sw - 34, y - 2, 34, 15);
-        y += 12 + 13;
+        sideTitles.push_back ({ { sx, y, sw - 40, 24 }, "Start on chord root" });
+        rootPill.setBounds (sx + sw - 34, y + 4, 34, 15);
+        y += 24 + 13;
         sideTitles.push_back ({ { sx, y, sw, 12 }, "Seed" });
         seedBox.setBounds (sx, y + 15, sw, 26);
     }
@@ -781,7 +806,7 @@ void MidinjaEditor::resized()
     if (hasMsg)
         y += 17;
     const int lanesH = adv ? velLane.preferredHeight() + 5 + lenLane.preferredHeight() + 5 + repLane.preferredHeight() + 6 : 0;
-    const int legendH = 32, stepsH = 14, playH = 4 + 10;
+    const int legendH = 46, stepsH = 14, playH = 4 + 10;
     const int budget = fy - 10 - legendH - stepsH - lanesH - playH - y;
     const int gh = grid.layoutHeight (budget);
     grid.setBounds (gx, y, gw, gh);
@@ -924,10 +949,10 @@ void MidinjaEditor::paint (juce::Graphics& g)
         item (theme::teal, false, "colour note of the scale");
         item ({}, true, "locked note");
         g.setColour (theme::ink3);
-        g.drawText (u8 ("click = add / remove \xC2\xB7 drag = pitch \xC2\xB7 Shift+click = lock note \xC2\xB7 right-click = longer \xC2\xB7 "
-                        "bars (left): click = select and edit, click again or Esc = deselect, lock or Shift+click = lock the part, \xC3\x97 = remove \xC2\xB7 "
-                        "parts (right): click = add a bar \xC2\xB7 keys 1\xE2\x80\x93" "4 = part \xC2\xB7 Space = dice, Shift+Space = All"),
-                    rLegend.getX(), ly + 16, rLegend.getWidth(), 14, juce::Justification::centredLeft, true);
+        g.drawFittedText (u8 ("click = add / remove \xC2\xB7 drag = pitch \xC2\xB7 Shift+click = lock note \xC2\xB7 right-click = longer \xC2\xB7 "
+                              "bars (left): click = select and edit, click again or Esc = deselect, lock or Shift+click = lock the part, \xC3\x97 = remove \xC2\xB7 "
+                              "parts (right): click = add a bar \xC2\xB7 keys 1\xE2\x80\x93" "4 = part \xC2\xB7 Space = dice, Shift+Space = All"),
+                          rLegend.getX(), ly + 16, rLegend.getWidth(), 28, juce::Justification::topLeft, 2, 1.0f);
     }
 }
 
