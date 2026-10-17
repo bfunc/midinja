@@ -3,69 +3,108 @@
 #include "PluginProcessor.h"
 #include "ui/GridComponent.h"
 #include "ui/LaneComponent.h"
+#include "ui/PartsBar.h"
 #include "ui/Theme.h"
+#include "ui/VersionsStrip.h"
+#include "ui/Widgets.h"
 
-class MidinjaEditor : public juce::AudioProcessorEditor, private juce::Timer
+#include <vector>
+
+// The plugin window, laid out like web/index.html: the dice row, the key and knobs row, the
+// Advanced side panel, the bars and the piano roll, the footer with Play, the synth, MIDI out,
+// Import / Export and a handle to drag the arrangement as a .mid file into a DAW.
+class MidinjaEditor : public juce::AudioProcessorEditor,
+                      public juce::DragAndDropContainer,
+                      public juce::FileDragAndDropTarget,
+                      private juce::Timer
 {
 public:
     explicit MidinjaEditor (MidinjaProcessor&);
     ~MidinjaEditor() override;
 
     void paint (juce::Graphics&) override;
+    void paintOverChildren (juce::Graphics&) override;
     void resized() override;
+    bool keyPressed (const juce::KeyPress&) override;
+    void mouseDown (const juce::MouseEvent&) override;
+
+    bool isInterestedInFileDrag (const juce::StringArray& files) override;
+    void fileDragEnter (const juce::StringArray&, int, int) override { dragOver = true; repaint(); }
+    void fileDragExit (const juce::StringArray&) override { dragOver = false; repaint(); }
+    void filesDropped (const juce::StringArray& files, int, int) override;
 
 private:
-    using Edit = std::function<void (MidinjaProcessor::State&)>;
-
     void timerCallback() override;
-    void applyEdit (const Edit& fn);
-    void refreshFromProcessor();
-    void syncControls();
-    void refreshMidiPorts();
+    // A manual edit: record it, play it, redraw.
+    void edited();
+    // The document changed in a way that is already recorded (a roll, undo, import): play, redraw.
+    void changed();
+    void preview(); // during a drag: play and redraw only
+    void render();  // every control follows the session
+    void importFile (const juce::File&);
     void exportMidi();
-    void setStatus (const juce::String& text) { status.setText (text, juce::dontSendNotification); }
-
-    // Small helpers to build the controls.
-    void setupCombo (juce::ComboBox& box, juce::Label& label, const juce::String& title);
-    void setupKnob (juce::Slider& s, juce::Label& label, const juce::String& title, double lo, double hi, double step);
-    void setupRange (juce::Slider& s, juce::Label& label, const juce::String& title, double lo, double hi);
+    juce::File writeTempMidi();
+    void refreshMidiPorts();
+    juce::String colorLabel() const;
+    juce::String colorWords() const;
+    void setupKnob (ui::Knob& k, std::function<double()> get, std::function<void (double)> set,
+                    std::function<juce::String (double)> fmt, double def, std::function<void()> onChange);
 
     MidinjaProcessor& proc;
+    midinja::Session& sess;
     theme::Look look;
-    MidinjaProcessor::State view;
     int shownVersion = -1;
+    bool dragOver = false;
+    bool dragging = false;
 
-    // Top bar
-    juce::TextButton dice { "DICE" }, infinity { "Infinity" }, play { "Play" }, exportButton { "Export MIDI" };
-    juce::TextButton transposeDown { "-" }, transposeUp { "+" };
-    juce::ComboBox rootBox, scaleBox, stepsBox, rateBox;
-    juce::Label rootLabel, scaleLabel, stepsLabel, rateLabel, transposeLabel;
-    juce::Slider swingKnob, notesKnob, bpmSlider;
-    juce::Label swingLabel, notesLabel, bpmLabel;
+    // Row A
+    ui::DiceButton dice;
+    ui::Seg what;
+    ui::IconButton rollAll { ui::IconButton::Dice, "All", false };
+    VersionsStrip versions;
+    ui::IconButton undoB { ui::IconButton::Undo }, redoB { ui::IconButton::Redo };
 
-    // Left panel: what the dice uses
-    juce::Slider pitchRange, lengthRange, velRange, repRange, repChance;
-    juce::Label pitchLabel, lengthLabel, velLabel, repRangeLabel, repChanceLabel;
-    juce::Label pitchValue, lengthValue, velValue, repValue, seedLabel;
-    juce::ToggleButton repeatsToggle { "Repeats" };
+    // Row B
+    juce::ComboBox rootBox, scaleBox, rateBox;
+    ui::Knob density { "Density", 1, 16, 1 }, swingK { "Swing", 0, 1, 0.01 }, similarity { "Similarity", 0, 1, 0.05 };
+    ui::Knob color { "Color", 0, 1, 0.05, true }, surprise { "Surprise", 0, 1, 0.05, true };
+    juce::TextButton trD { juce::String (juce::CharPointer_UTF8 ("\xE2\x88\x92")) }, trU { "+" };
+    ui::NumBox trVal { -99, 99, 1 };
+    ui::Seg viewSeg;
+    ui::Switch advSw { "Advanced" };
 
-    // Centre
+    // Side panel (Advanced)
+    ui::RangeSlider pitchR { 24, 96 }, lenR { 1, midinja::kMaxLength }, velR { 1, 127 }, repR { 1, midinja::kMaxRepeats };
+    ui::Pill repPill, rootPill;
+    ui::NumBox seedBox { 1.0, 4294967295.0, 1.0 };
+
+    // Grid area
+    PartsBar parts;
     GridComponent grid;
-    LaneComponent velLane { LaneComponent::Kind::Velocity };
-    LaneComponent lenLane { LaneComponent::Kind::Length };
-    LaneComponent repLane { LaneComponent::Kind::Repeats };
+    LaneComponent velLane { LaneComponent::Kind::Velocity }, lenLane { LaneComponent::Kind::Length },
+                  repLane { LaneComponent::Kind::Repeats };
 
-    // Footer: built-in synth and MIDI out
-    juce::ToggleButton synthToggle { "Synth" };
-    juce::ComboBox waveBox, midiOutBox, channelBox;
-    juce::Label waveLabel, midiOutLabel, channelLabel;
-    juce::Slider cutoffKnob, resoKnob, decayKnob, volumeKnob;
-    juce::Label cutoffLabel, resoLabel, decayLabel, volumeLabel;
-    juce::TextButton refreshPorts { "Rescan" };
+    // Footer
+    ui::PlayButton play;
+    ui::NumBox bpmBox { 40, 240, 1 };
+    ui::Switch synthSw { "Synth" };
+    juce::TextButton waveBtn { "Saw" };
+    ui::Knob cutoffK { "Cutoff", 60, 12000, 1, false, 24 }, resoK { "Reso", 0, 100, 1, false, 24 },
+             decayK { "Decay", 30, 1500, 1, false, 24 }, volK { "Volume", 0, 100, 1, false, 24 };
+    juce::ComboBox midiOutBox, channelBox;
     juce::StringArray midiPortIds;
-    juce::Label status;
-
+    ui::IconButton importB { ui::IconButton::Import, "Import MIDI", false }, exportB { ui::IconButton::Export, "Export MIDI", false },
+                   dragB { ui::IconButton::Drag, "Drag to DAW", false };
     std::unique_ptr<juce::FileChooser> chooser;
+
+    // Painted parts of the layout
+    struct Text { juce::Rectangle<int> r; juce::String s; };
+    std::vector<Text> labels, sideTitles;
+    std::vector<juce::Rectangle<int>> vseps;
+    juce::Rectangle<int> rLogo, rPreset, rSide, rMsg, rPlayRow, rSteps, rLegend, rRowA, rRowB, rFoot;
+    juce::Rectangle<int> rHostBpm;
+
+    juce::TooltipWindow tips { this, 400 };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MidinjaEditor)
 };

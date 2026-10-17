@@ -1,6 +1,7 @@
 // Engine tests: plain C++, no framework. Exit code 0 = all passed.
 // With an argument, also writes a demo .mid there (CI uploads it).
 
+#include "Document.h"
 #include "Engine.h"
 #include "MidiFileWriter.h"
 #include "Scales.h"
@@ -662,6 +663,106 @@ static void testDetectKey()
     CHECK (k.root == 0 && k.scale == 0);
 }
 
+// The document the UI edits: parts, arrangement, versions and undo, import and export.
+static void testDocument()
+{
+    Session s;
+    const auto& d = s.doc;
+    CHECK (d.arr.size() == 4 && d.sel == -1 && d.cur == 0);
+    for (const auto& p : d.parts)
+        CHECK (p.numSteps == 16 && countOn (p) > 0);
+    CHECK (s.versions.size() == 1 && s.vi == 0 && s.undo.size() == 1 && s.ui == 0);
+    CHECK (! s.canUndo() && ! s.canRedo());
+
+    // Play goes through the arrangement, a selected bar, or the part shown.
+    CHECK (d.playSeq().size() == 4);
+    s.selectSlot (2);
+    CHECK (d.sel == 2 && d.cur == 2 && d.playSeq() == std::vector<int> { 2 });
+    s.selectSlot (2);
+    CHECK (d.sel == -1 && d.playSeq().size() == 4);
+    s.removeBar (3);
+    s.removeBar (2);
+    s.removeBar (1);
+    s.removeBar (0);
+    CHECK (d.arr.empty() && d.playSeq() == std::vector<int> { d.cur });
+    s.addBar (1);
+    CHECK (d.arr == std::vector<int> { 1 } && d.cur == 1);
+    for (int k = 0; k < 6; ++k)
+        s.addBar (0);
+    CHECK (d.arr.size() == 4); // never more than 4 bars
+
+    // The dice make a version; a hand edit changes it in place; undo steps through everything.
+    const size_t nv = s.versions.size();
+    const Pattern before = d.parts[0];
+    s.selectPart (0);
+    s.apply (Op::Roll);
+    CHECK (s.versions.size() == nv + 1 && s.vi == (int) nv);
+    bool differs = false;
+    for (int i = 0; i < 16; ++i)
+        differs = differs || ! (d.parts[0].steps[(size_t) i] == before.steps[(size_t) i]);
+    CHECK (differs);
+    s.doc.parts[0].steps[3].on = ! s.doc.parts[0].steps[3].on;
+    s.push();
+    CHECK (s.versions.size() == nv + 1);
+    CHECK (s.versions.back().snap.parts[0].steps[3].on == d.parts[0].steps[3].on);
+    const bool edited = d.parts[0].steps[3].on;
+    s.undoTo (s.ui - 1);
+    CHECK (d.parts[0].steps[3].on != edited);
+    s.undoTo (s.ui + 1);
+    CHECK (d.parts[0].steps[3].on == edited);
+
+    // A locked part is skipped by the dice and by All.
+    s.toggleLock (0);
+    const Pattern locked = d.parts[0];
+    s.apply (Op::Roll);
+    s.applyAll (Op::Notes);
+    for (int i = 0; i < 16; ++i)
+        CHECK (d.parts[0].steps[(size_t) i] == locked.steps[(size_t) i]);
+    s.toggleLock (0);
+
+    // Switching versions brings parts and key back, but not the knobs.
+    s.doc.gen.notes = 5;
+    s.gotoVersion (0);
+    CHECK (s.vi == 0 && d.gen.notes == 5);
+
+    // Rate changes every part's length; the export covers the arrangement.
+    s.setRate (2);
+    for (const auto& p : d.parts)
+        CHECK (p.numSteps == 8);
+    s.setRate (4);
+    const auto bytes = s.midiFile (120.0, 3);
+    CHECK (bytes.size() > 30 && bytes[0] == 'M' && bytes[1] == 'T' && bytes[2] == 'h' && bytes[3] == 'd');
+    bool channel3 = false;
+    for (size_t i = 0; i + 2 < bytes.size(); ++i)
+        if (bytes[i] == 0x92 && bytes[i + 2] > 0) // note on, channel 3
+            channel3 = true;
+    CHECK (channel3);
+    CHECK (s.exportName().rfind ("midinja-", 0) == 0);
+
+    // Import: two bars at 480 ppq into A and B... -> A A', the rest generated; chords keep the lowest note.
+    std::vector<RawNote> raw;
+    const int ePhr[] = { 64, 65, 67, 69, 71, 72, 74, 76 }; // E Phrygian-ish line, one note per beat
+    for (int i = 0; i < 8; ++i)
+        raw.push_back ({ 480.0 * i, 480.0, ePhr[i], 90 });
+    raw.push_back ({ 0.0, 480.0, 76, 100 }); // a chord on the first beat: the lower note (64) must win
+    CHECK (s.importMidi (raw, 480.0, "two-bars.mid"));
+    CHECK (d.src[0] == Src::Import && d.src[1] == Src::Import && d.src[2] == Src::Derived && d.src[3] == Src::Derived);
+    CHECK (d.parts[0].steps[0].on && d.parts[0].steps[0].note == 64 && d.parts[0].steps[0].length == 4);
+    CHECK (d.parts[1].steps[0].on && d.parts[1].steps[0].note == 71);
+    CHECK (countOn (d.parts[0]) == 4 && countOn (d.parts[1]) == 4);
+    CHECK (countOn (d.parts[2]) > 0 && countOn (d.parts[3]) > 0);
+    CHECK (d.arr.size() == 4 && d.cur == 0 && d.rate == 4);
+    CHECK (s.message.find ("Imported 2 bars") == 0);
+    CHECK (s.message.find ("1 overlapping or late note dropped") != std::string::npos);
+    // A key change keeps the imported bars and regenerates the derived ones.
+    const Pattern impA = d.parts[0];
+    s.rekey ((d.gen.root + 7) % 12, d.gen.scale);
+    for (int i = 0; i < 16; ++i)
+        CHECK (d.parts[0].steps[(size_t) i] == impA.steps[(size_t) i]);
+    CHECK (! s.importMidi ({}, 480.0, "empty.mid"));
+    CHECK (s.message.find ("No notes found") == 0);
+}
+
 static void testMidiFile (const char* path)
 {
     GenSettings g;
@@ -696,6 +797,7 @@ int main (int argc, char** argv)
     testForm();
     testStartOnRoot();
     testDetectKey();
+    testDocument();
     testMidiFile (argc > 1 ? argv[1] : nullptr);
 
     if (failures == 0)

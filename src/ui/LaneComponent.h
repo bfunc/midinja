@@ -1,34 +1,34 @@
 #pragma once
 
-#include "PluginProcessor.h"
+#include "Document.h"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-// A value lane under the grid (velocity, length or repeats); drag the bars to set values.
+#include <functional>
+
+// A value lane under the grid (web `.lane`): velocity, length or ratchets; drag to set values.
 class LaneComponent : public juce::Component
 {
 public:
     enum class Kind { Velocity, Length, Repeats };
-    using Edit = std::function<void (MidinjaProcessor::State&)>;
+    explicit LaneComponent (Kind k) : kind (k) { setMouseCursor (juce::MouseCursor::UpDownResizeCursor); }
 
-    explicit LaneComponent (Kind k) : kind (k) {}
+    midinja::Session* sess = nullptr;
+    std::function<void()> onEdit;
+    std::function<void()> onPreview;
 
-    std::function<void (const Edit&)> onEdit;
+    int preferredHeight() const { return active() ? 40 : 24; }
 
-    void setState (const MidinjaProcessor::State& s) { state = s; repaint(); }
-    void setPlayStep (int step) { if (step != playStep) { playStep = step; repaint(); } }
-
-    void paint (juce::Graphics& g) override;
-    void mouseDown (const juce::MouseEvent& e) override { setFrom (e); }
+    void paint (juce::Graphics&) override;
+    void mouseDown (const juce::MouseEvent& e) override { changed = false; setFrom (e); }
     void mouseDrag (const juce::MouseEvent& e) override { setFrom (e); }
+    void mouseUp (const juce::MouseEvent&) override;
 
 private:
+    bool active() const { return kind != Kind::Repeats || (sess != nullptr && sess->doc.gen.repeatsOn); }
     void setFrom (const juce::MouseEvent& e);
-    bool enabled() const { return kind != Kind::Repeats || state.gen.repeatsOn; }
-    int maxValue() const;
-    int valueOf (const midinja::Step& st) const;
+    int maxValue() const { return kind == Kind::Velocity ? 127 : kind == Kind::Length ? midinja::kMaxLength : midinja::kMaxRepeats; }
 
     Kind kind;
-    MidinjaProcessor::State state;
-    int playStep = -1;
+    bool changed = false;
 };

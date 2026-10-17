@@ -1,120 +1,86 @@
 #include "LaneComponent.h"
 #include "Theme.h"
 
-int LaneComponent::maxValue() const
-{
-    switch (kind)
-    {
-        case Kind::Velocity: return 127;
-        case Kind::Length:   return midinja::kMaxLength;
-        case Kind::Repeats:  return midinja::kMaxRepeats;
-    }
-    return 127;
-}
-
-int LaneComponent::valueOf (const midinja::Step& st) const
-{
-    switch (kind)
-    {
-        case Kind::Velocity: return st.velocity;
-        case Kind::Length:   return st.length;
-        case Kind::Repeats:  return st.repeats;
-    }
-    return 0;
-}
+#include <algorithm>
+#include <cmath>
 
 void LaneComponent::paint (juce::Graphics& g)
 {
-    const auto bounds = getLocalBounds().toFloat();
+    const auto r = getLocalBounds().toFloat().reduced (0.5f);
     g.setColour (theme::panel);
-    g.fillRoundedRectangle (bounds, 5.0f);
+    g.fillRoundedRectangle (r, 6.0f);
     g.setColour (theme::line);
-    g.drawRoundedRectangle (bounds.reduced (0.5f), 5.0f, 1.0f);
+    g.drawRoundedRectangle (r, 6.0f, 1.0f);
 
-    const char* label = kind == Kind::Velocity ? "VEL" : (kind == Kind::Length ? "LEN" : "RPT");
+    const char* name = kind == Kind::Velocity ? "VEL" : kind == Kind::Length ? "LEN" : "RATCH";
     g.setColour (theme::ink3);
-    g.setFont (juce::FontOptions (10.0f).withStyle ("Bold"));
-    g.drawText (label, juce::Rectangle<float> (0.0f, 0.0f, (float) theme::keyWidth, bounds.getHeight()),
-                juce::Justification::centred);
+    g.setFont (theme::font (9.5f));
+    g.drawText (name, 0, 0, theme::keyWidth, getHeight(), juce::Justification::centred);
 
-    const int n = state.pattern.numSteps;
-    const float x0 = (float) theme::keyWidth;
-    const float cw = (bounds.getWidth() - x0) / (float) juce::jmax (1, n);
-    const auto inner = bounds.reduced (0.0f, 4.0f);
-    const float alpha = enabled() ? 1.0f : 0.35f;
-
-    if (playStep >= 0 && playStep < n)
+    if (sess == nullptr)
+        return;
+    if (! active())
     {
-        g.setColour (theme::teal.withAlpha (0.08f));
-        g.fillRect (x0 + playStep * cw, bounds.getY(), cw, bounds.getHeight());
+        g.setColour (theme::ink3);
+        g.setFont (theme::font (11.0f));
+        g.drawText (juce::String (juce::CharPointer_UTF8 ("Ratchets off \xC2\xB7 turn on in the left panel")),
+                    theme::keyWidth + 6, 0, getWidth() - theme::keyWidth - 6, getHeight(), juce::Justification::centredLeft);
+        return;
     }
 
+    const auto& p = sess->doc.shown();
+    const int n = std::max (1, p.numSteps);
+    const float cw = (float) (getWidth() - theme::keyWidth) / (float) n;
+    const float top = 3.0f, bottom = (float) getHeight() - 3.0f, h = bottom - top;
     for (int s = 0; s < n; ++s)
     {
-        const auto& st = state.pattern.steps[(size_t) s];
-        const float x = x0 + s * cw + 3.0f;
-        const float w = cw - 6.0f;
+        const auto& st = p.steps[(size_t) s];
+        const float x = (float) theme::keyWidth + (float) s * cw + 3.0f, w = std::max (1.0f, cw - 6.0f);
         if (kind == Kind::Repeats)
         {
-            // Four segments, lit up to the step's repeat count.
-            const float segH = (inner.getHeight() - 6.0f) / 4.0f;
-            for (int k = 0; k < midinja::kMaxRepeats; ++k)
+            const int count = st.on ? st.repeats : 0;
+            for (int i = 0; i < midinja::kMaxRepeats; ++i)
             {
-                const bool lit = st.on && k < st.repeats;
-                g.setColour ((lit ? theme::purple : theme::off).withMultipliedAlpha (alpha));
-                const float y = inner.getBottom() - (k + 1) * segH - k * 2.0f;
-                g.fillRoundedRectangle (x, y, w, segH, 1.5f);
+                g.setColour (i < count ? theme::purple : theme::off);
+                g.fillRoundedRectangle (x, bottom - 6.0f - (float) i * 8.0f, w, 6.0f, 1.0f);
             }
             continue;
         }
-        if (! st.on)
-        {
-            g.setColour (theme::off.withMultipliedAlpha (alpha));
-            g.fillRoundedRectangle (x, inner.getBottom() - 4.0f, w, 4.0f, 1.5f);
-            continue;
-        }
-        const float frac = (float) valueOf (st) / (float) maxValue();
-        const float h = juce::jmax (4.0f, inner.getHeight() * frac);
-        g.setColour ((kind == Kind::Velocity ? theme::teal : theme::blue).withAlpha (0.85f * alpha));
-        g.fillRoundedRectangle (x, inner.getBottom() - h, w, h, 2.0f);
-    }
-
-    if (! enabled())
-    {
-        g.setColour (theme::ink2);
-        g.setFont (juce::FontOptions (11.5f));
-        g.drawText ("OFF  -  turn Repeats on (left panel) to add ratchets",
-                    bounds.withTrimmedLeft (x0).reduced (10.0f, 0.0f), juce::Justification::centredRight);
+        const float v = st.on ? (float) (kind == Kind::Velocity ? st.velocity : st.length) / (float) maxValue() : 0.0f;
+        const float bh = st.on ? std::max (0.10f, v) * h : 0.06f * h;
+        g.setColour (st.on ? (kind == Kind::Velocity ? theme::teal : theme::blue).withAlpha (0.85f) : theme::off);
+        juce::Path bar;
+        bar.addRoundedRectangle (x, bottom - bh, w, bh, 3.0f, 3.0f, true, true, false, false);
+        g.fillPath (bar);
     }
 }
 
 void LaneComponent::setFrom (const juce::MouseEvent& e)
 {
-    if (! enabled())
+    if (sess == nullptr || ! active())
         return;
-    const int n = state.pattern.numSteps;
-    const float x0 = (float) theme::keyWidth;
-    const float cw = ((float) getWidth() - x0) / (float) juce::jmax (1, n);
-    const int s = (int) std::floor (((float) e.x - x0) / cw);
-    if (s < 0 || s >= n || ! state.pattern.steps[(size_t) s].on)
+    auto& p = sess->doc.shown();
+    const int n = std::max (1, p.numSteps);
+    const float cw = (float) (getWidth() - theme::keyWidth) / (float) n;
+    const int s = (int) std::floor (((float) e.x - (float) theme::keyWidth) / cw);
+    if (s < 0 || s >= n || ! p.steps[(size_t) s].on)
         return;
+    const float frac = juce::jlimit (0.0f, 1.0f, 1.0f - (float) e.y / (float) getHeight());
+    const float v = frac * (float) maxValue();
+    auto& st = p.steps[(size_t) s];
+    switch (kind)
+    {
+        case Kind::Velocity: st.velocity = std::max (1, (int) std::lround (v)); break;
+        case Kind::Length:   st.length = std::max (1, (int) std::lround (v)); midinja::fitLengths (p); break;
+        case Kind::Repeats:  st.repeats = juce::jlimit (1, midinja::kMaxRepeats, (int) std::ceil (v)); break;
+    }
+    changed = true;
+    if (onPreview) onPreview();
+}
 
-    const float top = 4.0f, bottom = (float) getHeight() - 4.0f;
-    const float frac = juce::jlimit (0.0f, 1.0f, (bottom - (float) e.y) / (bottom - top));
-    const int maxV = maxValue();
-    const int value = juce::jlimit (1, maxV, (int) std::ceil (frac * maxV));
-    if (value == valueOf (state.pattern.steps[(size_t) s]))
-        return;
-
-    const Kind k = kind;
-    Edit fn = [s, value, k] (MidinjaProcessor::State& x) {
-        auto& st = x.pattern.steps[(size_t) s];
-        if (k == Kind::Velocity) st.velocity = value;
-        else if (k == Kind::Length) { st.length = value; midinja::fitLengths (x.pattern); }
-        else st.repeats = value;
-    };
-    fn (state);
-    if (onEdit)
-        onEdit (fn);
-    repaint();
+void LaneComponent::mouseUp (const juce::MouseEvent&)
+{
+    if (changed && onEdit)
+        onEdit();
+    changed = false;
 }

@@ -1,39 +1,51 @@
 #pragma once
 
-#include "PluginProcessor.h"
+#include "Document.h"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-// The step grid: one column per step, one row per scale note in the pitch range.
-//   click empty cell    = add a note           click a note        = remove it
-//   drag a note         = change its pitch     shift+click a note  = lock / unlock
+#include <functional>
+#include <vector>
+
+// The piano roll of the part shown (web `.roll`): one column per step, one row per note of the
+// current View (Riff: the pitches used; Scale: the scale in the pitch range; All: every semitone).
+//   click an empty cell = add a note        click a note       = remove it
+//   drag a note         = change its pitch  Shift+click a note = lock / unlock
 //   right-click a note  = longer (wraps to 1)
-class GridComponent : public juce::Component
+class GridComponent : public juce::Component, public juce::TooltipClient
 {
 public:
-    using Edit = std::function<void (MidinjaProcessor::State&)>;
-    std::function<void (const Edit&)> onEdit;
+    midinja::Session* sess = nullptr;
+    std::function<void()> onEdit;    // an edit is finished: the editor records it and redraws
+    std::function<void()> onPreview; // during a drag: play and redraw, no undo entry
+    int playStep = -1;               // the playhead column, -1 when not on this part
 
-    void setState (const MidinjaProcessor::State& s);
-    void setPlayStep (int step);
+    // Rows follow the document; call before asking for the height.
+    void refresh();
+    // The rows fit the budget: 11..30 px each (web: 300 px for the grid), 120 px when there are none.
+    int layoutHeight (int budget);
 
-    void paint (juce::Graphics& g) override;
-    void mouseDown (const juce::MouseEvent& e) override;
-    void mouseDrag (const juce::MouseEvent& e) override;
-    void mouseUp (const juce::MouseEvent& e) override;
+    void paint (juce::Graphics&) override;
+    void mouseDown (const juce::MouseEvent&) override;
+    void mouseDrag (const juce::MouseEvent&) override;
+    void mouseUp (const juce::MouseEvent&) override;
+    void mouseMove (const juce::MouseEvent& e) override { hover = e.getPosition(); }
+    juce::String getTooltip() override;
 
 private:
-    void edit (const Edit& fn);
-    void rebuildRows();
-    int stepAt (float x) const;
-    int rowAt (float y) const;
-    juce::Rectangle<float> gridArea() const;
+    const midinja::Doc& doc() const { return sess->doc; }
+    int pcOf (int note) const;
+    bool inScale (int note) const;
     float colWidth() const;
-    float rowHeight() const;
+    int colAt (float x) const;
+    int rowAt (float y) const;
+    // The step whose note covers this cell (a long note spans columns), or -1.
+    int noteAt (int col, int row) const;
+    void drawPadlock (juce::Graphics&, juce::Rectangle<float>, juce::Colour) const;
 
-    MidinjaProcessor::State state;
     std::vector<int> rows; // MIDI notes, top row first
-    int playStep = -1;
-    int dragStep = -1;
-    bool dragged = false;
+    int rowH = 30;
+    int dragStep = -1, dragNote0 = 60;
+    bool moved = false;
+    juce::Point<int> hover;
 };

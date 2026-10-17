@@ -19,8 +19,10 @@ add_library(midinja_core STATIC
     src/core/Engine.cpp
     src/core/Generate.cpp
     src/core/Form.cpp
-    src/core/MidiFileWriter.cpp)
-target_include_directories(midinja_core PUBLIC src/core)
+    src/core/MidiFileWriter.cpp
+    src/Document.cpp)
+target_include_directories(midinja_core PUBLIC src/core src)
+set_target_properties(midinja_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 juce_add_plugin(Midinja
     COMPANY_NAME "bFunc"
@@ -29,12 +31,12 @@ juce_add_plugin(Midinja
     PLUGIN_CODE Mdnj
     PRODUCT_NAME "Midinja"
     BUNDLE_ID cc.bfunc.midinja
-    # v0.1 is the standalone app only; VST3/AU come in v0.2.
-    FORMATS Standalone
+    FORMATS Standalone VST3
+    VST3_CATEGORIES Instrument Synth
     IS_SYNTH TRUE
     NEEDS_MIDI_INPUT FALSE
-    # The app opens its own MIDI output port (picker in the top bar).
-    NEEDS_MIDI_OUTPUT FALSE
+    # The notes also go out as MIDI: to the host (VST3) and to the app's own MIDI port.
+    NEEDS_MIDI_OUTPUT TRUE
     IS_MIDI_EFFECT FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE)
 
@@ -42,7 +44,10 @@ target_sources(Midinja PRIVATE
     src/PluginProcessor.cpp
     src/PluginEditor.cpp
     src/ui/GridComponent.cpp
-    src/ui/LaneComponent.cpp)
+    src/ui/LaneComponent.cpp
+    src/ui/PartsBar.cpp
+    src/ui/VersionsStrip.cpp
+    src/ui/Widgets.cpp)
 
 target_include_directories(Midinja PRIVATE src)
 

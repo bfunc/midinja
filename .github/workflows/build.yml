@@ -48,18 +48,23 @@ jobs:
         shell: pwsh
         run: |
           $exe = Get-ChildItem build -Recurse -Filter Midinja.exe | Where-Object FullName -like '*Standalone*' | Select-Object -First 1
+          $vst = Get-ChildItem build -Recurse -Directory -Filter Midinja.vst3 | Select-Object -First 1
           New-Item -ItemType Directory -Force dist | Out-Null
           Copy-Item $exe.FullName dist/Midinja.exe
-          Compress-Archive -Path dist/Midinja.exe -DestinationPath Midinja-windows.zip
+          Copy-Item $vst.FullName dist/Midinja.vst3 -Recurse
+          Compress-Archive -Path dist/Midinja.exe, dist/Midinja.vst3 -DestinationPath Midinja-windows.zip
 
       - name: Package (macOS)
         if: matrix.name == 'macos'
         shell: bash
         run: |
           APP=$(find build -type d -name Midinja.app -path '*Standalone*' | head -1)
+          VST=$(find build -type d -name Midinja.vst3 | head -1)
           codesign --force --deep -s - "$APP"
+          codesign --force --deep -s - "$VST"
           lipo -info "$APP/Contents/MacOS/Midinja"
-          ditto -c -k --keepParent "$APP" Midinja-macos.zip
+          mkdir -p dist && cp -R "$APP" "$VST" dist/
+          ditto -c -k --keepParent dist Midinja-macos.zip
 
       - uses: actions/upload-artifact@v4
         with:
@@ -87,7 +92,7 @@ jobs:
           cp art/Midinja-windows/Midinja-windows.zip art/Midinja-macos/Midinja-macos.zip out/
           cp art/Midinja-windows/demo-riff.mid out/
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            gh release create "$GITHUB_REF_NAME" out/* --title "Midinja $GITHUB_REF_NAME" --notes "Standalone app for Windows and macOS. See the README for install notes."
+            gh release create "$GITHUB_REF_NAME" out/* --title "Midinja $GITHUB_REF_NAME" --notes "Standalone app and VST3 for Windows and macOS. See the README for install notes."
           else
             gh release delete latest --cleanup-tag -y || true
             gh release create latest out/* --prerelease --target "$GITHUB_SHA" --title "Latest build (main)" --notes "Built from ${GITHUB_SHA::7}. Rolling build, replaced on every push to main."
