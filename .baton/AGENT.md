@@ -1,5 +1,5 @@
 # You are now a Baton agent
-Baton protocol v0.6 · source: the Baton project (not published yet)
+Baton protocol v0.7 · source: the Baton project (not published yet)
 
 From now on, keep the project's Baton for the rest of this session. The Baton is the `.baton/` folder: the **state** of the work, passed from one agent to the next. What the project is and how to build it stays in README and `AGENTS.md` / `CLAUDE.md`; link them, never copy.
 
@@ -55,7 +55,7 @@ The user may answer with a number.
 ## 2. Playbooks (a project's `CLAUDE.md` may override them)
 - **Feature:** ask 1–3 clarifying questions → claim → build → test → log; add a Decision if one was made.
 - **Bug:** reproduce first → add to Open issues → fix → rerun the reproduction → remove the issue, log the fix.
-- **Verify:** take an Unverified item → test it → new log entry with `Checked:`.
+- **Verify:** take an Unverified item → test it → new log entry whose first line is `- Verifies: <heading of that entry>`, with `Checked:`. That takes it off the Unverified list.
 - **Release / deploy:** only on the user's word; follow `CLAUDE.md`. Log the hash and what was deployed.
 - **Cleanup:** run the cheap checks, archive nothing by hand, ask about stale items.
 
@@ -68,8 +68,9 @@ The user may answer with a number.
 
 ## 4. End (also on the word "handoff", or before a long pause)
 1. Append a log entry.
-2. Update STATE, remove your In progress line, set `Updated:`.
-3. Commit `.baton/` with the work, if the user allows commits. Multi-repo: commit the child repo first, then the hub's `.baton/`.
+2. Move every `Left:` and `Surprise:` that still matters into STATE (Open issues, Waiting for you, Next). The log is history, not storage: what is only in the log is lost.
+3. Update STATE, remove your In progress line, set `Updated:`.
+4. Commit `.baton/` with the work, if the user allows commits. Multi-repo: commit the child repo first, then the hub's `.baton/`.
 
 ## Rules
 1. **State only.** Link README and agent files, never copy them.
@@ -77,9 +78,11 @@ The user may answer with a number.
 3. **Decisions** are things done on purpose, so the next agent doesn't "fix" them. Only what the user said or confirmed. One line per topic; a replaced one is deleted and the change logged.
 4. **Logs are append-only.** Fix a mistake with a new entry.
 5. **Only verified claims.** "Done" means tested, and `Checked:` says how. Otherwise "not tested", which puts it on the Unverified list.
-6. **Write what git doesn't know:** why, what failed, what is left, what the user decided. Don't list changed files.
-7. **No secrets or personal data.** Name a secret, never its value.
-8. **Nesting** at most two levels: a root `.baton/`, and in a monorepo a subproject `.baton/` only when it has steady work of its own (listed in the root's Now table).
+6. **Write what git doesn't know:** why, what failed, what is left, what the user decided. Don't list changed files. An entry is at most 5 lines (~400 characters); detail goes into the commit message.
+7. **Log only work on the project.** Changes to Baton itself, the hooks or this protocol go to the Baton project's CHANGELOG, not here.
+8. **Month summary.** The first session in a new month appends `## Summary` (3–5 lines: what was done, what changed direction) to the end of the previous month's log.
+9. **No secrets or personal data.** Name a secret, never its value.
+10. **Nesting** at most two levels: a root `.baton/`, and in a monorepo a subproject `.baton/` only when it has steady work of its own (listed in the root's Now table).
 
 ## Layout
 
@@ -116,10 +119,11 @@ Who: <who works on what>
 `log/YYYY-MM.md`, newest entry last:
 ```md
 ### YYYY-MM-DD HH:MM · <agent> · <task>
+- Verifies: <heading>   (only for a verification)
 - Did:
 - Checked: <how, or "not tested">
 - Commit: <hash or repo@hash>
 - Left:
 - Surprise:
 ```
-`Commit`, `Left` and `Surprise` are optional.
+`Verifies`, `Commit`, `Left` and `Surprise` are optional.

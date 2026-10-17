@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-17 20:48 · opus-5.5@raptor#af93 · f5047cf
+Updated: 2026-10-17 21:08 · opus-5.5@raptor#af93 · f5047cf
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -20,9 +20,12 @@ Who: home builds the preview on localhost; raptor relays user feedback. No deplo
 
 ## Open issues
 - !  JUCE app is behind the preview: no form, arrangement, versions, colour sets, chord roots (?)
+-    Not clicked through by hand: Start-on-root toggle, root marker at narrow widths
 
 ## Waiting for you
-- (none)
+- Start-on-root: per-bar override (click the marker)? · since 2026-10-17
+- Start-on-root: a middle setting "root on a strong beat"? · since 2026-10-17
+- C in scales without a fifth falls back to ii (Locrian ♭II); keep it? · since 2026-10-17
 
 ## In progress
 - (none)
