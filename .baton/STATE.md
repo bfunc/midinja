@@ -1,11 +1,11 @@
 # Midinja · Baton
-Updated: 2026-10-17 21:08 · opus-5.5@raptor#af93 · f5047cf
+Updated: 2026-10-17 22:58 · fable-5.1@home#24cf · cb0bb73
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
 ## Now
-Focus: the **form** feature in the web preview (A A′ B C, A → A′ variations), designed in the browser first, then ported to JUCE and the VST3.
-Who: home builds the preview on localhost; raptor relays user feedback. No deploys to bfunc.cc.
+Focus: the **real build** v0.2: the JUCE app follows the web preview; Standalone with sound + VST3 with drag-and-drop of the arrangement into FL Studio. Built and checked on Home; waiting for the user to try it in FL.
+Who: home builds the app (CI) and the preview; raptor relays user feedback; the user tests in FL Studio. No deploys to bfunc.cc.
 
 ## Decisions (accepted, don't "fix")
 - 2026-10-13 · Builds: only on GitHub Actions · user keeps the laptop free of toolchains
@@ -23,8 +23,8 @@ Who: home builds the preview on localhost; raptor relays user feedback. No deplo
 - 2026-10-17 · Release: rolling "latest" pre-release from CI; a tagged release only after the user confirms it works in FL · user said "Defaults ok"
 
 ## Open issues
-- !  JUCE app is behind the preview: no form, arrangement, versions, colour sets, chord roots (?)
--    Not clicked through by hand: Start-on-root toggle, root marker at narrow widths
+-    Not tried on Home (no DAW): the VST3 in FL Studio (load, MIDI output port, drag onto the playlist), host tempo/transport sync. The mac zip (app + vst3) is built by CI but never opened.
+-    Not clicked through by hand: Start-on-root toggle, root marker at narrow widths (preview)
 
 ## Waiting for you
 - Start-on-root: per-bar override (click the marker)? · since 2026-10-17
@@ -32,8 +32,9 @@ Who: home builds the preview on localhost; raptor relays user feedback. No deplo
 - C in scales without a fifth falls back to ii (Locrian ♭II); keep it? · since 2026-10-17
 
 ## In progress
-- fable-5.1@home#24cf · Real build: Standalone with sound + VST3 (drag-and-drop .mid of the arrangement into FL Studio, MIDI channel 1-16 selectable in both, Export .mid kept) · since 2026-10-17 22:07
+- (none)
 
 ## Next
-1. More preview iterations on user feedback (home)
-2. Port form + new UI to JUCE, then VST3
+1. User: install Midinja.vst3 from the latest Midinja-windows.zip, try it in FL Studio (sound, MIDI output port, Drag to DAW); report back via raptor
+2. Fix what FL shows; then a tagged release (v0.2.0) when the user confirms
+3. Chords (mockup first), then AU
