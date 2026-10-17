@@ -125,6 +125,7 @@ input.num{width:64px}
 .note .rat{position:absolute;inset:0;display:flex;gap:2px;padding:2px}
 .note .rat i{flex:1;background:#00000033;border-radius:2px}
 .lockic{position:absolute;right:3px;top:50%;transform:translateY(-50%);font-size:8px}
+.rootmk{position:absolute;left:2px;top:50%;transform:translateY(-50%);font-size:9px;line-height:1;font-weight:800;color:#15171c;background:#fff;border-radius:3px;padding:1px 3px;z-index:3;pointer-events:none}
 .empty-hint{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink3);pointer-events:none}
 .play{height:4px;margin:4px 0 6px}
 .play i.on{background:var(--acc2);border-radius:2px;box-shadow:0 0 8px var(--acc2)}
@@ -521,6 +522,9 @@ function render() {
   const rowH = R.length ? Math.max(11, Math.min(30, Math.floor(300 / R.length))) : 30;
   const ph = shownPlayStep();
   const g = $('grid'); g.innerHTML = '';
+  // the chord root this part's step 1 is held on (the marker shows where the rule holds)
+  const chordDeg = core.partDegree(S.cur, S.scale), chordPc = SCALES[S.scale].intervals[chordDeg];
+  const chordName = ['I', '♭II', 'II', '♭III', 'III', 'IV', '♭V', 'V', '♭VI', 'VI', '♭VII', 'VII'][chordPc];
   R.forEach((note, r) => {
     const pc = pcOf(note), inS = inScale(note);
     const k = document.createElement('div');
@@ -541,6 +545,7 @@ function render() {
         d.style.opacity = 0.55 + 0.45 * st.velocity / 127;
         if (st.repeats > 1) { const rt = document.createElement('div'); rt.className = 'rat'; for (let i = 0; i < st.repeats; i++) rt.appendChild(document.createElement('i')); d.appendChild(rt); }
         if (st.locked) { const l = document.createElement('span'); l.className = 'lockic'; l.textContent = '🔒'; d.appendChild(l); }
+        if (s === 0 && S.startOnRoot && pc === chordPc) { const m = document.createElement('span'); m.className = 'rootmk'; m.textContent = chordName; d.appendChild(m); d.title = `Start on chord root: step 1 of ${PARTS[S.cur]} is held on its chord root (${chordName}); the dice, Rhythm, Notes and Mutate keep it. Turn off under Advanced`; }
         d.onpointerdown = e => noteDown(e, s, rowH);
         d.oncontextmenu = e => { e.preventDefault(); longer(s); };
         c.appendChild(d);
