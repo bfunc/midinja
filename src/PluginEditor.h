@@ -1,18 +1,21 @@
 #pragma once
 
 #include "PluginProcessor.h"
+#include "ui/EdgeBar.h"
 #include "ui/GridComponent.h"
 #include "ui/LaneComponent.h"
 #include "ui/PartsBar.h"
+#include "ui/TabBar.h"
 #include "ui/Theme.h"
 #include "ui/VersionsStrip.h"
 #include "ui/Widgets.h"
 
 #include <vector>
 
-// The plugin window, laid out like web/index.html: the dice row, the key and knobs row, the
-// Advanced side panel, the bars and the piano roll, the footer with Play, the synth, MIDI out,
-// Import / Export and a handle to drag the arrangement as a .mid file into a DAW.
+// The plugin window, laid out like web/index.html: the dice row, the key and knobs row, the tab
+// bar, the Advanced side panel, the bars and the piano roll with its range edges, the footer
+// with Play, the synth, MIDI out, Import / Export and a handle to drag the arrangement as a
+// .mid file into a DAW.
 class MidinjaEditor : public juce::AudioProcessorEditor,
                       public juce::DragAndDropContainer,
                       public juce::FileDragAndDropTarget,
@@ -35,7 +38,7 @@ public:
 
 private:
     void timerCallback() override;
-    // A manual edit: record it, play it, redraw.
+    // A manual edit of the part shown: record it, play it, redraw.
     void edited();
     // The document changed in a way that is already recorded (a roll, undo, import): play, redraw.
     void changed();
@@ -62,25 +65,30 @@ private:
     ui::DiceButton dice;
     ui::Seg what;
     ui::IconButton rollAll { ui::IconButton::Dice, "All", false };
+    ui::IconButton progB { ui::IconButton::Dice, "Progression", false };
     VersionsStrip versions;
     ui::IconButton undoB { ui::IconButton::Undo }, redoB { ui::IconButton::Redo };
 
     // Row B
     juce::ComboBox rootBox, scaleBox, rateBox;
+    juce::TextButton ocD { juce::String (juce::CharPointer_UTF8 ("\xE2\x88\x92")) }, ocU { "+" };
+    int rootOctShown = -99;
     ui::Knob density { "Density", 1, 16, 1 }, swingK { "Swing", 0, 1, 0.01 }, similarity { "Similarity", 0, 1, 0.05 };
     ui::Knob color { "Color", 0, 1, 0.05, true }, surprise { "Surprise", 0, 1, 0.05, true };
-    juce::TextButton trD { juce::String (juce::CharPointer_UTF8 ("\xE2\x88\x92")) }, trU { "+" };
-    ui::NumBox trVal { -99, 99, 1 };
-    ui::Seg viewSeg;
     ui::Switch advSw { "Advanced" };
 
+    // Tabs
+    TabBar tabBar;
+
     // Side panel (Advanced)
-    ui::RangeSlider pitchR { 24, 96 }, lenR { 1, midinja::kMaxLength }, velR { 1, 127 }, repR { 1, midinja::kMaxRepeats };
+    ui::RangeSlider lenR { 1, midinja::kMaxLength }, velR { 1, 127 }, repR { 1, midinja::kMaxRepeats };
     ui::Pill repPill, rootPill;
     ui::NumBox seedBox { 1.0, 4294967295.0, 1.0 };
 
     // Grid area
     PartsBar parts;
+    juce::ComboBox degBox, typeBox, invBox; // the chord of the part shown (chord tabs)
+    EdgeBar edgeTop, edgeBot;
     GridComponent grid;
     LaneComponent velLane { LaneComponent::Kind::Velocity }, lenLane { LaneComponent::Kind::Length },
                   repLane { LaneComponent::Kind::Repeats };
@@ -92,7 +100,7 @@ private:
     juce::TextButton waveBtn { "Saw" };
     ui::Knob cutoffK { "Cutoff", 60, 12000, 1, false, 24 }, resoK { "Reso", 0, 100, 1, false, 24 },
              decayK { "Decay", 30, 1500, 1, false, 24 }, volK { "Volume", 0, 100, 1, false, 24 };
-    juce::ComboBox midiOutBox, channelBox;
+    juce::ComboBox midiOutBox;
     juce::StringArray midiPortIds;
     ui::IconButton importB { ui::IconButton::Import, "Import MIDI", false }, exportB { ui::IconButton::Export, "Export MIDI", false },
                    dragB { ui::IconButton::Drag, "Drag to DAW", false };
@@ -103,7 +111,6 @@ private:
     std::vector<Text> labels, sideTitles;
     std::vector<juce::Rectangle<int>> vseps;
     juce::Rectangle<int> rLogo, rPreset, rSide, rMsg, rPlayRow, rSteps, rLegend, rRowA, rRowB, rFoot;
-    juce::Rectangle<int> rHostBpm;
 
     juce::TooltipWindow tips { this, 400 };
 

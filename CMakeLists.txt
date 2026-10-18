@@ -46,6 +46,7 @@ target_sources(Midinja PRIVATE
     src/ui/GridComponent.cpp
     src/ui/LaneComponent.cpp
     src/ui/PartsBar.cpp
+    src/ui/TabBar.cpp
     src/ui/VersionsStrip.cpp
     src/ui/Widgets.cpp)
 

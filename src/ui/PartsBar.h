@@ -7,17 +7,21 @@
 #include <functional>
 #include <vector>
 
-// The row above the grid (web `.tabs`): the arrangement's bars on the left (lock, name, thumbnail,
-// remove), a note about the part being edited in the middle, the palette of the four parts on the
-// right (click adds a bar).
+// The row above the grid (web `.tabs`): the arrangement's bars on the left (lock, name with the
+// chord degree under it, thumbnail, remove), a note about the part being edited in the middle,
+// room for the chord selectors, and the palette of the four parts on the right (letters with
+// their degree; click adds a bar).
 class PartsBar : public juce::Component, public juce::TooltipClient
 {
 public:
-    static constexpr int height = 26;
+    static constexpr int height = 30;
 
     midinja::Session* sess = nullptr;
     int playingSlot = -1;
+    int chordSelW = 0; // width kept free for the chord selectors (chord tabs)
     std::function<void (int)> onSelectSlot, onToggleLock, onRemoveBar, onAddBar;
+
+    juce::Rectangle<int> chordArea() const { return layout().chord; }
 
     void paint (juce::Graphics&) override;
     void mouseDown (const juce::MouseEvent&) override;
@@ -30,11 +34,13 @@ private:
     struct Layout
     {
         std::vector<juce::Rectangle<int>> slots, slotLocks, slotXs, tabs;
-        juce::Rectangle<int> info;
+        juce::Rectangle<int> info, chord;
         bool full = false;
     };
     Layout layout() const;
     Hit hitAt (juce::Point<int>) const;
+    int nameWidth (int k) const;
+    void drawName (juce::Graphics&, int k, int x, juce::Colour ink) const;
     static void drawPadlock (juce::Graphics&, juce::Rectangle<float>, juce::Colour, bool open);
 
     juce::Point<int> hover { -1, -1 };

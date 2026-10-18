@@ -663,102 +663,197 @@ static void testDetectKey()
     CHECK (k.root == 0 && k.scale == 0);
 }
 
-// The document the UI edits: parts, arrangement, versions and undo, import and export.
+// The document the UI edits: tabs, arrangement and extension, versions and undo, the scale
+// switch, the range, chords, the progression dice, import and export.
 static void testDocument()
 {
     Session s;
     const auto& d = s.doc;
-    CHECK (d.arr.size() == 4 && d.sel == -1 && d.cur == 0);
-    for (const auto& p : d.parts)
-        CHECK (p.numSteps == 16 && countOn (p) > 0);
+    const auto& t0 = d.tabs[0];
+    CHECK (d.arr == std::vector<int> { 0 } && d.sel == -1 && d.cur == 0 && d.tab == 0);
+    CHECK (countOn (t0.parts[0]) > 0 && countOn (t0.parts[1]) == 0 && countOn (t0.parts[2]) == 0);
+    CHECK (d.tabs[1].poly && ! d.tabs[1].on && d.tabs[1].channel == 2 && countOn (d.tabs[1].parts[0]) == 1);
     CHECK (s.versions.size() == 1 && s.vi == 0 && s.undo.size() == 1 && s.ui == 0);
     CHECK (! s.canUndo() && ! s.canRedo());
+    CHECK (d.degreeOf (0) == 0 && d.degreeOf (2) == partDegree (2, d.gen.scale) && d.degreeOf (3) == partDegree (3, d.gen.scale));
+
+    // Extension: an empty part joins as a copy of A moved to its degree; C ends on the root or fifth.
+    s.addBar (2);
+    CHECK ((d.arr == std::vector<int> { 0, 2 }) && d.cur == 2);
+    CHECK (countOn (t0.parts[2]) == countOn (t0.parts[0]));
+    s.addBar (1);
+    s.addBar (3);
+    CHECK (d.arr.size() == 4);
+    s.addBar (0);
+    CHECK (d.arr.size() == 4); // never more than 4 bars
+    for (int i = 0; i < 16; ++i)
+        CHECK (t0.parts[1].steps[(size_t) i].on == t0.parts[0].steps[(size_t) i].on && t0.parts[1].steps[(size_t) i].note == t0.parts[0].steps[(size_t) i].note);
+    {
+        int last = -1;
+        for (int i = 15; i >= 0 && last < 0; --i)
+            if (t0.parts[3].steps[(size_t) i].on)
+                last = i;
+        CHECK (last >= 0);
+        const int pc = d.pcOf (t0.parts[3].steps[(size_t) last].note);
+        const auto mi = modeInfo (d.gen.scale);
+        CHECK (pc == 0 || pc == mi.fifth);
+    }
+    for (const auto& p : t0.parts)
+        for (int i = 0; i < 16; ++i)
+            if (p.steps[(size_t) i].on)
+                CHECK (p.steps[(size_t) i].note >= t0.lowNote && p.steps[(size_t) i].note <= t0.highNote);
 
     // Play goes through the arrangement, a selected bar, or the part shown.
     CHECK (d.playSeq().size() == 4);
-    s.selectSlot (2);
-    CHECK (d.sel == 2 && d.cur == 2 && d.playSeq() == std::vector<int> { 2 });
-    s.selectSlot (2);
+    s.selectSlot (1);
+    CHECK (d.sel == 1 && d.cur == 2 && d.playSeq() == std::vector<int> { 2 });
+    s.selectSlot (1);
     CHECK (d.sel == -1 && d.playSeq().size() == 4);
-    s.removeBar (3);
-    s.removeBar (2);
-    s.removeBar (1);
-    s.removeBar (0);
-    CHECK (d.arr.empty() && d.playSeq() == std::vector<int> { d.cur });
-    s.addBar (1);
-    CHECK (d.arr == std::vector<int> { 1 } && d.cur == 1);
-    for (int k = 0; k < 6; ++k)
-        s.addBar (0);
-    CHECK (d.arr.size() == 4); // never more than 4 bars
 
     // The dice make a version; a hand edit changes it in place; undo steps through everything.
     const size_t nv = s.versions.size();
-    const Pattern before = d.parts[0];
+    const Pattern before = t0.parts[0];
     s.selectPart (0);
     s.apply (Op::Roll);
     CHECK (s.versions.size() == nv + 1 && s.vi == (int) nv);
     bool differs = false;
     for (int i = 0; i < 16; ++i)
-        differs = differs || ! (d.parts[0].steps[(size_t) i] == before.steps[(size_t) i]);
+        differs = differs || ! (t0.parts[0].steps[(size_t) i] == before.steps[(size_t) i]);
     CHECK (differs);
-    s.doc.parts[0].steps[3].on = ! s.doc.parts[0].steps[3].on;
-    s.push();
+    s.doc.tabs[0].parts[0].steps[3].on = ! s.doc.tabs[0].parts[0].steps[3].on;
+    s.push (0);
     CHECK (s.versions.size() == nv + 1);
-    CHECK (s.versions.back().snap.parts[0].steps[3].on == d.parts[0].steps[3].on);
-    const bool edited = d.parts[0].steps[3].on;
+    CHECK (s.versions.back().snap.tabs[0].parts[0].steps[3].on == t0.parts[0].steps[3].on);
+    const bool edited = t0.parts[0].steps[3].on;
     s.undoTo (s.ui - 1);
-    CHECK (d.parts[0].steps[3].on != edited);
+    CHECK (t0.parts[0].steps[3].on != edited);
     s.undoTo (s.ui + 1);
-    CHECK (d.parts[0].steps[3].on == edited);
+    CHECK (t0.parts[0].steps[3].on == edited);
 
     // A locked part is skipped by the dice and by All.
     s.toggleLock (0);
-    const Pattern locked = d.parts[0];
+    const Pattern locked = t0.parts[0];
     s.apply (Op::Roll);
     s.applyAll (Op::Notes);
     for (int i = 0; i < 16; ++i)
-        CHECK (d.parts[0].steps[(size_t) i] == locked.steps[(size_t) i]);
+        CHECK (t0.parts[0].steps[(size_t) i] == locked.steps[(size_t) i]);
     s.toggleLock (0);
+
+    // The scale switch is reversible: the notes come back exactly.
+    {
+        std::vector<int> notes;
+        for (const auto& p : t0.parts)
+            for (int i = 0; i < 16; ++i)
+                notes.push_back (p.steps[(size_t) i].on ? p.steps[(size_t) i].note : -1);
+        const int scale0 = d.gen.scale;
+        s.setScale (18); // Phrygian Dominant
+        bool changed = false;
+        size_t j = 0;
+        for (const auto& p : t0.parts)
+            for (int i = 0; i < 16; ++i, ++j)
+                if (p.steps[(size_t) i].on && p.steps[(size_t) i].note != notes[j])
+                    changed = true;
+        CHECK (changed);
+        s.setScale (scale0);
+        j = 0;
+        for (const auto& p : t0.parts)
+            for (int i = 0; i < 16; ++i, ++j)
+                if (p.steps[(size_t) i].on)
+                    CHECK (p.steps[(size_t) i].note == notes[j]);
+    }
+
+    // The root moves every tab; the octave moves the tab shown.
+    {
+        const int root0 = d.gen.root, rn0 = t0.rootNote, rn1 = d.tabs[1].rootNote, lo1 = d.tabs[1].lowNote;
+        const int n0 = t0.parts[0].steps[0].on ? t0.parts[0].steps[0].note : -1;
+        s.setRootPc ((root0 + 2) % 12);
+        CHECK (d.gen.root == (root0 + 2) % 12 && t0.rootNote == rn0 + 2 && d.tabs[1].rootNote == rn1 + 2 && d.tabs[1].lowNote == lo1 + 2);
+        if (n0 >= 0)
+            CHECK (t0.parts[0].steps[0].note == n0 + 2);
+        s.setOctave (-1);
+        CHECK (t0.rootNote == rn0 + 2 - 12 && d.tabs[1].rootNote == rn1 + 2);
+        s.setOctave (1);
+        s.setRootPc (root0);
+        CHECK (t0.rootNote == rn0);
+    }
+
+    // The range shrinks a semitone at a time and keeps every note (folded) and a scale note.
+    {
+        const int count = countOn (t0.parts[0]);
+        int guard = 0;
+        while (s.canShrink (true) && guard++ < 60)
+            s.shrinkRange (true);
+        std::string why;
+        CHECK (! s.canShrink (true, &why) && ! why.empty());
+        CHECK (countOn (t0.parts[0]) == count && s.scaleRows() >= 1);
+        while (s.canGrow (true) && guard++ < 120)
+            s.growRange (true);
+        CHECK (t0.highNote - t0.lowNote == kMaxSpan);
+        s.gotoVersion (s.vi); // the range is part of the version
+    }
+
+    // Chords: a triad on the degree, voiced inside the tab's range; the progression sets degrees.
+    {
+        const auto notes = d.chordNotes (0, d.tabs[1]);
+        CHECK (notes.size() == 3 && notes[0] >= d.tabs[1].lowNote && notes[0] % 12 == d.gen.root);
+        CHECK (notes[1] > notes[0] && notes[2] > notes[1]);
+        s.setChord (0, 0, ChordType::Seventh, 1);
+        CHECK (d.chordNotes (0, d.tabs[1]).size() == 4);
+        s.setChord (0, 0, ChordType::Triad, 0);
+        CHECK (s.canProgression());
+        s.rollProgression();
+        CHECK (d.arr.size() == 4 && d.degreeOf (1) == d.degreeOf (0));
+        CHECK (d.degreeOf (2) != partDegree (2, d.gen.scale) || d.degreeOf (3) != partDegree (3, d.gen.scale) || d.degreeOf (0) != 0);
+        s.selectTab (1);
+        s.apply (Op::Roll); // a chord tab's dice: a new rhythm
+        CHECK (countOn (d.tabs[1].parts[0]) >= 1);
+        s.selectTab (0);
+    }
 
     // Switching versions brings parts and key back, but not the knobs.
     s.doc.gen.notes = 5;
     s.gotoVersion (0);
     CHECK (s.vi == 0 && d.gen.notes == 5);
 
-    // Rate changes every part's length; the export covers the arrangement.
+    // Rate changes every part's length; the export has a track per tab that is on.
     s.setRate (2);
-    for (const auto& p : d.parts)
-        CHECK (p.numSteps == 8);
+    for (const auto& t : d.tabs)
+        for (const auto& p : t.parts)
+            CHECK (p.numSteps == 8);
     s.setRate (4);
-    const auto bytes = s.midiFile (120.0, 3);
+    s.setTabOn (1, true);
+    s.setTabChannel (0, 3);
+    const auto bytes = s.midiFile (120.0);
     CHECK (bytes.size() > 30 && bytes[0] == 'M' && bytes[1] == 'T' && bytes[2] == 'h' && bytes[3] == 'd');
-    bool channel3 = false;
+    CHECK (bytes[9] == 1 && bytes[11] == 3); // format 1, tempo track + two tabs
+    bool channel3 = false, channel2 = false;
     for (size_t i = 0; i + 2 < bytes.size(); ++i)
-        if (bytes[i] == 0x92 && bytes[i + 2] > 0) // note on, channel 3
-            channel3 = true;
-    CHECK (channel3);
+    {
+        if (bytes[i] == 0x92 && bytes[i + 2] > 0) channel3 = true;
+        if (bytes[i] == 0x91 && bytes[i + 2] > 0) channel2 = true;
+    }
+    CHECK (channel3 && channel2);
+    s.setTabOn (1, false);
+    s.setTabOn (0, false);
+    CHECK (s.midiFile (120.0).empty() && s.message.find ("No tab is on") == 0);
+    s.setTabOn (0, true);
     CHECK (s.exportName().rfind ("midinja-", 0) == 0);
 
-    // Import: two bars at 480 ppq into A and B... -> A A', the rest generated; chords keep the lowest note.
+    // Import into the tab shown: two bars at 480 ppq into A A'; chords keep the lowest note.
     std::vector<RawNote> raw;
     const int ePhr[] = { 64, 65, 67, 69, 71, 72, 74, 76 }; // E Phrygian-ish line, one note per beat
     for (int i = 0; i < 8; ++i)
         raw.push_back ({ 480.0 * i, 480.0, ePhr[i], 90 });
     raw.push_back ({ 0.0, 480.0, 76, 100 }); // a chord on the first beat: the lower note (64) must win
     CHECK (s.importMidi (raw, 480.0, "two-bars.mid"));
-    CHECK (d.src[0] == Src::Import && d.src[1] == Src::Import && d.src[2] == Src::Derived && d.src[3] == Src::Derived);
-    CHECK (d.parts[0].steps[0].on && d.parts[0].steps[0].note == 64 && d.parts[0].steps[0].length == 4);
-    CHECK (d.parts[1].steps[0].on && d.parts[1].steps[0].note == 71);
-    CHECK (countOn (d.parts[0]) == 4 && countOn (d.parts[1]) == 4);
-    CHECK (countOn (d.parts[2]) > 0 && countOn (d.parts[3]) > 0);
-    CHECK (d.arr.size() == 4 && d.cur == 0 && d.rate == 4);
+    CHECK (t0.src[0] == Src::Import && t0.src[1] == Src::Import && t0.src[2] == Src::Roll);
+    CHECK (t0.parts[0].steps[0].on && t0.parts[0].steps[0].note == 64 && t0.parts[0].steps[0].length == 4);
+    CHECK (t0.parts[1].steps[0].on && t0.parts[1].steps[0].note == 71);
+    CHECK (countOn (t0.parts[0]) == 4 && countOn (t0.parts[1]) == 4 && countOn (t0.parts[2]) == 0);
+    CHECK ((d.arr == std::vector<int> { 0, 1 }) && d.cur == 0 && d.rate == 4);
+    CHECK (t0.lowNote == 64 && t0.highNote == 76);
     CHECK (s.message.find ("Imported 2 bars") == 0);
     CHECK (s.message.find ("1 overlapping or late note dropped") != std::string::npos);
-    // A key change keeps the imported bars and regenerates the derived ones.
-    const Pattern impA = d.parts[0];
-    s.rekey ((d.gen.root + 7) % 12, d.gen.scale);
-    for (int i = 0; i < 16; ++i)
-        CHECK (d.parts[0].steps[(size_t) i] == impA.steps[(size_t) i]);
     CHECK (! s.importMidi ({}, 480.0, "empty.mid"));
     CHECK (s.message.find ("No notes found") == 0);
 }

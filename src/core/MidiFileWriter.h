@@ -16,4 +16,16 @@ std::vector<uint8_t> writeMidiFile (const std::vector<NoteEvent>& notes, double 
                                     double bpm, int channel, const std::string& trackName,
                                     double cycleSteps);
 
+// One track of a multi-track file: its name, channel (1..16) and notes.
+struct MidiTrack
+{
+    std::string name;
+    int channel = 1;
+    std::vector<NoteEvent> notes;
+};
+
+// A type 1 file: a tempo track (tempo, 4/4), then one track per entry, each ending at cycleSteps.
+std::vector<uint8_t> writeMidiFileTracks (const std::vector<MidiTrack>& tracks, double stepsPerBeat,
+                                          double bpm, double cycleSteps);
+
 } // namespace midinja

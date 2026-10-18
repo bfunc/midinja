@@ -11,6 +11,7 @@ permissions:
   contents: write
 
 jobs:
+  # Windows only for now (the user tests on Windows); the macOS job comes back later.
   build:
     strategy:
       fail-fast: false
@@ -18,8 +19,6 @@ jobs:
         include:
           - os: windows-latest
             name: windows
-          - os: macos-latest
-            name: macos
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -89,11 +88,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p out
-          cp art/Midinja-windows/Midinja-windows.zip art/Midinja-macos/Midinja-macos.zip out/
+          cp art/Midinja-windows/Midinja-windows.zip out/
+          cp art/Midinja-macos/Midinja-macos.zip out/ 2>/dev/null || true
           cp art/Midinja-windows/demo-riff.mid out/
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            gh release create "$GITHUB_REF_NAME" out/* --title "Midinja $GITHUB_REF_NAME" --notes "Standalone app and VST3 for Windows and macOS. See the README for install notes."
+            gh release create "$GITHUB_REF_NAME" out/* --title "Midinja $GITHUB_REF_NAME" --notes "Standalone app and VST3 for Windows. See the README for install notes."
           else
             gh release delete latest --cleanup-tag -y || true
-            gh release create latest out/* --prerelease --target "$GITHUB_SHA" --title "Latest build (main)" --notes "Built from ${GITHUB_SHA::7}. Rolling build, replaced on every push to main."
+            gh release create latest out/* --prerelease --target "$GITHUB_SHA" --title "Latest build (main)" --notes "Built from ${GITHUB_SHA::7}. Rolling build, replaced on every push to main. Windows only for now."
           fi

@@ -8,8 +8,29 @@
 namespace
 {
 juce::String u8 (const char* s) { return juce::String (juce::CharPointer_UTF8 (s)); }
+juce::String u8 (const std::string& s) { return juce::String (juce::CharPointer_UTF8 (s.c_str())); }
 constexpr int kThumbW = 44, kThumbH = 16;
 } // namespace
+
+int PartsBar::nameWidth (int k) const
+{
+    const auto& d = sess->doc;
+    const float w1 = theme::textWidth (theme::font (13.0f, true), u8 (midinja::partName (k)));
+    const float w2 = theme::textWidth (theme::font (9.0f), u8 (midinja::numeral (d.degreeOf (k), d.gen.scale)));
+    return std::max (16, (int) std::ceil (std::max (w1, w2)));
+}
+
+void PartsBar::drawName (juce::Graphics& g, int k, int x, juce::Colour ink) const
+{
+    const auto& d = sess->doc;
+    const int tn = nameWidth (k);
+    g.setColour (ink);
+    g.setFont (theme::font (13.0f, true));
+    g.drawText (u8 (midinja::partName (k)), x, 1, tn, 16, juce::Justification::centred);
+    g.setColour (ink == theme::accent ? theme::accent : theme::ink3);
+    g.setFont (theme::font (9.0f));
+    g.drawText (u8 (midinja::numeral (d.degreeOf (k), d.gen.scale)), x, 16, tn, 11, juce::Justification::centred);
+}
 
 PartsBar::Layout PartsBar::layout() const
 {
@@ -17,29 +38,29 @@ PartsBar::Layout PartsBar::layout() const
     if (sess == nullptr)
         return L;
     const auto& d = sess->doc;
-    const auto nameFont = theme::font (13.0f, true);
     int x = 0;
     for (int i = 0; i < (int) d.arr.size(); ++i)
     {
-        const int tn = std::max (16, (int) std::ceil (theme::textWidth (nameFont, u8 (midinja::partName (d.arr[(size_t) i])))));
+        const int tn = nameWidth (d.arr[(size_t) i]);
         const int w = 6 + 16 + 6 + tn + 6 + kThumbW + 6 + 18 + 4;
         L.slots.push_back ({ x, 0, w, height });
-        L.slotLocks.push_back ({ x + 6, 5, 16, 16 });
-        L.slotXs.push_back ({ x + w - 4 - 18, 4, 18, 18 });
+        L.slotLocks.push_back ({ x + 6, 7, 16, 16 });
+        L.slotXs.push_back ({ x + w - 4 - 18, 6, 18, 18 });
         x += w + 6;
     }
     L.full = (int) d.arr.size() >= midinja::kMaxBars;
     int px = getWidth();
     for (int k = midinja::kNumParts - 1; k >= 0; --k)
     {
-        const int tn = std::max (16, (int) std::ceil (theme::textWidth (nameFont, u8 (midinja::partName (k)))));
-        const int w = 10 + tn + 7 + kThumbW + 7;
+        const int w = 9 + nameWidth (k) + 9;
         px -= w;
         L.tabs.insert (L.tabs.begin(), { px, 0, w, height });
         px -= 6;
     }
     const int palLeft = px + 6 - 10 - 1; // the palette's left border
-    L.info = { x, 0, std::max (0, palLeft - x), height };
+    const int infoRight = chordSelW > 0 ? palLeft - 8 - chordSelW : palLeft;
+    L.chord = chordSelW > 0 ? juce::Rectangle<int> (palLeft - 8 - chordSelW, 0, chordSelW, height) : juce::Rectangle<int>();
+    L.info = { x, 0, std::max (0, infoRight - x), height };
     return L;
 }
 
@@ -79,8 +100,8 @@ void PartsBar::paint (juce::Graphics& g)
     if (sess == nullptr)
         return;
     const auto& d = sess->doc;
+    const auto& t = d.T();
     const auto L = layout();
-    const auto nameFont = theme::font (13.0f, true);
     const auto hit = hitAt (hover);
 
     // arrangement
@@ -88,7 +109,7 @@ void PartsBar::paint (juce::Graphics& g)
     {
         const int k = d.arr[(size_t) i];
         const auto r = L.slots[(size_t) i].toFloat().reduced (0.5f);
-        const bool on = i == d.sel, same = k == d.cur, locked = d.locks[(size_t) k];
+        const bool on = i == d.sel, same = k == d.cur, locked = t.locks[(size_t) k];
         const bool over = hit.kind != Hit::None && hit.kind != Hit::Tab && hit.kind != Hit::Info && hit.index == i;
         g.setColour (on ? theme::accent.withAlpha (0.13f) : theme::panel);
         g.fillRoundedRectangle (r, 8.0f);
@@ -99,15 +120,13 @@ void PartsBar::paint (juce::Graphics& g)
         drawPadlock (g, L.slotLocks[(size_t) i].toFloat().reduced (3.0f, 2.5f),
                      (locked ? theme::lock : ink).withAlpha (locked ? 1.0f : lockOver ? 0.9f : 0.3f), ! locked);
         int x = L.slots[(size_t) i].getX() + 6 + 16 + 6;
-        const int tn = std::max (16, (int) std::ceil (theme::textWidth (nameFont, u8 (midinja::partName (k)))));
-        g.setColour (ink);
-        g.setFont (nameFont);
-        g.drawText (u8 (midinja::partName (k)), x, 0, tn, height, juce::Justification::centredLeft);
+        const int tn = nameWidth (k);
+        drawName (g, k, x, ink);
         x += tn + 6;
-        const auto tt = juce::Rectangle<float> ((float) x, 5.0f, (float) kThumbW, (float) kThumbH);
+        const auto tt = juce::Rectangle<float> ((float) x, 7.0f, (float) kThumbW, (float) kThumbH);
         g.setColour (juce::Colours::black.withAlpha (0.25f));
         g.fillRoundedRectangle (tt, 4.0f);
-        ui::paintThumb (g, tt, { &d.parts[(size_t) k] }, on ? theme::accent : theme::ink2);
+        ui::paintThumb (g, tt, { &t.parts[(size_t) k] }, on ? theme::accent : theme::ink2);
         const auto xr = L.slotXs[(size_t) i];
         const bool xOver = hit.kind == Hit::SlotX && hit.index == i;
         if (xOver)
@@ -136,12 +155,12 @@ void PartsBar::paint (juce::Graphics& g)
     {
         // what is being edited and what Play goes through
         juce::String info;
-        const bool lockMsg = d.locks[(size_t) d.cur];
+        const bool lockMsg = t.locks[(size_t) d.cur];
         if (lockMsg)
             info = u8 (midinja::partName (d.cur)) + " locked: dice skip it";
         else
         {
-            info = "editing " + u8 (midinja::partName (d.cur)) + u8 (" \xC2\xB7 ");
+            info = "tab " + juce::String (d.tab + 1) + u8 (" \xC2\xB7 ") + u8 (midinja::partName (d.cur)) + u8 (" \xC2\xB7 ");
             if (d.sel >= 0) info += "Play: bar " + juce::String (d.sel + 1);
             else if (! d.arr.empty()) info += "Play: " + juce::String ((int) d.arr.size()) + (d.arr.size() > 1 ? " bars" : " bar");
             else info += "Play: this part";
@@ -151,7 +170,7 @@ void PartsBar::paint (juce::Graphics& g)
         g.drawText (info, L.info.reduced (8, 0), juce::Justification::centred, true);
     }
 
-    // palette
+    // palette: letters with their chord degree
     if (! L.tabs.empty())
     {
         g.setColour (theme::line);
@@ -168,14 +187,7 @@ void PartsBar::paint (juce::Graphics& g)
         g.setColour ((on ? theme::accent : over ? theme::teal : theme::line).withMultipliedAlpha (alpha));
         g.drawRoundedRectangle (r, 8.0f, 1.0f);
         const auto ink = (on ? theme::accent : theme::ink2).withMultipliedAlpha (alpha);
-        const int tn = std::max (16, (int) std::ceil (theme::textWidth (nameFont, u8 (midinja::partName (k)))));
-        g.setColour (ink);
-        g.setFont (nameFont);
-        g.drawText (u8 (midinja::partName (k)), L.tabs[(size_t) k].getX() + 10, 0, tn, height, juce::Justification::centredLeft);
-        const auto tt = juce::Rectangle<float> ((float) (L.tabs[(size_t) k].getX() + 10 + tn + 7), 5.0f, (float) kThumbW, (float) kThumbH);
-        g.setColour (juce::Colours::black.withAlpha (0.25f * alpha));
-        g.fillRoundedRectangle (tt, 4.0f);
-        ui::paintThumb (g, tt, { &d.parts[(size_t) k] }, ink);
+        drawName (g, k, L.tabs[(size_t) k].getX() + 9, ink);
     }
 }
 
@@ -207,14 +219,22 @@ juce::String PartsBar::getTooltip()
     if (sess == nullptr)
         return {};
     const auto& d = sess->doc;
+    const auto& t = d.T();
     const auto hit = hitAt (hover);
     const auto nameOf = [] (int k) { return u8 (midinja::partName (k)); };
+    const auto degOf = [&] (int k) { return u8 (midinja::numeral (d.degreeOf (k), d.gen.scale)); };
+    const auto hasNotes = [] (const midinja::Pattern& p) {
+        for (int i = 0; i < p.numSteps; ++i)
+            if (p.steps[(size_t) i].on)
+                return true;
+        return false;
+    };
     switch (hit.kind)
     {
         case Hit::Slot:
         {
             const int k = d.arr[(size_t) hit.index];
-            return "Bar " + juce::String (hit.index + 1) + ": " + nameOf (k) + u8 (" \xC2\xB7 ")
+            return "Bar " + juce::String (hit.index + 1) + ": " + nameOf (k) + " on " + degOf (k) + u8 (" \xC2\xB7 ")
                  + (hit.index == d.sel ? juce::String ("selected: Play loops this bar; click again to deselect")
                                        : "click to select it and edit " + nameOf (k))
                  + " (every " + nameOf (k) + " bar changes with it)";
@@ -222,7 +242,7 @@ juce::String PartsBar::getTooltip()
         case Hit::SlotLock:
         {
             const int k = d.arr[(size_t) hit.index];
-            return d.locks[(size_t) k] ? "Unlock (Shift+click): " + nameOf (k) + " is locked, the dice and Roll all skip it"
+            return t.locks[(size_t) k] ? "Unlock (Shift+click): " + nameOf (k) + " is locked, the dice and Roll all skip it"
                                        : "Lock (Shift+click): the dice and Roll all keep " + nameOf (k) + " as it is";
         }
         case Hit::SlotX: return "Remove this bar from the arrangement";
@@ -231,13 +251,14 @@ juce::String PartsBar::getTooltip()
             const int k = hit.index;
             if ((int) d.arr.size() >= midinja::kMaxBars)
                 return u8 ("Arrangement is full (4 bars) \xE2\x80\x94 remove a bar with \xC3\x97");
-            juce::String t = nameOf (k) + u8 (" \xC2\xB7 ") + midinja::partHint (k);
-            if (d.src[(size_t) k] == midinja::Src::Import) t += u8 (" \xC2\xB7 imported");
-            else if (d.src[(size_t) k] == midinja::Src::Derived) t += u8 (" \xC2\xB7 generated from the import");
-            return t + u8 (" \xC2\xB7 click to add a bar to the arrangement");
+            juce::String s = nameOf (k) + " on " + degOf (k) + u8 (" \xC2\xB7 ") + midinja::partHint (k);
+            if (t.src[(size_t) k] == midinja::Src::Import) s += u8 (" \xC2\xB7 imported");
+            if (! hasNotes (t.parts[(size_t) k])) s += u8 (" \xC2\xB7 empty: added as a copy of A on its degree");
+            return s + u8 (" \xC2\xB7 click to add a bar to the arrangement");
         }
         case Hit::Info:
-            return "Editing " + nameOf (d.cur) + " (" + midinja::partHint (d.cur) + "); 1 bar = " + juce::String (d.numSteps()) + " steps";
+            return "Tab " + juce::String (d.tab + 1) + u8 (" \xC2\xB7 editing ") + nameOf (d.cur) + " (" + midinja::partHint (d.cur) + ", on " + degOf (d.cur)
+                 + "); 1 bar = " + juce::String (d.numSteps()) + " steps";
         case Hit::None: return {};
     }
     return {};

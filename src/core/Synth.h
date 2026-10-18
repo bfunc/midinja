@@ -1,13 +1,23 @@
 #pragma once
 
-// The built-in preview synth: mono, saw or square (polyBLEP), a resonant low-pass with a little
-// envelope on the cutoff, and an amp envelope. Plain C++, header only.
+// The built-in preview synths: a mono saw / square (polyBLEP) with a resonant low-pass and an
+// amp envelope for the riff tabs, and a small strings pad (detuned saws, slow envelope) for the
+// chord tabs. Plain C++, header only.
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstdint>
 
 namespace midinja
 {
+
+inline double polyBlep (double t, double dt)
+{
+    if (t < dt) { t /= dt; return t + t - t * t - 1.0; }
+    if (t > 1.0 - dt) { t = (t - 1.0) / dt; return t * t + t + t + 1.0; }
+    return 0.0;
+}
 
 class MonoSynth
 {
@@ -97,13 +107,13 @@ public:
             double s;
             if (wave == Wave::Saw)
             {
-                s = 2.0 * phase - 1.0 - blep (phase, dt);
+                s = 2.0 * phase - 1.0 - polyBlep (phase, dt);
             }
             else
             {
                 s = phase < 0.5 ? 1.0 : -1.0;
-                s += blep (phase, dt);
-                s -= blep (std::fmod (phase + 0.5, 1.0), dt);
+                s += polyBlep (phase, dt);
+                s -= polyBlep (std::fmod (phase + 0.5, 1.0), dt);
             }
             phase += dt;
             if (phase >= 1.0)
@@ -131,19 +141,145 @@ public:
 private:
     enum class Stage { Idle, Attack, Decay, Release };
 
-    static double blep (double t, double dt)
-    {
-        if (t < dt) { t /= dt; return t + t - t * t - 1.0; }
-        if (t > 1.0 - dt) { t = (t - 1.0) / dt; return t * t + t + t + 1.0; }
-        return 0.0;
-    }
-
     double sr = 44100.0;
     double phase = 0.0, freq = 110.0, vel = 1.0, env = 0.0;
     double ic1 = 0.0, ic2 = 0.0, cutoffSmooth = 1800.0;
     bool gate = false;
     int current = -1;
     Stage stage = Stage::Idle;
+};
+
+// A strings pad for the chord tabs: 8 voices, three detuned saws each, a slow attack and
+// release, a gentle low-pass. The cutoff, resonance and volume knobs apply; the decay does not.
+class PadSynth
+{
+public:
+    static constexpr int kVoices = 8;
+
+    void prepare (double sampleRate)
+    {
+        sr = sampleRate > 0 ? sampleRate : 44100.0;
+        reset();
+    }
+
+    void reset()
+    {
+        for (auto& v : voices)
+            v = Voice {};
+        cutoffSmooth = cutoffHz;
+    }
+
+    double cutoffHz = 1800.0;
+    double resonance = 0.3;
+    double volume = 0.6;
+
+    void noteOn (int note, int velocity)
+    {
+        Voice* v = nullptr;
+        for (auto& x : voices)
+            if (! x.active) { v = &x; break; }
+        if (v == nullptr)
+        {
+            v = &voices[0];
+            for (auto& x : voices)
+                if (x.age < v->age)
+                    v = &x;
+        }
+        const bool fresh = ! v->active;
+        v->active = true;
+        v->note = note;
+        v->freq = 440.0 * std::pow (2.0, (note - 69) / 12.0);
+        v->vel = std::clamp (velocity, 1, 127) / 127.0;
+        v->gate = true;
+        v->age = ++counter;
+        if (fresh)
+        {
+            v->env = 0.0;
+            v->phase = { 0.0, 0.33, 0.66 };
+            v->ic1 = v->ic2 = 0.0;
+        }
+    }
+
+    void noteOff (int note)
+    {
+        for (auto& v : voices)
+            if (v.active && v.note == note)
+                v.gate = false;
+    }
+
+    void allOff()
+    {
+        for (auto& v : voices)
+            v.gate = false;
+    }
+
+    void render (float* left, float* right, int start, int num)
+    {
+        const double attackInc = 1.0 / (0.12 * sr);
+        const double releaseCoef = std::exp (-1.0 / (0.4 * sr));
+        const double k = 2.0 - 1.95 * std::clamp (resonance, 0.0, 1.0);
+        cutoffSmooth += (cutoffHz - cutoffSmooth) * 0.05;
+        const double fcBase = std::clamp (cutoffSmooth * 0.8, 20.0, sr * 0.45);
+        const double g = std::tan (3.14159265358979 * fcBase / sr);
+        const double a1 = 1.0 / (1.0 + g * (g + k));
+        const double a2 = g * a1;
+        const double a3 = g * a2;
+        const double detune[3] = { 0.996, 1.0, 1.004 };
+
+        for (auto& v : voices)
+        {
+            if (! v.active)
+                continue;
+            for (int i = start; i < start + num; ++i)
+            {
+                if (v.gate)
+                    v.env = std::min (1.0, v.env + attackInc);
+                else
+                {
+                    v.env *= releaseCoef;
+                    if (v.env < 1.0e-5)
+                    {
+                        v.active = false;
+                        break;
+                    }
+                }
+                double s = 0.0;
+                for (int o = 0; o < 3; ++o)
+                {
+                    const double dt = v.freq * detune[o] / sr;
+                    s += 2.0 * v.phase[(size_t) o] - 1.0 - polyBlep (v.phase[(size_t) o], dt);
+                    v.phase[(size_t) o] += dt;
+                    if (v.phase[(size_t) o] >= 1.0)
+                        v.phase[(size_t) o] -= 1.0;
+                }
+                s /= 3.0;
+                const double v3 = s - v.ic2;
+                const double v1 = a1 * v.ic1 + a2 * v3;
+                const double v2 = v.ic2 + a2 * v.ic1 + a3 * v3;
+                v.ic1 = 2.0 * v1 - v.ic1;
+                v.ic2 = 2.0 * v2 - v.ic2;
+                const auto out = (float) (v2 * v.env * (0.5 + 0.5 * v.vel) * volume * 0.22);
+                left[i] += out;
+                right[i] += out;
+            }
+        }
+    }
+
+private:
+    struct Voice
+    {
+        bool active = false, gate = false;
+        int note = -1;
+        double freq = 110.0, vel = 1.0, env = 0.0;
+        std::array<double, 3> phase { 0.0, 0.33, 0.66 };
+        double ic1 = 0.0, ic2 = 0.0;
+        uint32_t age = 0;
+    };
+
+    double sr = 44100.0;
+    double cutoffSmooth = 1800.0;
+    uint32_t counter = 0;
+    std::array<Voice, kVoices> voices;
 };
 
 } // namespace midinja

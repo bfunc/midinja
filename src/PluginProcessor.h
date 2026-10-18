@@ -35,15 +35,14 @@ public:
     juce::Array<juce::MidiDeviceInfo> midiOutputs() const { return juce::MidiOutput::getAvailableDevices(); }
     bool openMidiOut (const juce::String& identifier); // "" closes
     juce::String midiOutId() const { return midiOutIdentifier; }
-    void setChannel (int newChannel); // 1..16; All Notes Off on the old one first
 
-    // The arrangement (or the part shown) as a .mid file, on the current channel.
-    juce::MemoryBlock exportMidi() const;
+    // The arrangement (or the part shown) as a .mid file: a track per tab that is on.
+    juce::MemoryBlock exportMidi();
 
     // Playback and synth settings: plain atomics, read by the audio thread every block.
     std::atomic<bool> playing { false }, synthOn { true };
     std::atomic<float> bpm { 122.0f };
-    std::atomic<int> channel { 1 }, synthWave { 0 };
+    std::atomic<int> synthWave { 0 };
     std::atomic<float> cutoff { 1800.0f }, resonance { 0.3f }, decay { 250.0f }, volume { 0.6f };
     // From the host, for the UI: tempo (0 = none) and transport.
     std::atomic<float> hostBpm { 0.0f };
@@ -75,10 +74,19 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
 private:
-    // What the audio thread plays: the four parts and the sequence of bars.
+    // What the audio thread plays: per tab its parts (a chord tab's steps carry the part index
+    // as the note, expanded to the chord's notes on the way out) and the sequence of bars.
+    struct PlayTab
+    {
+        bool on = false, poly = false;
+        int channel = 1;
+        std::array<midinja::Pattern, midinja::kNumParts> parts;
+        std::array<std::array<int, midinja::kMaxChordNotes>, midinja::kNumParts> chord {};
+        std::array<int, midinja::kNumParts> chordN {};
+    };
     struct PlayModel
     {
-        std::array<midinja::Pattern, midinja::kNumParts> parts;
+        std::array<PlayTab, midinja::kNumTabs> tabs;
         std::array<int, midinja::kMaxBars> seq {};
         int seqLen = 1;
         int rate = 4;
@@ -98,12 +106,16 @@ private:
     // Audio-thread copies.
     PlayModel audio;
     int seenVersion = 0;
-    midinja::Pattern playPat;
+    std::array<midinja::Pattern, midinja::kNumTabs> playPat;
     int barIdx = 0;
     bool lastHostPlaying = false;
 
-    midinja::Sequencer sequencer;
-    midinja::MonoSynth synth;
+    std::array<midinja::Sequencer, midinja::kNumTabs> sequencers;
+    std::array<midinja::MonoSynth, midinja::kNumTabs> mono;
+    std::array<midinja::PadSynth, midinja::kNumTabs> pad;
+    // The chord notes a chord tab's part is holding, so a note-off releases what was played.
+    std::array<std::array<std::array<int, midinja::kMaxChordNotes>, midinja::kNumParts>, midinja::kNumTabs> sounding {};
+    std::array<std::array<int, midinja::kNumParts>, midinja::kNumTabs> soundingN {};
     std::vector<midinja::MidiEvent> events;
     juce::MidiBuffer outBuffer;
     std::atomic<int> playStep { -1 }, playBar { -1 };

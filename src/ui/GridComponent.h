@@ -7,11 +7,12 @@
 #include <functional>
 #include <vector>
 
-// The piano roll of the part shown (web `.roll`): one column per step, one row per note of the
-// current View (Riff: the pitches used; Scale: the scale in the pitch range; All: every semitone).
-//   click an empty cell = add a note        click a note       = remove it
-//   drag a note         = change its pitch  Shift+click a note = lock / unlock
-//   right-click a note  = longer (wraps to 1)
+// The piano roll of the part shown (web `.roll`): one column per step, one row per semitone of
+// the tab's range (scale rows full height, the others half and dimmed). A chord tab shows its
+// held chord on every hit.
+//   click an empty cell = add a note (an off-scale one is locked at once)   click a note = remove it
+//   drag a note = pitch, snapping to scale rows (Alt: every row)            Shift+click = lock
+//   right-click a note = longer (wraps to 1)
 class GridComponent : public juce::Component, public juce::TooltipClient
 {
 public:
@@ -22,7 +23,7 @@ public:
 
     // Rows follow the document; call before asking for the height.
     void refresh();
-    // The rows fit the budget: 11..30 px each (web: 300 px for the grid), 120 px when there are none.
+    // The rows fit the budget: 11..30 px each (web: 300 px for the grid), half for out-of-scale rows.
     int layoutHeight (int budget);
 
     void paint (juce::Graphics&) override;
@@ -34,18 +35,21 @@ public:
 
 private:
     const midinja::Doc& doc() const { return sess->doc; }
-    int pcOf (int note) const;
-    bool inScale (int note) const;
     float colWidth() const;
     int colAt (float x) const;
     int rowAt (float y) const;
-    // The step whose note covers this cell (a long note spans columns), or -1.
+    int rowOf (int note) const;                 // row index of a note, or -1
+    int nearestRow (float y, bool chromatic) const;
+    // The step whose hit covers this cell (a long note spans columns), or -1.
     int noteAt (int col, int row) const;
+    void layoutRows();
     void drawPadlock (juce::Graphics&, juce::Rectangle<float>, juce::Colour) const;
 
-    std::vector<int> rows; // MIDI notes, top row first
-    int rowH = 30;
-    int dragStep = -1, dragNote0 = 60;
+    std::vector<int> rows;        // MIDI notes, top row first
+    std::vector<int> rowTop, rowHt;
+    std::vector<int> chord;       // the chord of the part shown (chord tabs)
+    int baseH = 30, lastBudget = 300;
+    int dragStep = -1, dragNote0 = 60, pressY = 0;
     bool moved = false;
     juce::Point<int> hover;
 };
