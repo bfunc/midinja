@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-17 22:58 · fable-5.1@home#24cf · cb0bb73
+Updated: 2026-10-18 13:05 · opus-5.5@raptor#af93 · cb0bb73
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -23,7 +23,8 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 - 2026-10-17 · Release: rolling "latest" pre-release from CI; a tagged release only after the user confirms it works in FL · user said "Defaults ok"
 
 ## Open issues
--    Not tried on Home (no DAW): the VST3 in FL Studio (load, MIDI output port, drag onto the playlist), host tempo/transport sync. The mac zip (app + vst3) is built by CI but never opened.
+- !  VST3 MIDI bypasses FL: the external synth on the audio interface plays whatever FL port is set, because the plugin also opens the system MIDI port directly. VST instruments follow FL's port correctly. Found by the user in FL, 2026-10-18
+-    Not tried yet: host tempo/transport sync. The mac zip (app + vst3) is built by CI but never opened.
 -    Not clicked through by hand: Start-on-root toggle, root marker at narrow widths (preview)
 
 ## Waiting for you
@@ -35,6 +36,8 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 - (none)
 
 ## Next
-1. User: install Midinja.vst3 from the latest Midinja-windows.zip, try it in FL Studio (sound, MIDI output port, Drag to DAW); report back via raptor
-2. Fix what FL shows; then a tagged release (v0.2.0) when the user confirms
-3. Chords (mockup first), then AU
+1. VST3 MIDI out only to the host (no direct system port, or an option off by default); Standalone keeps the direct port
+2. Root note octave selector next to Transpose: bass riffs come out in octave 4–5, too high
+3. Note range (low / high) setting for the generator
+4. Then a tagged release (v0.2.0) when the user confirms in FL
+5. Chords (mockup first), then AU
