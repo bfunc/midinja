@@ -108,7 +108,7 @@ input.num{width:64px}
 .msg{color:var(--acc2);font-size:11px;margin:-2px 0 6px}
 .msg:empty{display:none}
 .roll{border:1px solid var(--line);border-radius:6px;overflow:hidden;position:relative}
-.key{font-size:9.5px;color:var(--ink3);display:flex;align-items:center;justify-content:flex-end;gap:4px;padding-right:5px;border-bottom:1px solid #00000040;background:var(--panel)}
+.key{overflow:hidden;font-size:9.5px;color:var(--ink3);display:flex;align-items:center;justify-content:flex-end;gap:4px;padding-right:5px;border-bottom:1px solid #00000040;background:var(--panel)}
 .key.root{color:var(--acc);font-weight:700}
 .key.out{color:#454b58}
 .key em{font-style:normal;font-size:8.5px;padding:0 3px;border-radius:3px}
@@ -132,7 +132,7 @@ input.num{width:64px}
 .eb{width:20px;height:16px;line-height:1;padding:0;font-size:11px;border-radius:4px;background:var(--panel2);border:1px solid var(--line);color:var(--ink2);cursor:pointer}
 .eb:hover:not(:disabled){border-color:var(--lineHi)}
 .eb:disabled{opacity:.3;cursor:default}
-.dimrow{opacity:.5}
+.cell.half .note{top:0;bottom:0}
 .empty-hint{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink3);pointer-events:none}
 .play{height:4px;margin:4px 0 6px}
 .play i.on{background:var(--acc2);border-radius:2px;box-shadow:0 0 8px var(--acc2)}
@@ -191,7 +191,6 @@ body.dragging .drop{display:grid}
       <div class="kv" title="How often the riff breaks the rules (next roll)"><div class="knob t" id="kSurprise"><i></i></div><div><span>Surprise</span><br><b id="vSurprise"></b></div></div>
     </div>
     <div class="sp"></div>
-    <div class="ctl"><small>View</small><div class="seg small" id="view"><button data-v="riff" title="Only the pitches the riff uses">Riff</button><button data-v="scale" title="All notes of the scale in the pitch range">Scale</button><button data-v="all" title="Every semitone in the pitch range">All</button></div></div>
     <div class="tog" id="adv" title="Ranges, velocity, length, ratchets, seed and the undo buttons"><div class="sw"></div>Advanced</div>
   </div>
 
@@ -248,7 +247,7 @@ const S = {
   mode: 1, root: 4, scale: 2, numSteps: 16, rate: 4, notes: 10, swing: 0.18,
   rootNote: 40, lowNote: 40, highNote: 64, lenMin: 1, lenMax: 2, velMin: 70, velMax: 120,
   repeatsOn: false, repMin: 2, repMax: 3, repChance: 0.25, color: 0.4, surprise: 0.15, similarity: 0.65,
-  seed: 4821, view: 'scale', adv: false, what: 'roll', mutAmt: 0.15, startOnRoot: true,
+  seed: 4821, adv: false, what: 'roll', mutAmt: 0.15, startOnRoot: true,
   cur: 0, sel: -1,
 };
 const MAX_BARS = 4;
@@ -430,18 +429,24 @@ function colorWords() {
 const pcOf = n => ((n - S.root) % 12 + 12) % 12;
 const inScale = n => SCALES[S.scale].intervals.includes(pcOf(n));
 // the rows of the roll are the note range; its two edge rows are always shown
-function rows() {
-  const lo = S.lowNote, hi = S.highNote;
-  let r = [];
-  if (S.view === 'riff') r = [...new Set([lo, hi, ...used().filter(n => n >= lo && n <= hi)])];
-  else for (let n = lo; n <= hi; n++) if (S.view === 'all' || inScale(n) || n === lo || n === hi) r.push(n);
-  return r.sort((a, b) => b - a);
-}
-// the next row of the current view beyond n: a semitone in All view, a scale note otherwise
-function nextRow(n, dir) {
-  let m = n + dir;
-  if (S.view !== 'all') while (m > 0 && m < 127 && !inScale(m)) m += dir;
-  return Math.max(0, Math.min(127, m));
+// the rows of the roll: every semitone of the range, top down. Scale rows are full height, the
+// others half (the user is comparing: ?rows=full or #rows=full makes every row full height)
+function rows() { const r = []; for (let n = S.highNote; n >= S.lowNote; n--) r.push(n); return r; }
+const ROWS_FULL = /rows=full/.test(location.search + location.hash);
+const rowHeight = (note, rowH) => inScale(note) || ROWS_FULL ? rowH : Math.max(5, Math.floor(rowH / 2));
+const scaleRows = () => rows().filter(inScale).length;
+const nextRow = (n, dir) => Math.max(0, Math.min(127, n + dir));
+// the row under a pointer y while dragging a note: scale rows only, every row with Alt
+function noteAtY(y, chromatic) {
+  let best = null, bestD = Infinity;
+  document.querySelectorAll('#grid .key').forEach(k => {
+    const note = +k.dataset.note;
+    if (!chromatic && !inScale(note)) return;
+    const r = k.getBoundingClientRect();
+    const d = y < r.top ? r.top - y : y > r.bottom ? y - r.bottom : 0;
+    if (d < bestD) { bestD = d; best = note; }
+  });
+  return best;
 }
 const lockedOn = note => parts.some(p => p.steps.slice(0, p.numSteps).some(s => s.on && s.locked && s.note === note));
 // a note outside the range folds in by octave (pitch class kept); if no octave fits, the nearest edge
@@ -465,7 +470,7 @@ function edge(top, grow) {
     if (n === cur) return;
     if (top) S.highNote = n; else S.lowNote = n;
   } else {
-    if (R.length <= 1 || lockedOn(cur)) return;
+    if (R.length <= 1 || lockedOn(cur) || (inScale(cur) && scaleRows() <= 1)) return;
     const n = nextRow(cur, top ? -1 : 1);
     if (top) S.highNote = Math.max(n, S.lowNote); else S.lowNote = Math.min(n, S.highNote);
     foldAll();
@@ -475,12 +480,12 @@ function edge(top, grow) {
 function edgeBar(el, top, R) {
   el.innerHTML = '';
   if (!R.length) return;
-  const cur = top ? R[0] : R[R.length - 1], lk = lockedOn(cur), one = R.length <= 1;
+  const cur = top ? R[0] : R[R.length - 1], lk = lockedOn(cur), one = R.length <= 1, lastScale = inScale(cur) && scaleRows() <= 1;
   const canGrow = S.highNote - S.lowNote < MAX_SPAN && nextRow(cur, top ? 1 : -1) !== cur;
   const lab = document.createElement('span'); lab.className = 'en'; lab.textContent = nn(cur); el.appendChild(lab);
   const mk = (txt, title, dis, fn) => { const b = document.createElement('button'); b.className = 'eb'; b.textContent = txt; b.title = title; b.disabled = dis; b.onclick = fn; el.appendChild(b); };
-  mk('+', canGrow ? `Add a row ${top ? 'above' : 'below'}: ${nn(nextRow(cur, top ? 1 : -1))} (one ${S.view === 'all' ? 'semitone' : 'scale note'})` : 'The range is three octaves already', !canGrow, () => edge(top, true));
-  mk('−', lk ? nn(cur) + ' holds a locked note: unlock it first' : one ? 'The range is one note' : `Remove the ${top ? 'top' : 'bottom'} row ${nn(cur)}: notes on it fold into the range by octave`, one || lk, () => edge(top, false));
+  mk('+', canGrow ? `Add a row ${top ? 'above' : 'below'}: ${nn(nextRow(cur, top ? 1 : -1))}` : 'The range is three octaves already', !canGrow, () => edge(top, true));
+  mk('−', lk ? nn(cur) + ' holds a locked note: unlock it first' : lastScale ? nn(cur) + ' is the last scale note in the range: the range keeps at least one' : one ? 'The range is one note' : `Remove the ${top ? 'top' : 'bottom'} row ${nn(cur)}: notes on it fold into the range by octave`, one || lk || lastScale, () => edge(top, false));
   if (top) { const t = document.createElement('span'); t.className = 'en r'; t.textContent = `range ${nn(S.lowNote)}–${nn(S.highNote)}`; el.appendChild(t); }
 }
 function used() { const u = []; for (let i = 0; i < pat.numSteps; i++) if (pat.steps[i].on) u.push(pat.steps[i].note); return u; }
@@ -524,7 +529,6 @@ function thumb(el, ps, w, h) {
 
 function render() {
   plug.classList.toggle('adv-off', !S.adv);
-  document.querySelectorAll('#view button').forEach(b => b.classList.toggle('on', b.dataset.v === S.view));
   $('adv').classList.toggle('on', S.adv);
   $('mutAmt').textContent = Math.round(S.mutAmt * 100) + '%';
   const oct = Math.floor(S.rootNote / 12) - 1;
@@ -575,26 +579,27 @@ function render() {
 
   // piano roll
   const R = rows();
-  const rowH = R.length ? Math.max(11, Math.min(30, Math.floor(300 / R.length))) : 30;
+  const wsum = R.reduce((a, m) => a + (inScale(m) || ROWS_FULL ? 1 : 0.5), 0);
+  const rowH = R.length ? Math.max(11, Math.min(30, Math.floor(300 / wsum))) : 30;
   const ph = shownPlayStep();
   const g = $('grid'); g.innerHTML = '';
   edgeBar($('edgeTop'), true, R); edgeBar($('edgeBot'), false, R);
-  const u = new Set(used());
   // the chord root this part's step 1 is held on (the marker shows where the rule holds)
   const chordDeg = core.partDegree(S.cur, S.scale), chordPc = SCALES[S.scale].intervals[chordDeg];
   const chordName = ['I', '♭II', 'II', '♭III', 'III', 'IV', '♭V', 'V', '♭VI', 'VI', '♭VII', 'VII'][chordPc];
   R.forEach((note, r) => {
-    const pc = pcOf(note), inS = inScale(note), dim = S.view === 'riff' && !u.has(note);
+    const pc = pcOf(note), inS = inScale(note), rh = rowHeight(note, rowH), half = rh < rowH;
     const k = document.createElement('div');
-    k.className = 'key' + (pc === 0 ? ' root' : '') + (inS ? '' : ' out') + (dim ? ' dimrow' : '');
-    k.style.height = rowH + 'px';
+    k.className = 'key' + (pc === 0 ? ' root' : '') + (inS ? '' : ' out');
+    k.style.height = rh + 'px';
+    k.dataset.note = note;
     const bd = inS ? degreeBadge(note) : null;
-    k.innerHTML = (bd ? `<em class="${bd[1]}">${bd[0]}</em>` : '') + nn(note);
+    k.innerHTML = rh < 10 ? '' : (bd ? `<em class="${bd[1]}">${bd[0]}</em>` : '') + nn(note);
     g.appendChild(k);
     for (let s = 0; s < n; s++) {
       const c = document.createElement('div');
-      c.className = 'cell' + (s % 4 === 0 ? ' beat' : '') + (!inS ? ' outrow' : pc === 0 ? ' rootrow' : r % 2 ? ' alt' : '') + (s === ph ? ' ph' : '') + (dim ? ' dimrow' : '');
-      c.style.height = rowH + 'px';
+      c.className = 'cell' + (s % 4 === 0 ? ' beat' : '') + (!inS ? ' outrow' : pc === 0 ? ' rootrow' : r % 2 ? ' alt' : '') + (s === ph ? ' ph' : '') + (half ? ' half' : '');
+      c.style.height = rh + 'px';
       const st = pat.steps[s];
       if (st.on && st.note === note) {
         const d = document.createElement('div');
@@ -604,7 +609,7 @@ function render() {
         if (st.repeats > 1) { const rt = document.createElement('div'); rt.className = 'rat'; for (let i = 0; i < st.repeats; i++) rt.appendChild(document.createElement('i')); d.appendChild(rt); }
         if (st.locked) { const l = document.createElement('span'); l.className = 'lockic'; l.textContent = '🔒'; d.appendChild(l); }
         if (s === 0 && S.startOnRoot && pc === chordPc) { const m = document.createElement('span'); m.className = 'rootmk'; m.textContent = chordName; d.appendChild(m); d.title = `Start on chord root: step 1 of ${PARTS[S.cur]} is held on its chord root (${chordName}); the dice, Rhythm, Notes and Mutate keep it. Turn off under Advanced`; }
-        d.onpointerdown = e => noteDown(e, s, rowH);
+        d.onpointerdown = e => noteDown(e, s);
         d.oncontextmenu = e => { e.preventDefault(); longer(s); };
         c.appendChild(d);
       } else {
@@ -613,7 +618,7 @@ function render() {
       g.appendChild(c);
     }
   });
-  if (!R.length) { const h = document.createElement('div'); h.className = 'empty-hint'; h.style.height = '120px'; h.style.gridColumn = '1/-1'; h.style.position = 'relative'; h.textContent = `${PARTS[S.cur]} has no notes yet: roll the dice ⚄ or switch View to Scale and click the grid`; g.appendChild(h); }
+  if (!R.length) { const h = document.createElement('div'); h.className = 'empty-hint'; h.style.height = '120px'; h.style.gridColumn = '1/-1'; h.style.position = 'relative'; h.textContent = `${PARTS[S.cur]} has no notes yet: roll the dice ⚄ or click the grid`; g.appendChild(h); }
 
   const pl = $('play'); pl.innerHTML = '<i></i>';
   for (let s = 0; s < n; s++) { const i = document.createElement('i'); if (s === ph) i.className = 'on'; pl.appendChild(i); }
@@ -673,22 +678,19 @@ function longer(s) {
   const st = pat.steps[s], n = pat.numSteps; let nx = s + 1; while (nx < n && !pat.steps[nx].on) nx++;
   st.length = st.length + 1 > Math.min(8, nx - s) ? 1 : st.length + 1; push();
 }
-function noteDown(e, s, rowH) {
+function noteDown(e, s) {
   if (e.button !== 0) return;
   e.stopPropagation();
   const st = pat.steps[s];
   if (e.shiftKey) { st.locked = !st.locked; push(); return; }
-  const y0 = e.clientY, n0 = st.note, k = plugScale();
+  const y0 = e.clientY;
   let moved = false;
   const mv = ev => {
-    const d = Math.round((y0 - ev.clientY) / k / rowH);
-    if (d === 0 && !moved) return;
+    if (!moved && Math.abs(ev.clientY - y0) < 4) return;
+    // the note follows the pointer over the rows: scale rows, or every row with Alt
+    const note = noteAtY(ev.clientY, ev.altKey);
+    if (note === null) return;
     moved = true;
-    // drag by rows of the current view (scale steps in Riff/Scale view, semitones in All)
-    let note = n0;
-    if (S.view === 'all') note = n0 + d;
-    else { const dir = Math.sign(d); for (let i = 0; i < Math.abs(d); i++) { do note += dir; while (!inScale(note) && note > 0 && note < 127); } }
-    note = Math.max(S.lowNote, Math.min(S.highNote, note));
     if (note !== st.note) { st.note = note; render(); }
   };
   const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); if (moved) push(); else { pat.steps[s] = { ...st, on: false, locked: false }; push(); } };
@@ -742,7 +744,6 @@ const rekey = () => {
 };
 $('scale').onchange = rekey;
 $('rate').onchange = () => { S.rate = +$('rate').value; S.numSteps = { 2: 8, 4: 16, 6: 12 }[S.rate]; parts.forEach(p => { p.numSteps = S.numSteps; fitP(p); }); push(); };
-document.querySelectorAll('#view button').forEach(b => b.onclick = () => { S.view = b.dataset.v; render(); });
 $('roll').onclick = () => apply(S.what);
 $('rollAll').onclick = () => applyAll(S.what);
 document.querySelectorAll('#what button').forEach(b => b.onclick = e => {
@@ -898,8 +899,6 @@ addEventListener('resize', fitW);
 
 const h = location.hash;
 if (h.includes('advanced')) S.adv = true;
-if (h.includes('scale')) S.view = 'scale';
-if (h.includes('all')) S.view = 'all';
 applyAll('roll');
 })();
 </script>
