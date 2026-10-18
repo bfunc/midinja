@@ -39,6 +39,7 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 -    Not clicked through by hand: Start-on-root toggle, root marker at narrow widths (preview)
 
 ## Waiting for you
+- Dice selector rework (Rhythm and Notes as two toggles, both on = new riff; Mutate aside as its own button with a 15/33/50 chip): the user is still planning, on hold until the go · since 2026-10-18
 - Start-on-root: per-bar override (click the marker)? · since 2026-10-17
 - Start-on-root: a middle setting "root on a strong beat"? · since 2026-10-17
 - C in scales without a fifth falls back to ii (Locrian ♭II); keep it? · since 2026-10-17
