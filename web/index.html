@@ -29,10 +29,13 @@ button{cursor:pointer}
 .dice{width:38px;height:38px;border-radius:9px;border:0;background:var(--acc);color:#1a1206;font-size:31px;line-height:1;box-shadow:0 0 0 3px #ff9f4333;display:grid;place-items:center}
 .dice:active{transform:translateY(1px)}
 .dice[disabled]{opacity:.35;cursor:default;box-shadow:none}
+.mutamt{display:inline-block;margin-left:5px;padding:0 5px;border-radius:999px;background:#ffffff14;color:var(--ink2);font-size:10px}
+.seg button.on .mutamt{background:#ff9f4333;color:var(--acc)}
 .ctl{display:flex;flex-direction:column;gap:3px}
 .ctl small,.lbl{color:var(--ink3);font-size:10px;text-transform:uppercase;letter-spacing:.8px}
 .sel{padding:6px 9px;border-radius:7px;background:var(--panel2);border:1px solid var(--line);white-space:nowrap;appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:22px;background-image:linear-gradient(45deg,transparent 50%,#626a7c 50%),linear-gradient(135deg,#626a7c 50%,transparent 50%);background-position:calc(100% - 12px) 50%,calc(100% - 8px) 50%;background-size:4px 4px;background-repeat:no-repeat}
 .sel option{background:#242832}
+.sel.xs{padding:3px 20px 3px 7px;background-position:calc(100% - 10px) 50%,calc(100% - 6px) 50%}
 .knob{width:32px;height:32px;border-radius:50%;background:conic-gradient(var(--acc) 0 var(--v),#333845 var(--v) 75%,transparent 75%);transform:rotate(-135deg);display:grid;place-items:center;flex:none;cursor:ns-resize}
 .knob.t{background:conic-gradient(var(--acc2) 0 var(--v),#333845 var(--v) 75%,transparent 75%)}
 .knob i{width:22px;height:22px;border-radius:50%;background:var(--panel2);display:block}
@@ -54,15 +57,16 @@ button{cursor:pointer}
 .tog.on{color:var(--acc2)}
 .num{padding:5px 8px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);color:var(--ink);font-variant-numeric:tabular-nums;min-width:44px;text-align:center}
 input.num{width:64px}
-.tabbar{display:flex;align-items:center;gap:8px;padding:6px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
-.tb{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink2);cursor:pointer}
+.tabbar{display:flex;align-items:center;gap:8px;padding:6px 14px;background:var(--panel);border-bottom:1px solid var(--line);min-height:40px}
+.tb{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 9px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink2);cursor:pointer;font-weight:700;font-size:13px}
 .tb:hover{border-color:#4a5163}
 .tb.cur{border-color:var(--acc);color:var(--acc)}
-.tb.off .n,.tb.off .sel{opacity:.5}
-.tb .n{font-weight:800;font-size:13px;min-width:12px}
-.tb .sel{padding:3px 20px 3px 7px;background-position:calc(100% - 10px) 50%,calc(100% - 6px) 50%}
-.tb .tog{gap:0}
-.tbhint{color:var(--ink3);font-size:10.5px;margin-left:auto}
+.tb .dot{width:11px;height:11px;border-radius:50%;border:2px solid var(--ink3);background:transparent;flex:none}
+.tb .dot.on{background:var(--acc2);border-color:var(--acc2);box-shadow:0 0 6px var(--acc2)}
+.tb.off{opacity:.6}
+.tabset{margin-left:auto;display:flex;align-items:center;gap:6px;color:var(--ink2);font-size:11px}
+.tabset .lbl{margin:0 2px 0 8px}
+.tabset .lbl:first-child{margin-left:0}
 .main{display:flex}
 .side{width:156px;padding:12px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:13px}
 .undoredo{display:flex}
@@ -100,20 +104,27 @@ input.num{width:64px}
 .tab.add:hover{border-color:var(--acc2)}
 .tab.full{cursor:default;opacity:.4}
 .tab.full:hover{border-color:var(--line)}
-.tab{display:flex;align-items:center;gap:7px;padding:3px 9px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink2);cursor:pointer;position:relative}
+.tab{display:flex;align-items:center;gap:7px;padding:5px 11px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink2);cursor:pointer;position:relative}
 .tab:hover{border-color:#4a5163}
 .tab.on{background:#ff9f4322;border-color:var(--acc);color:var(--acc)}
-.tab.locked{border-color:var(--lock)}
-.tab.locked.on{border-color:var(--lock);box-shadow:0 0 0 1px var(--lock) inset}
 .tt{width:44px;height:16px;border-radius:4px;background:#00000040;position:relative;overflow:hidden}
 .tt i{position:absolute;width:2px;height:2px;background:var(--ink2)}
 .tabinfo{flex:1;text-align:center;color:var(--ink3);font-size:10.5px;padding:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tabinfo.lockmsg{color:var(--lock)}
-.chordsel{display:flex;gap:4px;align-items:center}
-.chordsel .sel{padding:4px 20px 4px 7px;background-position:calc(100% - 10px) 50%,calc(100% - 6px) 50%}
-.chordsel .lbl{margin-right:2px}
 .msg{color:var(--acc2);font-size:11px;margin:-2px 0 6px}
 .msg:empty{display:none}
+.clane{display:flex;align-items:center;gap:6px;margin:0 0 6px;padding:5px 6px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+.clane .cl{color:var(--ink3);font-size:10px;text-transform:uppercase;letter-spacing:.8px;width:38px;flex:none;text-align:center}
+.ccell{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:64px;padding:3px 8px;border-radius:7px;border:1px solid var(--line);background:var(--panel2);color:var(--ink2);cursor:pointer;line-height:1.15;position:relative}
+.ccell:hover{border-color:#4a5163}
+.ccell.sel{border-color:var(--acc2);color:var(--acc2);background:#5ad1c714}
+.ccell b{font-size:13px;color:var(--ink)}
+.ccell.sel b{color:var(--acc2)}
+.ccell small{font-size:9.5px;color:var(--ink3)}
+.ccell .pp{position:absolute;left:8px;right:8px;bottom:-1px;height:2px;background:var(--acc2);display:none;box-shadow:0 0 6px var(--acc2)}
+.ccell.playing .pp{display:block}
+.clane .fill{margin-left:auto;display:flex;align-items:center;gap:4px}
+.clane .fill .btn{padding:4px 8px}
 .roll{border:1px solid var(--line);border-radius:6px;overflow:hidden;position:relative;touch-action:pan-x pan-y pinch-zoom}
 .key{overflow:hidden;font-size:9.5px;color:var(--ink3);display:flex;align-items:center;justify-content:flex-end;gap:4px;padding-right:5px;border-bottom:1px solid #00000040;background:var(--panel)}
 .key.root{color:var(--acc);font-weight:700}
@@ -129,6 +140,7 @@ input.num{width:64px}
 .note.colr{background:var(--acc2)}
 .note.outn{background:#8a90a0}
 .note.chord{cursor:pointer;background:#ffb264}
+.note.ghost{z-index:1;background:#9aa1b2;opacity:.22;pointer-events:none;box-shadow:none;cursor:default}
 .note.locked{outline:2px solid var(--lock);outline-offset:-1px}
 .note .rat{position:absolute;inset:0;display:flex;gap:2px;padding:2px}
 .note .rat i{flex:1;background:#00000033;border-radius:2px}
@@ -142,7 +154,6 @@ input.num{width:64px}
 .eb{width:20px;height:16px;line-height:1;padding:0;font-size:11px;border-radius:4px;background:var(--panel2);border:1px solid var(--line);color:var(--ink2);cursor:pointer}
 .eb:hover:not(:disabled){border-color:#4a5163}
 .eb:disabled{opacity:.3;cursor:default}
-.cell.half .note{top:0;bottom:0}
 .empty-hint{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink3);pointer-events:none}
 .play{height:4px;margin:4px 0 6px}
 .play i.on{background:var(--acc2);border-radius:2px;box-shadow:0 0 8px var(--acc2)}
@@ -169,29 +180,28 @@ input.num{width:64px}
 body.dragging .drop{display:grid}
 </style></head>
 <body>
-<div class="drop" id="drop">Drop the .mid file here<small>up to 4 bars → A A′ B C · monophonic · quantised to 1/16 · into the tab shown</small></div>
+<div class="drop" id="drop">Drop the .mid file here<small>up to 4 bars → A A′ B C · monophonic · quantised to 1/16 · into the Riff tab</small></div>
 <div id="wrap"><div class="plug adv-off" id="plug">
   <div class="row rowA">
     <div class="logo">Midi<b>nja</b></div>
     <div class="ctl"><small>Preset</small><div style="display:flex;gap:3px" class="inert" title="Presets come later"><button class="btn ghost sm">◂</button><div class="btn" style="min-width:80px">Init</div><button class="btn ghost sm">▸</button></div></div>
     <div class="vsep"></div>
     <div class="gen">
-      <button class="dice" id="roll" title="Roll the part shown (Space). Locked notes stay">⚄</button>
-      <div class="seg small" id="what" title="What the dice change">
-        <button data-w="roll" title="New rhythm and new notes">Both</button>
-        <button data-w="rhythm" title="New rhythm, keep the pitches">♩ Rhythm</button>
-        <button data-w="notes" title="New pitches, keep the rhythm">♪ Notes</button>
-        <button data-w="mutate" title="Change some notes, keep the riff. Click the % to change how much">~ Mutate <span class="dim" id="mutAmt">15%</span></button>
+      <button class="dice" id="roll" title="Roll the part shown (Space)">⚄</button>
+      <div class="seg small" id="what" title="What the dice change: Rhythm, Notes, both (a new riff), or Mutate">
+        <button data-w="rhythm" title="New rhythm (keeps the pitches unless Notes is on too)">♩ Rhythm</button>
+        <button data-w="notes" title="New pitches (keeps the rhythm unless Rhythm is on too)">♪ Notes</button>
       </div>
-      <button class="btn sm" id="rollAll" title="Roll all four parts of this tab the same way: A, then A′ B C from it (Shift+Space). Locked parts stay">🎲 All</button>
-      <button class="btn sm" id="prog" title="Progression: A A′ B C with chord degrees that fit the mode (A = A′, B, C leads home). Locked parts keep their degree. 7-note scales only">⚄ Progression</button>
+      <div class="vsep" style="height:22px;align-self:center"></div>
+      <div class="seg small" id="mutseg"><button data-w="mutate" title="Mutate: change some notes, keep the riff. Click again for 15 / 33 / 50 %">~ Mutate<span class="mutamt" id="mutAmt">15%</span></button></div>
+      <button class="btn sm" id="rollAll" title="The same for all four parts of this tab: A, then A′ B C from it (Shift+Space). Locked parts stay">🎲 All</button>
     </div>
     <div class="sp"></div>
     <div class="ctl"><small>Versions</small><div class="hist"><button class="pg" id="hPrev" title="Older">◂</button><div class="hist" id="hist"></div><button class="pg" id="hNext" title="Newer">▸</button></div></div>
     <div class="undoredo"><button class="btn ghost" id="undo" title="Undo (Ctrl+Z)">↶</button><button class="btn ghost" id="redo" title="Redo (Ctrl+Shift+Z)">↷</button></div>
   </div>
   <div class="row rowB">
-    <div class="ctl"><small>Key</small><div style="display:flex;gap:4px"><select class="sel" id="root" title="The root: pick the note here (every tab moves with it), − / + move this tab an octave. The range and the parts follow the root"></select><button class="btn sm" id="ocD" title="This tab an octave down: its root, range and parts">−</button><button class="btn sm" id="ocU" title="This tab an octave up: its root, range and parts">+</button><select class="sel" id="scale" title="The scale: notes keep their degree, colour notes and augmented-second pairs move to the new scale's; locked notes stay"></select></div></div>
+    <div class="ctl"><small>Key</small><div style="display:flex;gap:4px"><select class="sel" id="root" title="The root: pick the note here (both tabs move with it), − / + move this tab an octave. The range and the parts follow the root"></select><button class="btn sm" id="ocD" title="This tab an octave down: its root, range and parts">−</button><button class="btn sm" id="ocU" title="This tab an octave up: its root, range and parts">+</button><select class="sel" id="scale" title="The scale: notes keep their degree, colour notes and augmented-second pairs move to the new scale's; locked notes stay"></select></div></div>
     <div class="ctl"><small>Rate · steps/bar</small><select class="sel" id="rate" title="One part is one bar of 4/4; the rate sets how many steps it has"><option value="2">1/8 · 8</option><option value="4" selected>1/16 · 16</option><option value="6">1/16T · 12</option></select></div>
     <div class="vsep"></div>
     <div class="kv" title="How many steps get a note (next roll). Ctrl+click resets"><div class="knob" id="kDensity"><i></i></div><div><span>Density</span><br><b id="vDensity"></b></div></div>
@@ -204,18 +214,19 @@ body.dragging .drop{display:grid}
     <div class="sp"></div>
     <div class="tog" id="adv" title="Ranges, velocity, length, ratchets, seed and the undo buttons"><div class="sw"></div>Advanced</div>
   </div>
-  <div class="tabbar" id="tabbar"></div>
+  <div class="tabbar" id="tabbar" title="The two tabs share the key, the arrangement and the chord lane; each has its own octave, range and channel (the Riff tab its parts). Export = one .mid, a track per tab that is on"></div>
 
   <div class="main">
     <div class="side">
       <div><h4>Length</h4><div class="range" id="rgLen"></div><div class="rl"><span id="lLenLo"></span><span id="lLenHi"></span></div></div>
       <div><h4>Velocity</h4><div class="range" id="rgVel"></div><div class="rl"><span id="lVelLo"></span><span id="lVelHi"></span></div></div>
       <div id="rptbox"><h4>Ratchets <span class="pill" id="rptpill">OFF</span></h4><div class="range" id="rgRep"></div><div class="rl"><span id="lRepLo"></span><span id="lRepHi"></span></div></div>
-      <div><h4>Start on chord root <span class="pill on" id="rootpill" title="Every bar begins with the root of its chord on step 1 (the part's degree). Imported bars are left as they are">ON</span></h4></div>
+      <div><h4>Start on chord root <span class="pill on" id="rootpill" title="Every bar begins with the root of its chord on step 1 (the bar's chord in the lane). Imported bars are left as they are">ON</span></h4></div>
       <div><h4>Seed</h4><input class="num" id="seed" style="width:100%" title="The seed of the last roll. Type one and press Enter to roll the whole form from it"></div>
     </div>
     <div class="gridw">
-      <div class="tabs" id="tabs"><div class="arr" id="arr"></div><span class="tabinfo" id="tabinfo"></span><div class="chordsel" id="chordsel"></div><div class="pal" id="pal"></div></div>
+      <div class="tabs" id="tabs"><div class="arr" id="arr"></div><span class="tabinfo" id="tabinfo"></span><div class="pal" id="pal"></div></div>
+      <div class="clane" id="clane"></div>
       <div class="msg" id="msg"></div>
       <div class="edge" id="edgeTop"></div>
       <div class="roll cols" id="grid"></div>
@@ -223,7 +234,7 @@ body.dragging .drop{display:grid}
       <div class="cols play" id="play"></div>
       <div class="lanes" id="lanes"></div>
       <div class="cols steps" id="stepn"></div>
-      <div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add / remove · drag = pitch (Alt = chromatic, locks the note) · Shift+click = lock · right-click = longer · bars (left): click = select and edit, Esc = deselect, 🔒 = lock the part, × = remove · parts (right): click = add a bar · keys 1–4 = part · chord tab: click = hit on / off</span></div>
+      <div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>the other tab (ghost)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add / remove · drag = pitch (Alt = chromatic, locks the note) · Shift+click = lock · right-click = longer · bars (left): click = select and edit, Esc = deselect, 🔒 = lock the part, × = remove · parts (right): click = add a bar · chord lane: click a bar = its chord · keys 1–4 = part · Space = dice, Shift+Space = All</span></div>
     </div>
   </div>
 
@@ -235,7 +246,7 @@ body.dragging .drop{display:grid}
     <div class="sp"></div>
     <div class="grp inert" title="In the app only"><span class="lbl">MIDI Out</span><span class="btn sm">None</span></div>
     <div class="vsep"></div>
-    <button class="btn" id="imp" title="Import a .mid file (or drop one on the page) into the tab shown: up to 4 bars become A A′ B C">⤒ Import MIDI</button>
+    <button class="btn" id="imp" title="Import a .mid file (or drop one on the page) into the Riff tab: up to 4 bars become A A′ B C">⤒ Import MIDI</button>
     <input type="file" id="impFile" accept=".mid,.midi,audio/midi" hidden>
     <button class="btn" id="exp" title="Save the arrangement as one .mid file: a track per tab that is on, each on its channel">⤓ Export MIDI</button>
   </div>
@@ -254,28 +265,30 @@ const $ = id => document.getElementById(id);
 const plug = $('plug');
 
 // ---- state -------------------------------------------------------------------------------
-// Shared by every tab: the key (root pitch class, scale), the rate, the arrangement and the chord of
-// each part type. Per tab: channel, riff or chords, on/off, the root's octave with the range, and
-// its own four parts with their locks.
+// Shared by both tabs: the key (root pitch class, scale), the rate, the arrangement and the chord
+// lane (one chord with a rhythm per bar). Per tab: channel, on/off, the root's octave with the
+// range; the Riff tab has four parts (A A′ B C, the melody form) with their locks; the Chords tab
+// plays the lane.
 const S = {
   mode: 1, root: 4, scale: 2, numSteps: 16, rate: 4, notes: 10, swing: 0.18,
   lenMin: 1, lenMax: 2, velMin: 70, velMax: 120,
   repeatsOn: false, repMin: 2, repMax: 3, repChance: 0.25, color: 0.4, surprise: 0.15, similarity: 0.65,
-  seed: 4821, adv: false, what: 'roll', mutAmt: 0.15, startOnRoot: true,
-  cur: 0, sel: -1, tab: 0,
+  seed: 4821, adv: false, doRhythm: true, doNotes: true, mutate: false, mutAmt: 0.15, startOnRoot: true,
+  cur: 0, sel: -1, tab: 0, laneSel: 0,
 };
 const MAX_BARS = 4, MAX_SPAN = 36; // three octaves: more rows get too thin to click
 const newPat = () => ({ numSteps: S.numSteps, steps: Array.from({ length: 32 }, () => ({ on: false, note: 60, length: 1, velocity: 100, repeats: 1, locked: false })) });
-const newTab = (ch, poly, on, rootNote) => ({ ch, poly, on, rootNote, lowNote: rootNote, highNote: rootNote + 24, parts: [0, 1, 2, 3].map(newPat), locks: [false, false, false, false], src: ['roll', 'roll', 'roll', 'roll'] });
-let tabs = [newTab(1, false, true, 40), newTab(2, true, false, 52), newTab(3, false, false, 52)];
-// the chord of each part type: a scale degree (index into the scale), a type and an inversion
+const newTab = (name, ch, poly, on, rootNote) => ({ name, ch, poly, on, rootNote, lowNote: rootNote, highNote: rootNote + 24, parts: [0, 1, 2, 3].map(newPat), locks: [false, false, false, false], src: ['roll', 'roll', 'roll', 'roll'] });
+let tabs = [newTab('Riff', 1, false, true, 40), newTab('Chords', 2, true, false, 52)];
+// the chord lane: one cell per bar of the arrangement. A cell holds its chords (one for now, the
+// list is here so more per bar can come later) and the chord rhythm the Chords tab plays
 const TYPES = [['triad', 'Triad'], ['7th', '7th'], ['sus2', 'sus2'], ['sus4', 'sus4']];
-const defaultChords = () => [0, 1, 2, 3].map(k => ({ degree: core.partDegree(k, S.scale), type: k === 3 ? '7th' : 'triad', inv: k === 1 ? 1 : 0 }));
-let chords = defaultChords();
+const RHYTHMS = { whole: [[0, 16]], halves: [[0, 8], [8, 8]], quarters: [[0, 4], [4, 4], [8, 4], [12, 4]], stabs: [[0, 2], [6, 2], [8, 2], [14, 2]], push: [[0, 3], [3, 3], [6, 2], [10, 2], [12, 4]], offbeat: [[2, 2], [6, 2], [10, 2], [14, 2]] };
+const RHYTHM_NAMES = Object.keys(RHYTHMS);
 let arr = [0]; // the arrangement: part indices, up to MAX_BARS bars; S.sel is the selected bar or -1
-let T, parts, locks, src, pat; // the tab shown and its arrays; pat is always parts[S.cur]
-function useTab(i) { S.tab = i; T = tabs[i]; parts = T.parts; locks = T.locks; src = T.src; pat = parts[S.cur]; }
-useTab(0);
+let lane = [];
+let T, parts, locks, src, pat; // the tab shown and the Riff tab's arrays; pat is the pattern shown
+function useTab(i) { S.tab = i; T = tabs[i]; parts = tabs[0].parts; locks = tabs[0].locks; src = tabs[0].src; refreshPat(); }
 // the root note and the range read through S belong to the tab shown
 ['rootNote', 'lowNote', 'highNote'].forEach(k => Object.defineProperty(S, k, { get: () => T[k], set: v => { T[k] = v; }, enumerable: true }));
 // Two records. The history strip holds versions: a new one on every roll and import, and manual
@@ -290,26 +303,44 @@ const newSeed = () => (Math.random() * 0xffffffff) >>> 0 || 1;
 const lockMask = () => locks.reduce((m, l, k) => m | (l ? 1 << k : 0), 0);
 const hasNotes = p => p.steps.slice(0, p.numSteps).some(s => s.on);
 const lastOnIdx = p => { for (let i = p.numSteps - 1; i >= 0; i--) if (p.steps[i].on) return i; return -1; };
-function setPart(k, p) { parts[k] = p; if (k === S.cur) pat = p; }
-function selectPart(k) { S.cur = k; pat = parts[k]; render(); }
-function selectSlot(i) { S.sel = S.sel === i ? -1 : i; if (S.sel >= 0) { S.cur = arr[i]; pat = parts[S.cur]; } stepIdx = 0; playPos = 0; render(); }
+function setPart(k, p) { parts[k] = p; refreshPat(); }
+// the bar shown: the selected bar, else the first bar of the part shown, else -1
+const shownBar = () => S.sel >= 0 && S.sel < arr.length ? S.sel : arr.indexOf(S.cur);
+// what the roll edits: the Riff tab's part shown, or the Chords tab's lane cell of the bar shown
+function refreshPat() { pat = T.poly ? (shownBar() >= 0 ? lane[shownBar()].pat : newPat()) : parts[S.cur]; }
+function selectPart(k) { S.cur = k; refreshPat(); render(); }
+function selectSlot(i) { S.sel = S.sel === i ? -1 : i; if (S.sel >= 0) { S.cur = arr[i]; S.laneSel = i; } stepIdx = 0; playPos = 0; refreshPat(); render(); }
 
 // ---- scale maths -------------------------------------------------------------------------
 const pcOf = n => ((n - S.root) % 12 + 12) % 12;
 const inScale = n => SCALES[S.scale].intervals.includes(pcOf(n));
 const nScale = () => SCALES[S.scale].intervals.length;
 const MAJOR = [0, 2, 4, 5, 7, 9, 11], ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+// the triad quality on a scale degree: 'M', 'm', 'd' (diminished), 'a' (augmented), 'o' (other)
+function quality(d) {
+  const iv = SCALES[S.scale].intervals, n = iv.length, r = iv[d % n];
+  const third = (iv[(d + 2) % n] - r + 12) % 12, fifth = (iv[(d + 4) % n] - r + 12) % 12;
+  return third === 3 ? (fifth === 6 ? 'd' : 'm') : third === 4 ? (fifth === 8 ? 'a' : 'M') : 'o';
+}
 // the chord on a scale degree as a roman numeral with its quality (quality from the scale)
 function numeral(d) {
   const iv = SCALES[S.scale].intervals, n = iv.length, r = iv[d % n];
-  const third = (iv[(d + 2) % n] - r + 12) % 12, fifth = (iv[(d + 4) % n] - r + 12) % 12;
   let s = ROMAN[d % n] || String(d + 1);
   if (n === 7) { const diff = r - MAJOR[d % 7]; if (diff === -1) s = '♭' + s; else if (diff === 1) s = '♯' + s; }
-  const minor = third === 3, dim = minor && fifth === 6, aug = third === 4 && fifth === 8;
-  if (minor) s = s.toLowerCase();
-  return s + (dim ? '°' : aug ? '⁺' : '');
+  const q = quality(d);
+  if (q === 'm' || q === 'd') s = s.toLowerCase();
+  return s + (q === 'd' ? '°' : q === 'a' ? '⁺' : '');
 }
-const degreeOf = k => chords[k].degree % nScale();
+// the degree whose chord root sits pc semitones above the tonic with the given triad quality, or -1
+function diatonic(pc, q) {
+  const iv = SCALES[S.scale].intervals;
+  for (let d = 0; d < iv.length; d++) if (iv[d] === pc && quality(d) === q) return d;
+  return -1;
+}
+const tonicMinor = () => { const q = quality(0); return q === 'm' || q === 'd'; };
+// the chord degree of a bar, and of a part (its first bar; the usual degree when it is in no bar)
+const barDegree = b => b >= 0 && b < lane.length ? lane[b].chords[0].degree % nScale() : 0;
+const degreeOf = k => { const b = arr.indexOf(k); return b >= 0 ? barDegree(b) : core.partDegree(k, S.scale) % nScale(); };
 // a note moved by scale steps; an altered (off-scale) note moves with the scale note below it
 function scaleStep(note, steps) {
   let alt = 0;
@@ -320,9 +351,9 @@ function scaleStep(note, steps) {
   return n + alt;
 }
 const nearestOfPcs = (note, pcs, lo, hi) => { let best = note, d = Infinity; for (let n = lo; n <= hi; n++) if (pcs.includes(((n % 12) + 12) % 12) && Math.abs(n - note) < d) { d = Math.abs(n - note); best = n; } return best; };
-// the chord of part k voiced inside the tab's range, bottom up
-function chordNotes(k) {
-  const iv = SCALES[S.scale].intervals, n = iv.length, c = chords[k], d = c.degree % n;
+// a chord { degree, type, inv } voiced inside a tab's range, bottom up
+function chordNotes(c, tab) {
+  const iv = SCALES[S.scale].intervals, n = iv.length, d = c.degree % n;
   const degs = c.type === 'sus2' ? [0, 1, 4] : c.type === 'sus4' ? [0, 3, 4] : c.type === '7th' ? [0, 2, 4, 6] : [0, 2, 4];
   const base = iv[d];
   let offs = degs.map(x => (iv[(d + x) % n] - base + 12) % 12);
@@ -331,10 +362,10 @@ function chordNotes(k) {
   const m = offs[0];
   offs = offs.map(o => o - m);
   const bassPc = (S.root + base + m) % 12;
-  let bass = S.lowNote;
+  let bass = tab.lowNote;
   while (((bass % 12) + 12) % 12 !== bassPc) bass++;
   let notes = offs.map(o => bass + o);
-  while (notes[notes.length - 1] > S.highNote && notes[0] - 12 >= S.lowNote) notes = notes.map(x => x - 12);
+  while (notes[notes.length - 1] > tab.highNote && notes[0] - 12 >= tab.lowNote) notes = notes.map(x => x - 12);
   return notes;
 }
 // the augmented-second pairs of a riff: two neighbouring notes that form a signature move of the
@@ -352,6 +383,31 @@ function pairsOf(p) {
     if (mv.some(([lo, hi]) => (lo === pa && hi === pb) || (lo === pb && hi === pa))) { out.push([on[j], on[j + 1]]); j++; }
   }
   return out;
+}
+
+// ---- the chord lane ----------------------------------------------------------------------
+function chordRhythm(name) {
+  const n = S.numSteps, q = newPat();
+  q.numSteps = n;
+  RHYTHMS[name].forEach(([s, l]) => { const i = Math.round(s * n / 16); if (i < n) q.steps[i] = { on: true, note: 60, length: Math.max(1, Math.round(l * n / 16)), velocity: 100, repeats: 1, locked: false }; });
+  fitP(q);
+  return q;
+}
+// a new cell for a bar holding part k: the part's usual chord (I, I, IV, V; A′ in first inversion)
+const newCell = k => ({ chords: [{ degree: core.partDegree(k, S.scale), type: k === 3 ? '7th' : 'triad', inv: k === 1 ? 1 : 0 }], rhythm: 'whole', pat: chordRhythm('whole') });
+function setRhythm(b, name) { lane[b].rhythm = name; lane[b].pat = chordRhythm(name); }
+function rollRhythm(b) { const names = RHYTHM_NAMES.filter(x => x !== lane[b].rhythm); setRhythm(b, names[Math.floor(Math.random() * names.length)]); }
+// the arrangement grows to four bars (empty parts filled by the extension) before the lane is filled
+function fourBars() {
+  const before = arr.slice();
+  arr = [0, 1, 2, 3]; S.sel = -1;
+  while (lane.length < 4) lane.push(newCell(arr[lane.length]));
+  lane.length = 4;
+  return before;
+}
+// riffs follow their bars' chords: a part whose first bar changed its degree moves by scale steps
+function retuneAll(fromDeg) {
+  [0, 1, 2, 3].forEach(k => { const to = degreeOf(k); if (fromDeg[k] !== to) retune(tabs[0], k, fromDeg[k], to); });
 }
 
 // ---- lossless scale switch ---------------------------------------------------------------
@@ -408,7 +464,7 @@ function foldNoteIn(n, lo, hi) {
   while (m > hi) m -= 12;
   return m >= lo ? m : n < lo ? lo : hi;
 }
-// notes outside the tab's range fold in by octave (pitch class kept); a pair folds as a whole;
+// notes outside the Riff tab's range fold in by octave (pitch class kept); a pair folds as a whole;
 // locked notes never move
 function foldPattern(p, lo, hi) {
   const done = new Set();
@@ -420,7 +476,7 @@ function foldPattern(p, lo, hi) {
   p.steps.forEach((s, i) => { if (s.on && !s.locked && !done.has(i)) s.note = foldNoteIn(s.note, lo, hi); });
 }
 function foldTab(tab) { if (!tab.poly) tab.parts.forEach(p => foldPattern(p, tab.lowNote, tab.highNote)); }
-const foldAll = () => foldTab(T);
+const foldAll = () => foldTab(tabs[0]);
 // the tab's root, range and parts move together by d semitones; the remembered notes too
 function shiftTab(tab, d) {
   tab.rootNote += d; tab.lowNote += d; tab.highNote += d;
@@ -428,16 +484,8 @@ function shiftTab(tab, d) {
 }
 
 // ---- the dice ----------------------------------------------------------------------------
-// chord tabs: the dice only change the rhythm of the held chord
-const RHYTHMS = { whole: [[0, 16]], halves: [[0, 8], [8, 8]], quarters: [[0, 4], [4, 4], [8, 4], [12, 4]], stabs: [[0, 2], [6, 2], [8, 2], [14, 2]], push: [[0, 3], [3, 3], [6, 2], [10, 2], [12, 4]], offbeat: [[2, 2], [6, 2], [10, 2], [14, 2]] };
-function chordRhythm(p, name) {
-  const n = p.numSteps, q = newPat();
-  q.numSteps = n; q.tpl = name;
-  RHYTHMS[name].forEach(([s, l]) => { const i = Math.round(s * n / 16); if (i < n) q.steps[i] = { on: true, note: 60, length: Math.max(1, Math.round(l * n / 16)), velocity: 100, repeats: 1, locked: false }; });
-  fitP(q);
-  return q;
-}
-const rollChord = p => { const names = Object.keys(RHYTHMS).filter(x => x !== p.tpl); return chordRhythm(p, names[Math.floor(Math.random() * names.length)]); };
+// what the dice do: a new riff (Rhythm and Notes), one of them, or Mutate; nothing when none is on
+const opOf = () => S.mutate ? 'mutate' : S.doRhythm && S.doNotes ? 'roll' : S.doRhythm ? 'rhythm' : S.doNotes ? 'notes' : null;
 // a mono part: the Form's own moves when the part sits on its usual degree, else a plain roll on its degree
 function rollMono(k, op, p) {
   const g = settings();
@@ -447,23 +495,26 @@ function rollMono(k, op, p) {
   if (op === 'roll' && k > 1 && g.degree === core.partDegree(k, S.scale)) return core.part(k, p, parts[0], g);
   return core.run(op, p, g, S.mutAmt);
 }
-// the dice on the part shown
+// the dice on the part shown (Riff), or a new chord rhythm for the bar shown (Chords)
 function apply(op) {
+  if (!op) return;
+  if (T.poly) { const b = shownBar(); if (b < 0) return; S.seed = newSeed(); rollRhythm(b); refreshPat(); commitVersion(); return; }
   if (locks[S.cur]) return;
   S.seed = newSeed();
   pat.numSteps = S.numSteps;
-  const q = T.poly ? rollChord(pat) : rollMono(S.cur, op, pat);
+  const q = rollMono(S.cur, op, pat);
   setPart(S.cur, q);
   src[S.cur] = 'roll';
   rebase(q);
   commitVersion();
 }
-// the dice on every unlocked part of the tab
+// the dice on every unlocked part (Riff), or new rhythms for every bar (Chords)
 function applyAll(op, keepSeed) {
+  if (!op) return;
   if (!keepSeed) S.seed = newSeed();
+  if (T.poly) { lane.forEach((c, b) => rollRhythm(b)); refreshPat(); commitVersion(); return; }
   parts.forEach(p => p.numSteps = S.numSteps);
-  if (T.poly) parts.forEach((p, k) => { if (!locks[k]) setPart(k, rollChord(p)); });
-  else if (op === 'roll' && [0, 1, 2, 3].every(k => degreeOf(k) === core.partDegree(k, S.scale))) {
+  if (op === 'roll' && [0, 1, 2, 3].every(k => degreeOf(k) === core.partDegree(k, S.scale))) {
     const g = settings();
     core.form(parts, lockMask(), g).forEach((p, k) => { if (!locks[k]) { setPart(k, p); src[k] = 'roll'; } });
   } else parts.forEach((p, k) => { if (!locks[k]) { setPart(k, rollMono(k, op, p)); src[k] = 'roll'; } });
@@ -471,7 +522,7 @@ function applyAll(op, keepSeed) {
   if (!locks.some(Boolean)) msg('');
   commitVersion();
 }
-// Progression: the chord degrees of A A′ B C from the mode's idiom; the riffs of the tab move to them
+// Progression: the chord lane from the mode's idiom (A = A′, B, C leads home)
 const PROG = {
   'Major (Ionian)': [[0, 3, 4], [0, 5, 4], [0, 1, 4], [0, 4, 3]],
   'Natural Minor': [[0, 5, 6], [0, 3, 4], [0, 5, 4], [0, 2, 6]],
@@ -485,6 +536,55 @@ const PROG = {
   'Phrygian Dominant': [[0, 5, 1], [0, 6, 1], [0, 3, 1]],
 };
 const PROG_DEFAULT = [[0, 3, 4], [0, 5, 4], [0, 1, 4]];
+// Moods: moves from the tonic, as (semitones to the chord root, quality, strong) for a major and
+// for a minor tonic; only the moves that are diatonic in the current scale are used
+const MOODS = [
+  { name: 'Позитив', M: [[2, 'M', 1], [5, 'M', 0], [7, 'M', 0], [10, 'M', 0], [2, 'm', 0], [9, 'm', 1]], m: [[7, 'M', 0], [10, 'M', 0], [0, 'M', 0]] },
+  { name: 'Колорит', M: [[1, 'M', 0], [6, 'M', 1], [8, 'M', 1], [11, 'M', 0], [5, 'm', 1], [11, 'm', 0]], m: [[1, 'M', 0], [6, 'M', 0], [9, 'M', 0], [2, 'm', 0]] },
+  { name: 'Сказочность', M: [[3, 'M', 0], [4, 'M', 0], [9, 'M', 0], [7, 'm', 1], [10, 'm', 0]], m: [[3, 'M', 0], [4, 'M', 0], [5, 'M', 1], [7, 'm', 1]] },
+  { name: 'Драматизм', M: [[1, 'm', 0], [4, 'm', 1], [0, 'm', 0]], m: [[2, 'M', 1], [8, 'M', 1], [11, 'M', 1], [5, 'm', 0], [10, 'm', 0]] },
+  { name: 'Тьма', M: [[3, 'm', 0], [6, 'm', 0], [8, 'm', 0]], m: [[1, 'm', 0], [3, 'm', 1], [4, 'm', 0], [6, 'm', 1], [8, 'm', 1], [9, 'm', 0], [11, 'm', 0]] },
+];
+const HOME = [[7, 'M'], [7, 'm'], [10, 'M'], [5, 'M'], [5, 'm'], [11, 'd'], [1, 'M'], [10, 'm']]; // what leads back to the tonic, best first
+// the mood's moves that exist in the current scale, as degrees (strong ones twice)
+function moodMoves(mood) {
+  const list = mood[tonicMinor() ? 'm' : 'M'];
+  const out = [];
+  list.forEach(([pc, q, strong]) => { const d = diatonic(pc, q); if (d > 0) { out.push(d); if (strong) out.push(d); } });
+  return out;
+}
+function fillLane(degrees) {
+  const fromDeg = [0, 1, 2, 3].map(degreeOf);
+  fourBars();
+  degrees.forEach((d, b) => { lane[b].chords[0].degree = d; lane[b].chords[0].inv = 0; });
+  retuneAll(fromDeg);
+  tabs.forEach(tab => [1, 2, 3].forEach(k => extendPart(tab, k)));
+  commitVersion();
+}
+function rollProgression() {
+  if (nScale() !== 7) return;
+  const list = PROG[SCALES[S.scale].name] || PROG_DEFAULT;
+  const cur = [barDegree(0), barDegree(2), barDegree(3)].join();
+  const opts = list.filter(p => p.join() !== cur);
+  const pick = opts[Math.floor(Math.random() * opts.length)] || list[0];
+  fillLane([pick[0], pick[0], pick[1], pick[2]]);
+}
+function rollMood(mood) {
+  const moves = moodMoves(mood);
+  if (!moves.length) return;
+  const pick = () => moves[Math.floor(Math.random() * moves.length)];
+  const uniq = [...new Set(moves)];
+  let home = -1;
+  for (const [pc, q] of HOME) { const d = diatonic(pc, q); if (d > 0 && uniq.includes(d)) { home = d; break; } }
+  if (home < 0) for (const [pc, q] of HOME) { const d = diatonic(pc, q); if (d > 0) { home = d; break; } }
+  if (home < 0) home = pick();
+  let b2 = pick(), b3 = pick();
+  if (uniq.length > 1) { let guard = 0; while (b3 === b2 && guard++ < 10) b3 = pick(); }
+  const degrees = [0, b2, b3, home];
+  const cur = [barDegree(0), barDegree(1), barDegree(2), barDegree(3)].join();
+  if (degrees.join() === cur && uniq.length > 1) { degrees[1] = uniq.find(d => d !== b2) ?? b2; }
+  fillLane(degrees);
+}
 // a riff moves from one degree to another by scale steps; the whole bar shifts an octave before single notes fold
 function retune(tab, k, from, to) {
   const p = tab.parts[k], n = nScale();
@@ -502,31 +602,16 @@ function fitBar(p, tab) {
   if (shift !== undefined) { if (shift) p.steps.forEach(s => { if (s.on && !s.locked) s.note += 12 * shift; }); }
   else foldPattern(p, tab.lowNote, tab.highNote);
 }
-function rollProgression() {
-  if (nScale() !== 7) return;
-  const list = PROG[SCALES[S.scale].name] || PROG_DEFAULT;
-  const cur = [degreeOf(0), degreeOf(2), degreeOf(3)].join();
-  const opts = list.filter(p => p.join() !== cur);
-  const pick = opts[Math.floor(Math.random() * opts.length)] || list[0];
-  const want = [pick[0], pick[0], pick[1], pick[2]];
-  want.forEach((d, k) => {
-    if (locks[k]) return; // a locked part keeps its degree
-    tabs.forEach(tab => retune(tab, k, degreeOf(k), d));
-    chords[k].degree = d;
-  });
-  arr = [0, 1, 2, 3]; S.sel = -1;
-  tabs.forEach(tab => [1, 2, 3].forEach(k => extendPart(tab, k)));
-  commitVersion();
-}
-// Extension: an empty part that joins the arrangement is a copy of the tab's A moved to its degree
-// (A′ as it is); C's last note goes to the root or the fifth; locks are not copied
+// Extension (Riff tab): an empty part that joins the arrangement is a copy of A moved to its bar's
+// chord degree (A′ as it is); C's last note goes to the root or the fifth; locks are not copied
 function extendPart(tab, k) {
+  if (tab.poly) return false;
   const a = tab.parts[0], p = tab.parts[k];
   if (k === 0 || hasNotes(p) || !hasNotes(a)) return false;
   const q = clone(a);
   delete q.base;
   q.steps.forEach(s => { s.locked = false; });
-  if (!tab.poly && k !== 1) {
+  if (k !== 1) {
     const delta = ((degreeOf(k) - degreeOf(0)) % nScale() + nScale()) % nScale();
     q.steps.forEach(s => { if (s.on) s.note = scaleStep(s.note, delta); });
     fitBar(q, tab);
@@ -536,16 +621,16 @@ function extendPart(tab, k) {
     }
   }
   tab.parts[k] = q;
-  if (tab === T) { parts = T.parts; pat = parts[S.cur]; }
+  refreshPat();
   rebase(q);
   return true;
 }
 
 // ---- versions and undo -------------------------------------------------------------------
-function snapshot() { return { tabs: clone(tabs), chords: clone(chords), arr: [...arr], sel: S.sel, cur: S.cur, tab: S.tab, root: S.root, scale: S.scale, rate: S.rate, star: false }; }
+function snapshot() { return { tabs: clone(tabs), lane: clone(lane), arr: [...arr], sel: S.sel, cur: S.cur, tab: S.tab, laneSel: S.laneSel, root: S.root, scale: S.scale, rate: S.rate, star: false }; }
 function restore(h) {
-  tabs = clone(h.tabs); chords = clone(h.chords); arr = [...h.arr]; S.sel = h.sel;
-  S.cur = h.cur; S.root = h.root; S.scale = h.scale; S.rate = h.rate;
+  tabs = clone(h.tabs); lane = clone(h.lane); arr = [...h.arr]; S.sel = h.sel;
+  S.cur = h.cur; S.laneSel = h.laneSel; S.root = h.root; S.scale = h.scale; S.rate = h.rate;
   useTab(h.tab);
   S.numSteps = parts[0].numSteps;
   $('scale').value = S.scale; $('rate').value = S.rate;
@@ -572,9 +657,9 @@ function commitVersion() {
   pushUndo(snap);
   render();
 }
-// a manual edit: the current version changes in place; the edited part remembers its notes
+// a manual edit: the current version changes in place; an edited riff part remembers its notes
 function push(edited) {
-  if (edited) rebase(edited);
+  if (edited && !T.poly) rebase(edited);
   foldAll();
   const snap = snapshot();
   if (vi >= 0 && versions[vi]) versions[vi].snap = snap;
@@ -676,11 +761,8 @@ function colorWords() {
 }
 
 // ---- grid ----------------------------------------------------------------------------------
-// the rows of the roll: every semitone of the range, top down. Scale rows are full height, the
-// others half (the user is comparing: ?rows=full or #rows=full makes every row full height)
+// the rows of the roll: every semitone of the range, top down, all the same height
 function rows() { const r = []; for (let n = S.highNote; n >= S.lowNote; n--) r.push(n); return r; }
-const ROWS_FULL = /rows=full/.test(location.search + location.hash);
-const rowHeight = (note, rowH) => inScale(note) || ROWS_FULL ? rowH : Math.max(5, Math.floor(rowH / 2));
 const scaleRows = () => rows().filter(inScale).length;
 const nextRow = (n, dir) => Math.max(0, Math.min(127, n + dir));
 // the row under a pointer y while dragging a note: scale rows only, every row with Alt
@@ -722,7 +804,7 @@ function edgeBar(el, top, R) {
   const mk = (txt, title, dis, fn) => { const b = document.createElement('button'); b.className = 'eb'; b.textContent = txt; b.title = title; b.disabled = dis; b.onclick = fn; el.appendChild(b); };
   mk('+', canGrow ? `Add a row ${top ? 'above' : 'below'}: ${nn(nextRow(cur, top ? 1 : -1))}` : 'The range is three octaves already', !canGrow, () => edge(top, true));
   mk('−', lk ? nn(cur) + ' holds a locked note: unlock it first' : lastScale ? nn(cur) + ' is the last scale note in the range: the range keeps at least one' : one ? 'The range is one note' : `Remove the ${top ? 'top' : 'bottom'} row ${nn(cur)}: notes on it fold into the range by octave`, one || lk || lastScale, () => edge(top, false));
-  if (top) { const t = document.createElement('span'); t.className = 'en r'; t.textContent = `tab ${S.tab + 1} range ${nn(S.lowNote)}–${nn(S.highNote)}`; el.appendChild(t); }
+  if (top) { const t = document.createElement('span'); t.className = 'en r'; t.textContent = `${T.name} range ${nn(S.lowNote)}–${nn(S.highNote)}`; el.appendChild(t); }
 }
 function degreeBadge(n) {
   const sc = SCALES[S.scale], pc = pcOf(n);
@@ -732,13 +814,35 @@ function degreeBadge(n) {
   if (sc.colors.includes(pc)) return [DEG[pc], 'col'];
   return null;
 }
+// the other tab's notes for the bar shown, as { s, len, notes }, the whole layer moved by octaves
+// to fit the visible range best (never per note); what still does not fit is left out
+function ghostHits() {
+  const other = tabs[T.poly ? 0 : 1];
+  const b = shownBar();
+  if (!other.on || b < 0) return [];
+  let hits = [];
+  if (T.poly) {
+    const p = other.parts[arr[b]];
+    for (let s = 0; s < p.numSteps; s++) if (p.steps[s].on) hits.push({ s, len: p.steps[s].length, notes: [p.steps[s].note] });
+  } else {
+    const c = lane[b], notes = chordNotes(c.chords[0], other);
+    for (let s = 0; s < c.pat.numSteps; s++) if (c.pat.steps[s].on) hits.push({ s, len: c.pat.steps[s].length, notes });
+  }
+  if (!hits.length) return [];
+  let best = 0, bestN = -1;
+  for (const k of [0, -1, 1, -2, 2, -3, 3]) {
+    const n = hits.reduce((a, h) => a + h.notes.filter(x => x + 12 * k >= S.lowNote && x + 12 * k <= S.highNote).length, 0);
+    if (n > bestN) { bestN = n; best = k; }
+  }
+  return hits.map(h => ({ s: h.s, len: h.len, notes: h.notes.map(x => x + 12 * best).filter(x => x >= S.lowNote && x <= S.highNote) }));
+}
 let playStep = -1, playPos = 0;
 // what Play goes through: the selected bar, else the arrangement, else the part shown
 const playSeq = () => S.sel >= 0 && S.sel < arr.length ? [arr[S.sel]] : arr.length ? arr : [S.cur];
 const playingBar = () => Math.floor(playPos / S.numSteps) % playSeq().length;
 const playingPart = () => playSeq()[playingBar()];
 const playingSlot = () => !timer || !arr.length ? -1 : S.sel >= 0 ? S.sel : playingBar();
-const shownPlayStep = () => timer && playingPart() === S.cur ? playStep : -1;
+const shownPlayStep = () => timer && (T.poly ? playingSlot() === shownBar() : playingPart() === S.cur) ? playStep : -1;
 
 // small picture of one or more parts, side by side
 function thumb(el, ps, w, h) {
@@ -763,118 +867,149 @@ function thumb(el, ps, w, h) {
 }
 
 function render() {
+  refreshPat();
+  if (S.laneSel >= lane.length) S.laneSel = lane.length - 1;
   plug.classList.toggle('adv-off', !S.adv);
   $('adv').classList.toggle('on', S.adv);
-  $('mutAmt').textContent = Math.round(S.mutAmt * 100) + '%';
   const oct = Math.floor(S.rootNote / 12) - 1;
   if ($('root').options.length !== 12 || $('root').options[0].text !== 'C' + oct) $('root').innerHTML = NAMES.map((n, i) => `<option value="${i}">${n}${oct}</option>`).join('');
   $('root').value = S.root;
   $('seed').value = S.seed;
   $('colorWrap').title = colorWords();
-  $('roll').disabled = locks[S.cur];
-  const WHAT = T.poly ? { roll: 'New rhythm for the chord shown', rhythm: 'New rhythm for the chord shown', notes: 'New rhythm for the chord shown (a chord tab only varies the rhythm)', mutate: 'New rhythm for the chord shown' }
-    : { roll: 'Roll the part shown: new rhythm and notes', rhythm: 'Roll a new rhythm for the part shown, keep its pitches', notes: 'Roll new pitches for the part shown, keep its rhythm', mutate: 'Mutate the part shown: change some notes, keep the riff' };
-  $('roll').title = locks[S.cur] ? PARTS[S.cur] + ' is locked: unlock it on its bar to roll' : WHAT[S.what] + ' (Space). Locked notes stay';
-  $('prog').disabled = nScale() !== 7;
-  document.querySelectorAll('#what button').forEach(b => b.classList.toggle('on', b.dataset.w === S.what));
+
+  // the dice block: Rhythm / Notes toggles, Mutate as a mode with its amount
+  const op = opOf();
+  document.querySelectorAll('#what button').forEach(b => b.classList.toggle('on', !S.mutate && (b.dataset.w === 'rhythm' ? S.doRhythm : S.doNotes)));
+  document.querySelector('#mutseg button').classList.toggle('on', S.mutate);
+  $('mutAmt').textContent = Math.round(S.mutAmt * 100) + '%';
+  const lockedPart = !T.poly && locks[S.cur];
+  $('roll').disabled = !op || lockedPart || (T.poly && shownBar() < 0);
+  const WHAT = { roll: 'Roll the part shown: new rhythm and new notes', rhythm: 'Roll a new rhythm for the part shown, keep its pitches', notes: 'Roll new pitches for the part shown, keep its rhythm', mutate: 'Mutate the part shown: change ' + Math.round(S.mutAmt * 100) + '% of the notes, keep the riff' };
+  $('roll').title = !op ? 'Choose what the dice change: Rhythm, Notes or Mutate' : lockedPart ? PARTS[S.cur] + ' is locked: unlock it on its bar to roll'
+    : T.poly ? 'New chord rhythm for the bar shown (Space); the chord itself is in the lane' : WHAT[op] + ' (Space). Locked notes stay';
+  $('rollAll').disabled = !op;
+  $('rollAll').title = T.poly ? 'New chord rhythms for every bar (Shift+Space)' : 'The same for all four parts: A, then A′ B C from it (Shift+Space). Locked parts stay';
   drawers.forEach(d => d());
   const n = pat.numSteps;
   document.querySelectorAll('.cols').forEach(c => c.style.setProperty('--n', n));
 
-  // the tab bar: number, riff or chords, channel, on/off
+  // the tab bar: Riff and Chords with their on/off dots; the tab shown has its settings on the right
   const TB = $('tabbar'); TB.innerHTML = '';
   tabs.forEach((tab, i) => {
     const d = document.createElement('div');
     d.className = 'tb' + (i === S.tab ? ' cur' : '') + (tab.on ? '' : ' off');
-    d.title = `Tab ${i + 1}: ${tab.poly ? 'chords' : 'riff'} on channel ${tab.ch}, ${tab.on ? 'on' : 'off (no play, no export)'}. Its own parts, octave and range; the key and the arrangement are shared`;
-    d.innerHTML = `<span class="n">${i + 1}</span><select class="sel" data-f="mode" title="Riff: one note at a time. Chords: one held chord per bar, the dice vary its rhythm"><option value="mono">Riff</option><option value="poly">Chords</option></select><select class="sel" data-f="ch" title="MIDI channel of this tab">${Array.from({ length: 16 }, (_, c) => `<option value="${c + 1}">Ch ${c + 1}</option>`).join('')}</select><div class="tog${tab.on ? ' on' : ''}" title="${tab.on ? 'On: plays and exports. Click to turn off' : 'Off: no play, no export. Click to turn on'}"><div class="sw"></div></div>`;
-    d.querySelector('[data-f=mode]').value = tab.poly ? 'poly' : 'mono';
-    d.querySelector('[data-f=ch]').value = tab.ch;
+    d.title = `${tab.name} on channel ${tab.ch}, ${tab.on ? 'on' : 'off (no play, no export)'} · click the name to show it, the dot to turn it on or off`;
+    d.innerHTML = `<span class="dot${tab.on ? ' on' : ''}" title="${tab.on ? 'On: plays and exports. Click to turn off' : 'Off: no play, no export. Click to turn on'}"></span><span>${tab.name}</span>`;
     d.onclick = () => { if (i !== S.tab) { useTab(i); render(); } };
-    d.querySelectorAll('select').forEach(s => s.onclick = e => e.stopPropagation());
-    d.querySelector('[data-f=mode]').onchange = e => { tab.poly = e.target.value === 'poly'; useTab(i); push(); };
-    d.querySelector('[data-f=ch]').onchange = e => { tab.ch = +e.target.value; useTab(i); push(); };
-    d.querySelector('.tog').onclick = e => { e.stopPropagation(); tab.on = !tab.on; push(); };
+    d.querySelector('.dot').onclick = e => { e.stopPropagation(); tab.on = !tab.on; push(); };
     TB.appendChild(d);
   });
-  const hint = document.createElement('span'); hint.className = 'tbhint';
-  hint.textContent = 'tabs share the key and the arrangement; each has its own parts, octave, range and channel · export = one .mid, a track per tab that is on';
-  TB.appendChild(hint);
+  const set = document.createElement('div'); set.className = 'tabset';
+  const lbl = t => { const s = document.createElement('span'); s.className = 'lbl'; s.textContent = t; set.appendChild(s); };
+  const sel = (title, opts, val, fn, cls) => { const s = document.createElement('select'); s.className = 'sel xs' + (cls ? ' ' + cls : ''); s.title = title; s.innerHTML = opts.map(([v, t]) => `<option value="${v}">${t}</option>`).join(''); s.value = val; s.onchange = () => fn(s.value); set.appendChild(s); return s; };
+  lbl(T.name);
+  sel('MIDI channel of this tab', Array.from({ length: 16 }, (_, c) => [c + 1, 'Ch ' + (c + 1)]), T.ch, v => { T.ch = +v; push(); });
+  lbl('range');
+  const rg = document.createElement('span'); rg.textContent = `${nn(S.lowNote)}–${nn(S.highNote)}`; rg.title = 'The rows of the roll: grow or shrink it with + and − at the top and bottom edges; − and + by the key move it an octave'; set.appendChild(rg);
+  if (S.laneSel >= 0 && S.laneSel < lane.length) {
+    const c = lane[S.laneSel].chords[0];
+    lbl(`bar ${S.laneSel + 1} chord`);
+    sel('Degree: the chord of this bar; the riff of this bar starts on it', Array.from({ length: nScale() }, (_, d) => [d, numeral(d)]), c.degree % nScale(), v => { c.degree = +v; push(); });
+    sel('Chord type; the quality comes from the scale', TYPES, c.type, v => { c.type = v; c.inv = Math.min(c.inv, v === '7th' ? 3 : 2); push(); });
+    sel('Inversion: which chord note is at the bottom', [[0, 'Root'], [1, '1st inv'], [2, '2nd inv']].concat(c.type === '7th' ? [[3, '3rd inv']] : []), Math.min(c.inv, c.type === '7th' ? 3 : 2), v => { c.inv = +v; push(); });
+    lbl('rhythm');
+    sel('The chord rhythm of this bar (Chords tab)', RHYTHM_NAMES.map(r => [r, r]).concat(lane[S.laneSel].rhythm === 'custom' ? [['custom', 'custom']] : []), lane[S.laneSel].rhythm, v => { setRhythm(S.laneSel, v); refreshPat(); push(); });
+    const all = document.createElement('button'); all.className = 'btn sm'; all.textContent = 'to all'; all.title = 'This bar\'s chord rhythm for every bar';
+    all.onclick = () => { const r = lane[S.laneSel].rhythm; lane.forEach((cell, b) => { if (r === 'custom') { cell.rhythm = 'custom'; cell.pat = clone(lane[S.laneSel].pat); } else setRhythm(b, r); }); refreshPat(); push(); };
+    set.appendChild(all);
+  }
+  TB.appendChild(set);
 
   // arrangement (left: bars with lock and remove) and palette (right: the four parts, click adds a bar)
   const A = $('arr'); A.innerHTML = '';
   const ps = playingSlot();
-  const letter = k => `<span class="tn">${PARTS[k]}<small>${numeral(degreeOf(k))}</small></span>`;
   arr.forEach((k, i) => {
     const t = document.createElement('div');
     t.className = 'slot' + (i === S.sel ? ' on' : k === S.cur ? ' same' : '') + (locks[k] ? ' locked' : '') + (i === ps ? ' playing' : '');
-    t.title = `Bar ${i + 1}: ${PARTS[k]} on ${numeral(degreeOf(k))} · ${i === S.sel ? 'selected: Play loops this bar; click again to deselect' : 'click to select it and edit ' + PARTS[k]} (every ${PARTS[k]} bar changes with it)`;
-    t.innerHTML = `<span class="lk" title="${locks[k] ? 'Unlock (Shift+click): ' + PARTS[k] + ' is locked, the dice and Roll all skip it' : 'Lock (Shift+click): the dice and Roll all keep ' + PARTS[k] + ' as it is'}">${locks[k] ? '🔒' : '🔓'}</span>${letter(k)}<div class="tt"></div><button class="x" title="Remove this bar from the arrangement">×</button><i class="pp"></i>`;
+    t.title = `Bar ${i + 1}: ${PARTS[k]} on ${numeral(barDegree(i))} · ${i === S.sel ? 'selected: Play loops this bar; click again to deselect' : 'click to select it and edit ' + PARTS[k]} (every ${PARTS[k]} bar changes with it)`;
+    t.innerHTML = `<span class="lk" title="${locks[k] ? 'Unlock (Shift+click): ' + PARTS[k] + ' is locked, the dice and All skip it' : 'Lock (Shift+click): the dice and All keep ' + PARTS[k] + ' as it is'}">${locks[k] ? '🔒' : '🔓'}</span><span class="tn">${PARTS[k]}<small>${numeral(barDegree(i))}</small></span><div class="tt"></div><button class="x" title="Remove this bar from the arrangement">×</button><i class="pp"></i>`;
     thumb(t.querySelector('.tt'), [parts[k]], 44, 16);
     const toggleLock = () => { locks[k] = !locks[k]; push(); };
     t.onclick = e => e.shiftKey ? toggleLock() : selectSlot(i);
     t.querySelector('.lk').onclick = e => { e.stopPropagation(); toggleLock(); };
-    t.querySelector('.x').onclick = e => { e.stopPropagation(); arr.splice(i, 1); if (S.sel === i) S.sel = -1; else if (S.sel > i) S.sel--; push(); };
+    t.querySelector('.x').onclick = e => { e.stopPropagation(); arr.splice(i, 1); lane.splice(i, 1); if (S.sel === i) S.sel = -1; else if (S.sel > i) S.sel--; if (S.laneSel >= lane.length) S.laneSel = lane.length - 1; refreshPat(); push(); };
     A.appendChild(t);
   });
   if (!arr.length) { const h = document.createElement('span'); h.className = 'arrhint'; h.textContent = 'No bars yet: click a part on the right to add it'; A.appendChild(h); }
   const info = $('tabinfo');
-  info.className = 'tabinfo' + (locks[S.cur] ? ' lockmsg' : '');
-  info.title = `Tab ${S.tab + 1} · editing ${PARTS[S.cur]} (${PART_HINT[S.cur]}, on ${numeral(degreeOf(S.cur))}); 1 bar = ${n} steps`;
-  info.textContent = locks[S.cur] ? `🔒 ${PARTS[S.cur]} locked: dice skip it`
-    : `tab ${S.tab + 1} · ${PARTS[S.cur]} · ${S.sel >= 0 ? 'Play: bar ' + (S.sel + 1) : arr.length ? 'Play: ' + arr.length + ' bar' + (arr.length > 1 ? 's' : '') : 'Play: this part'}`;
-  // the chord of the part shown: degree, type, inversion (chord tabs)
-  const CS = $('chordsel'); CS.innerHTML = '';
-  CS.style.display = T.poly ? '' : 'none';
-  if (T.poly) {
-    const c = chords[S.cur];
-    const sel = (title, opts, val, set) => {
-      const s = document.createElement('select'); s.className = 'sel'; s.title = title;
-      s.innerHTML = opts.map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
-      s.value = val; s.onchange = () => { set(s.value); push(); }; CS.appendChild(s);
-    };
-    sel(`Degree: the chord of ${PARTS[S.cur]}, and where its riffs start on every tab`, Array.from({ length: nScale() }, (_, d) => [d, numeral(d)]), degreeOf(S.cur), v => { c.degree = +v; });
-    sel('Chord type; the quality comes from the scale', TYPES, c.type, v => { c.type = v; c.inv = Math.min(c.inv, v === '7th' ? 3 : 2); });
-    sel('Inversion: which chord note is at the bottom', [[0, 'Root'], [1, '1st inv'], [2, '2nd inv']].concat(c.type === '7th' ? [[3, '3rd inv']] : []), Math.min(c.inv, c.type === '7th' ? 3 : 2), v => { c.inv = +v; });
-  }
+  info.className = 'tabinfo' + (lockedPart ? ' lockmsg' : '');
+  info.title = T.poly ? `Chords · bar ${shownBar() + 1}: ${shownBar() >= 0 ? numeral(barDegree(shownBar())) + ' ' + lane[shownBar()].rhythm : '—'}` : `Riff · editing ${PARTS[S.cur]} (${PART_HINT[S.cur]}, on ${numeral(degreeOf(S.cur))}); 1 bar = ${n} steps`;
+  info.textContent = lockedPart ? `🔒 ${PARTS[S.cur]} locked: dice skip it`
+    : `${T.name} · ${T.poly ? (shownBar() >= 0 ? 'bar ' + (shownBar() + 1) : 'no bar') : PARTS[S.cur]} · ${S.sel >= 0 ? 'Play: bar ' + (S.sel + 1) : arr.length ? 'Play: ' + arr.length + ' bar' + (arr.length > 1 ? 's' : '') : 'Play: this part'}`;
   const P = $('pal'); P.innerHTML = '';
   const full = arr.length >= MAX_BARS;
   parts.forEach((p, k) => {
     const t = document.createElement('div');
     t.className = 'tab' + (k === S.cur ? ' on' : '') + (full ? ' full' : ' add');
-    t.title = full ? 'Arrangement is full (4 bars) — remove a bar with ×' : `${PARTS[k]} on ${numeral(degreeOf(k))} · ${PART_HINT[k]}` + (src[k] === 'import' ? ' · imported' : '') + (hasNotes(p) ? '' : ' · empty: added as a copy of A on its degree') + ' · click to add a bar to the arrangement';
-    t.innerHTML = letter(k);
-    if (!full) t.onclick = () => { S.cur = k; pat = parts[k]; arr.push(k); S.sel = -1; tabs.forEach(tab => extendPart(tab, k)); push(); };
+    t.title = full ? 'Arrangement is full (4 bars) — remove a bar with ×' : `${PARTS[k]} · ${PART_HINT[k]}` + (src[k] === 'import' ? ' · imported' : '') + (hasNotes(p) ? '' : ' · empty: added as a copy of A on its bar\'s chord') + ' · click to add a bar to the arrangement';
+    t.innerHTML = `<span class="tn">${PARTS[k]}</span>`;
+    if (!full) t.onclick = () => { S.cur = k; arr.push(k); lane.push(newCell(k)); S.sel = -1; S.laneSel = lane.length - 1; tabs.forEach(tab => extendPart(tab, k)); refreshPat(); push(); };
     P.appendChild(t);
   });
 
+  // the chord lane: one cell per bar; Progression and the moods fill it
+  const CL = $('clane'); CL.innerHTML = '';
+  const cl = document.createElement('span'); cl.className = 'cl'; cl.textContent = 'chords'; cl.title = 'One chord per bar, shared by both tabs: the Chords tab plays it, the riff of the bar starts on it. Click a bar to set its chord in the tab bar'; CL.appendChild(cl);
+  lane.forEach((c, b) => {
+    const d = document.createElement('div');
+    d.className = 'ccell' + (b === S.laneSel ? ' sel' : '') + (b === ps ? ' playing' : '');
+    d.title = `Bar ${b + 1} (${PARTS[arr[b]]}): ${numeral(barDegree(b))} ${c.chords[0].type}${c.chords[0].inv ? ', inversion ' + c.chords[0].inv : ''} · rhythm ${c.rhythm} · click to edit it in the tab bar`;
+    d.innerHTML = `<b>${numeral(barDegree(b))}</b><small>${b + 1} · ${c.chords[0].type === 'triad' ? '' : c.chords[0].type + ' · '}${c.rhythm}</small><i class="pp"></i>`;
+    d.onclick = () => { S.laneSel = b; if (T.poly) { S.sel = b; S.cur = arr[b]; } refreshPat(); render(); };
+    CL.appendChild(d);
+  });
+  if (!lane.length) { const h = document.createElement('span'); h.className = 'arrhint'; h.textContent = 'no bars'; CL.appendChild(h); }
+  const fill = document.createElement('div'); fill.className = 'fill';
+  const mkb = (txt, title, dis, fn) => { const b = document.createElement('button'); b.className = 'btn sm'; b.textContent = txt; b.title = title; b.disabled = dis; b.onclick = fn; fill.appendChild(b); };
+  mkb('⚄ Progression', 'Fill the lane from the idiom of the mode: A A′ B C (A = A′, C leads home). Seven-note scales only', nScale() !== 7, rollProgression);
+  const vs = document.createElement('span'); vs.className = 'vsep'; vs.style.height = '18px'; fill.appendChild(vs);
+  MOODS.forEach(mood => {
+    const moves = [...new Set(moodMoves(mood))];
+    mkb(mood.name, moves.length ? `Fill the lane with this mood: I, then ${moves.map(numeral).join(' / ')} (what the ${SCALES[S.scale].name} scale has of it), the last bar leads home` : `No chord of this mood is in the ${SCALES[S.scale].name} scale`, !moves.length, () => rollMood(mood));
+  });
+  CL.appendChild(fill);
+
   // piano roll
   const R = rows();
-  const wsum = R.reduce((a, m) => a + (inScale(m) || ROWS_FULL ? 1 : 0.5), 0);
-  const rowH = R.length ? Math.max(11, Math.min(30, Math.floor(300 / wsum))) : 30;
+  const rowH = R.length ? Math.max(11, Math.min(30, Math.floor(300 / R.length))) : 30;
   const ph = shownPlayStep();
   const g = $('grid'); g.innerHTML = '';
   edgeBar($('edgeTop'), true, R); edgeBar($('edgeBot'), false, R);
-  // the chord root this part's step 1 is held on (the marker shows where the rule holds)
+  // the chord root this bar's step 1 is held on (the marker shows where the rule holds)
   const chordPc = SCALES[S.scale].intervals[degreeOf(S.cur)];
   const chordName = numeral(degreeOf(S.cur));
-  const chord = T.poly ? chordNotes(S.cur) : [];
+  const b0 = shownBar();
+  const chord = T.poly && b0 >= 0 ? chordNotes(lane[b0].chords[0], T) : [];
+  const ghosts = ghostHits();
   const cellEl = {};
   R.forEach((note, r) => {
-    const pc = pcOf(note), inS = inScale(note), rh = rowHeight(note, rowH), half = rh < rowH;
+    const pc = pcOf(note), inS = inScale(note);
     const k = document.createElement('div');
     k.className = 'key' + (pc === 0 ? ' root' : '') + (inS ? '' : ' out');
-    k.style.height = rh + 'px';
+    k.style.height = rowH + 'px';
     k.dataset.note = note;
     const bd = inS ? degreeBadge(note) : null;
-    k.innerHTML = rh < 10 ? '' : (bd ? `<em class="${bd[1]}">${bd[0]}</em>` : '') + nn(note);
+    k.innerHTML = (bd ? `<em class="${bd[1]}">${bd[0]}</em>` : '') + nn(note);
     g.appendChild(k);
     for (let s = 0; s < n; s++) {
       const c = document.createElement('div');
-      c.className = 'cell' + (s % 4 === 0 ? ' beat' : '') + (!inS ? ' outrow' : pc === 0 ? ' rootrow' : r % 2 ? ' alt' : '') + (s === ph ? ' ph' : '') + (half ? ' half' : '');
-      c.style.height = rh + 'px';
+      c.className = 'cell' + (s % 4 === 0 ? ' beat' : '') + (!inS ? ' outrow' : pc === 0 ? ' rootrow' : r % 2 ? ' alt' : '') + (s === ph ? ' ph' : '');
+      c.style.height = rowH + 'px';
       const st = pat.steps[s];
       const hit = st.on && (T.poly ? chord.includes(note) : st.note === note);
+      // the other tab, faintly underneath
+      const gh = ghosts.find(h => h.s === s && h.notes.includes(note));
+      if (gh) { const d = document.createElement('div'); d.className = 'note ghost'; d.style.width = `calc(${gh.len * 100}% + ${gh.len - 1}px - 4px)`; c.appendChild(d); }
       if (hit) {
         const d = document.createElement('div');
         d.className = 'note' + (T.poly ? ' chord' : '') + (st.locked ? ' locked' : '') + (!T.poly && SCALES[S.scale].colors.includes(pc) && inS ? ' colr' : '') + (inS ? '' : ' outn');
@@ -882,8 +1017,8 @@ function render() {
         d.style.opacity = 0.55 + 0.45 * st.velocity / 127;
         if (st.repeats > 1) { const rt = document.createElement('div'); rt.className = 'rat'; for (let i = 0; i < st.repeats; i++) rt.appendChild(document.createElement('i')); d.appendChild(rt); }
         if (st.locked) { const l = document.createElement('span'); l.className = 'lockic'; l.textContent = '🔒'; d.appendChild(l); }
-        if (!T.poly && s === 0 && S.startOnRoot && pc === chordPc) { const m = document.createElement('span'); m.className = 'rootmk'; m.textContent = chordName; d.appendChild(m); d.title = `Start on chord root: step 1 of ${PARTS[S.cur]} is held on its chord root (${chordName}); the dice, Rhythm, Notes and Mutate keep it. Turn off under Advanced`; }
-        if (T.poly) { d.title = `${chordName} ${chords[S.cur].type}: ${chord.map(nn).join(' ')} · click = remove the hit · Shift+click = lock · right-click = longer`; d.onpointerdown = e => chordDown(e, s); }
+        if (!T.poly && s === 0 && S.startOnRoot && pc === chordPc) { const m = document.createElement('span'); m.className = 'rootmk'; m.textContent = chordName; d.appendChild(m); d.title = `Start on chord root: step 1 of ${PARTS[S.cur]} is held on its bar's chord root (${chordName}); the dice keep it. Turn off under Advanced`; }
+        if (T.poly) { d.title = `${chordName} ${lane[b0].chords[0].type}: ${chord.map(nn).join(' ')} · click = remove the hit · Shift+click = lock · right-click = longer`; d.onpointerdown = e => chordDown(e, s); }
         else d.onpointerdown = e => noteDown(e, s);
         d.oncontextmenu = e => { e.preventDefault(); longer(s); };
         c.appendChild(d);
@@ -891,7 +1026,7 @@ function render() {
       } else {
         c.onclick = () => {
           if (pat.steps[s].locked && !pat.steps[s].on) return;
-          if (T.poly) { if (pat.steps[s].on) return; pat.steps[s] = { on: true, note: 60, length: 1, velocity: 100, repeats: 1, locked: false }; }
+          if (T.poly) { if (pat.steps[s].on) return; pat.steps[s] = { on: true, note: 60, length: 1, velocity: 100, repeats: 1, locked: false }; lane[b0].rhythm = 'custom'; }
           else pat.steps[s] = { on: true, note, length: 1, velocity: 100, repeats: 1, locked: !inScale(note) }; // an off-scale note by hand is locked at once
           fit(); push(pat);
         };
@@ -899,8 +1034,9 @@ function render() {
       g.appendChild(c);
     }
   });
-  if (!R.length) { const h = document.createElement('div'); h.className = 'empty-hint'; h.style.height = '120px'; h.style.gridColumn = '1/-1'; h.style.position = 'relative'; h.textContent = `${PARTS[S.cur]} has no notes yet: roll the dice ⚄ or click the grid`; g.appendChild(h); }
-  else if (!hasNotes(pat)) { const h = document.createElement('div'); h.className = 'empty-hint'; h.textContent = `${PARTS[S.cur]} is empty on tab ${S.tab + 1}: roll the dice ⚄ or click the grid`; g.appendChild(h); }
+  if (!R.length) { const h = document.createElement('div'); h.className = 'empty-hint'; h.style.height = '120px'; h.style.gridColumn = '1/-1'; h.style.position = 'relative'; h.textContent = 'No rows'; g.appendChild(h); }
+  else if (T.poly && b0 < 0) { const h = document.createElement('div'); h.className = 'empty-hint'; h.textContent = 'No bar to show: add a bar on the right'; g.appendChild(h); }
+  else if (!hasNotes(pat)) { const h = document.createElement('div'); h.className = 'empty-hint'; h.textContent = T.poly ? `Bar ${b0 + 1} has no chord hits: roll the dice ⚄ or click the grid` : `${PARTS[S.cur]} is empty: roll the dice ⚄ or click the grid`; g.appendChild(h); }
   // the augmented-second pairs of the riff: a thin arc between the two notes
   if (!T.poly) {
     const pairs = pairsOf(pat);
@@ -923,15 +1059,15 @@ function render() {
 
   // lanes
   const L = $('lanes'); L.innerHTML = '';
-  const lane = (name, val, set, max, col) => {
+  const laneRow = (name, val, setv, max, col) => {
     const l = document.createElement('div'); l.className = 'lane cols'; l.style.setProperty('--n', n);
     l.innerHTML = `<div class="ll">${name}</div>`;
     for (let s = 0; s < n; s++) { const b = document.createElement('div'); const st = pat.steps[s]; const v = st.on ? val(st) / max : 0; b.className = 'bar' + (st.on ? '' : ' off'); b.style.height = (st.on ? Math.max(10, v * 100) : 6) + '%'; if (st.on) b.style.background = col; l.appendChild(b); }
-    laneDrag(l, set, max);
+    laneDrag(l, setv, max);
     L.appendChild(l);
   };
-  lane('Vel', st => st.velocity, (st, v) => st.velocity = Math.max(1, Math.round(v)), 127, 'var(--acc2)');
-  lane('Len', st => st.length, (st, v) => st.length = Math.max(1, Math.round(v)), 8, 'var(--len)');
+  laneRow('Vel', st => st.velocity, (st, v) => st.velocity = Math.max(1, Math.round(v)), 127, 'var(--acc2)');
+  laneRow('Len', st => st.length, (st, v) => st.length = Math.max(1, Math.round(v)), 8, 'var(--len)');
   if (S.repeatsOn) {
     const l = document.createElement('div'); l.className = 'lane cols'; l.style.setProperty('--n', n); l.innerHTML = '<div class="ll">Ratch</div>';
     for (let s = 0; s < n; s++) { const d = document.createElement('div'); d.className = 'dens'; const c = pat.steps[s].on ? pat.steps[s].repeats : 0; for (let i = 0; i < 4; i++) { const x = document.createElement('i'); if (i < c) x.className = 'on'; d.appendChild(x); } l.appendChild(d); }
@@ -943,7 +1079,7 @@ function render() {
   const sn = $('stepn'); sn.innerHTML = '<div></div>';
   for (let s = 0; s < n; s++) { const d = document.createElement('div'); d.textContent = s % 4 === 0 ? s / 4 + 1 : '·'; sn.appendChild(d); }
 
-  // the version strip: 3 per page, each entry is a whole arrangement (tab 1 pictured)
+  // the version strip: 3 per page, each entry is a whole arrangement (the Riff tab pictured)
   const H = $('hist'); H.innerHTML = '';
   histEnd = Math.min(versions.length, Math.max(Math.min(PER_PAGE, versions.length), histEnd));
   for (let k = 0; k < PER_PAGE; k++) {
@@ -967,14 +1103,15 @@ function render() {
 }
 
 function fitP(p) {
-  // monophonic (one chord at a time on a chord tab): a hit never overlaps the next one or the bar end
+  // monophonic (one chord at a time on the Chords tab): a hit never overlaps the next one or the bar end
   const n = p.numSteps;
   for (let i = 0; i < n; i++) { const st = p.steps[i]; if (!st.on) continue; let nx = i + 1; while (nx < n && !p.steps[nx].on) nx++; st.length = Math.max(1, Math.min(st.length, 8, nx - i)); }
 }
 const fit = () => fitP(pat);
+const customised = () => { if (T.poly && shownBar() >= 0) lane[shownBar()].rhythm = 'custom'; };
 function longer(s) {
   const st = pat.steps[s], n = pat.numSteps; let nx = s + 1; while (nx < n && !pat.steps[nx].on) nx++;
-  st.length = st.length + 1 > Math.min(8, nx - s) ? 1 : st.length + 1; push(pat);
+  st.length = st.length + 1 > Math.min(8, nx - s) ? 1 : st.length + 1; customised(); push(pat);
 }
 // a chord hit: click removes it, Shift+click locks the step
 function chordDown(e, s) {
@@ -982,7 +1119,7 @@ function chordDown(e, s) {
   e.stopPropagation();
   const st = pat.steps[s];
   if (e.shiftKey) { st.locked = !st.locked; push(pat); return; }
-  pat.steps[s] = { ...st, on: false, locked: false }; push(pat);
+  pat.steps[s] = { ...st, on: false, locked: false }; customised(); push(pat);
 }
 function noteDown(e, s) {
   if (e.button !== 0) return;
@@ -1016,21 +1153,21 @@ function noteDown(e, s) {
   };
   for (const t in h) addEventListener(t, h[t], true);
 }
-function laneDrag(l, set, max) {
+function laneDrag(l, setv, max) {
   l.addEventListener('pointerdown', e => {
     l.setPointerCapture(e.pointerId);
-    const apply = ev => {
+    const apply2 = ev => {
       const r = l.getBoundingClientRect(), k = plugScale();
       const colW = (r.width - 44 * k) / pat.numSteps;
       const s = Math.floor((ev.clientX - r.left - 44 * k) / colW);
       if (s < 0 || s >= pat.numSteps || !pat.steps[s].on) return;
       const v = (1 - (ev.clientY - r.top) / r.height) * max;
-      set(pat.steps[s], Math.max(0, Math.min(max, v)));
+      setv(pat.steps[s], Math.max(0, Math.min(max, v)));
       fit(); render();
     };
-    apply(e);
-    const up = () => { l.removeEventListener('pointermove', apply); l.removeEventListener('pointerup', up); push(pat); };
-    l.addEventListener('pointermove', apply); l.addEventListener('pointerup', up);
+    apply2(e);
+    const up = () => { l.removeEventListener('pointermove', apply2); l.removeEventListener('pointerup', up); customised(); push(pat); };
+    l.addEventListener('pointermove', apply2); l.addEventListener('pointerup', up);
   });
 }
 
@@ -1038,7 +1175,7 @@ function laneDrag(l, set, max) {
 $('root').innerHTML = NAMES.map((n, i) => `<option value="${i}">${n}</option>`).join('');
 $('scale').innerHTML = SCALES.map((s, i) => `<option value="${i}">${s.name}</option>`).join('');
 $('root').value = S.root; $('scale').value = S.scale;
-// the root chip: a new note moves every tab by the same semitones; the octave moves the tab shown
+// the root chip: a new note moves both tabs by the same semitones; the octave moves the tab shown
 function setRootPc(pc) {
   const d = ((pc - S.root + 18) % 12) - 6;
   if (!d || tabs.some(t => t.lowNote + d < 0 || t.highNote + d > 127)) { render(); return; }
@@ -1055,21 +1192,29 @@ function setOctave(d) {
 $('root').onchange = () => setRootPc(+$('root').value);
 $('ocU').onclick = () => setOctave(12);
 $('ocD').onclick = () => setOctave(-12);
-// the scale: every riff of every tab moves from its remembered notes; chords follow their degree
+// the scale: every riff moves from its remembered notes; chords follow their degree
 const rekey = () => {
   S.scale = +$('scale').value;
   tabs.forEach(tab => { if (tab.poly) return; tab.parts.forEach(remapPattern); foldTab(tab); });
   push();
 };
 $('scale').onchange = rekey;
-$('rate').onchange = () => { S.rate = +$('rate').value; S.numSteps = { 2: 8, 4: 16, 6: 12 }[S.rate]; tabs.forEach(t => t.parts.forEach(p => { p.numSteps = S.numSteps; fitP(p); })); push(); };
-$('roll').onclick = () => apply(S.what);
-$('rollAll').onclick = () => applyAll(S.what);
-$('prog').onclick = rollProgression;
-document.querySelectorAll('#what button').forEach(b => b.onclick = e => {
-  if (e.target.id === 'mutAmt') { const a = [0.15, 0.33, 0.5]; S.mutAmt = a[(a.indexOf(S.mutAmt) + 1) % a.length]; }
-  S.what = b.dataset.w; render();
+$('rate').onchange = () => { S.rate = +$('rate').value; S.numSteps = { 2: 8, 4: 16, 6: 12 }[S.rate]; tabs.forEach(t => t.parts.forEach(p => { p.numSteps = S.numSteps; fitP(p); })); lane.forEach((c, b) => { if (c.rhythm === 'custom') { c.pat.numSteps = S.numSteps; fitP(c.pat); } else setRhythm(b, c.rhythm); }); refreshPat(); push(); };
+$('roll').onclick = () => apply(opOf());
+$('rollAll').onclick = () => applyAll(opOf());
+// Rhythm and Notes are toggles (both on = a new riff); Mutate is a mode that switches them off,
+// a second click cycles its amount
+document.querySelectorAll('#what button').forEach(b => b.onclick = () => {
+  if (S.mutate) { S.mutate = false; S.doRhythm = b.dataset.w === 'rhythm'; S.doNotes = b.dataset.w === 'notes'; }
+  else if (b.dataset.w === 'rhythm') S.doRhythm = !S.doRhythm;
+  else S.doNotes = !S.doNotes;
+  render();
 });
+document.querySelector('#mutseg button').onclick = () => {
+  if (S.mutate) { const a = [0.15, 0.33, 0.5]; S.mutAmt = a[(a.indexOf(S.mutAmt) + 1) % a.length]; }
+  else { S.mutate = true; S.doRhythm = false; S.doNotes = false; }
+  render();
+};
 $('adv').onclick = () => { S.adv = !S.adv; render(); };
 $('rptpill').onclick = () => { S.repeatsOn = !S.repeatsOn; render(); };
 $('rootpill').onclick = () => { S.startOnRoot = !S.startOnRoot; render(); };
@@ -1080,7 +1225,7 @@ $('hPrev').onclick = () => { histEnd -= PER_PAGE; render(); };
 $('hNext').onclick = () => { histEnd += PER_PAGE; render(); };
 addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-  if (e.code === 'Space') { e.preventDefault(); e.shiftKey ? applyAll(S.what) : apply(S.what); }
+  if (e.code === 'Space') { e.preventDefault(); e.shiftKey ? applyAll(opOf()) : apply(opOf()); }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? $('redo').click() : $('undo').click(); }
   if (!e.ctrlKey && !e.metaKey && !e.altKey && ['1', '2', '3', '4'].includes(e.key)) selectPart(+e.key - 1);
   if (e.key === 'Escape' && S.sel >= 0) selectSlot(S.sel);
@@ -1095,7 +1240,7 @@ function tick() {
     const n = S.numSteps, len = cycleLen();
     playPos = stepIdx % len;
     playStep = playPos % n;
-    if (S.sel < 0 && arr.length && playingPart() !== S.cur) { S.cur = playingPart(); pat = parts[S.cur]; }
+    if (S.sel < 0 && arr.length && playingPart() !== S.cur) { S.cur = playingPart(); refreshPat(); }
     const stepMs = 60000 / (+$('bpm').value || 120) / S.rate;
     const swing = (playStep % 2 === 0 ? 1 : -1) * S.swing * 0.5 * stepMs;
     nextAt = (nextAt || now) + stepMs + swing;
@@ -1147,8 +1292,8 @@ function parseMidi(u8) {
   return { ppq, notes };
 }
 
-// Up to 4 bars from the file start into A A' B C of the tab shown: 1/16 grid, lowest note where
-// notes overlap, a note cut at the bar line, velocities kept. The key is guessed and set for all tabs.
+// Up to 4 bars from the file start into A A' B C of the Riff tab: 1/16 grid, lowest note where
+// notes overlap, a note cut at the bar line, velocities kept. The key is guessed and set for both tabs.
 function importMidi(u8, name) {
   let m;
   try { m = parseMidi(u8); } catch (e) { msg(`Could not read ${name}: ${e.message}`); render(); return; }
@@ -1168,28 +1313,27 @@ function importMidi(u8, name) {
 
   const w = placed.map((x, j) => ({ note: x.note, weight: (x.e - x.s) * (x.s % 4 === 0 ? 2 : 1) + (j === 0 ? 1 : 0) + (j === placed.length - 1 ? 2 : 0) }));
   const k = core.detectKey(w);
-  // the other tabs follow the new root; then every riff follows the new scale
+  useTab(0);
   const d = ((k.root - S.root + 18) % 12) - 6;
-  tabs.forEach(t => { if (t !== T && d) shiftTab(t, d); });
+  if (d) shiftTab(tabs[1], d);
   S.root = k.root; S.scale = k.scale; $('scale').value = S.scale;
-  tabs.forEach(t => { if (t !== T && !t.poly) { t.parts.forEach(remapPattern); foldTab(t); } });
   const lo = Math.min(...placed.map(x => x.note)), hi = Math.max(...placed.map(x => x.note));
   T.lowNote = lo; T.highNote = Math.min(hi, lo + MAX_SPAN);
   T.rootNote = lo + ((S.root - lo) % 12 + 12) % 12;
   S.rate = 4; S.numSteps = N; $('rate').value = 4;
-  tabs.forEach(t => t.parts.forEach(p => { p.numSteps = N; fitP(p); }));
 
   const fresh = [0, 1, 2, 3].map(newPat);
   placed.forEach(x => { const b = Math.floor(x.s / N); fresh[b].steps[x.s - b * N] = { on: true, note: x.note, length: Math.min(8, x.e - x.s), velocity: Math.max(1, Math.min(127, x.vel)), repeats: 1, locked: false }; });
-  T.parts = fresh; T.locks = [false, false, false, false]; T.src = [0, 1, 2, 3].map(b => b < nBars ? 'import' : 'roll'); T.poly = false;
-  useTab(S.tab);
+  T.parts = fresh; T.locks = [false, false, false, false]; T.src = [0, 1, 2, 3].map(b => b < nBars ? 'import' : 'roll');
+  useTab(0);
   parts.forEach(p => { fitP(p); rebase(p); });
   arr = Array.from({ length: nBars }, (_, b) => b); S.sel = -1;
-  S.cur = 0; pat = parts[0];
+  lane = arr.map(newCell); S.laneSel = 0;
+  S.cur = 0; refreshPat();
   S.seed = newSeed();
 
   const dropped = m.notes.length - placed.length;
-  msg(`Imported ${nBars} bar${nBars > 1 ? 's' : ''} from ${name} → ${PARTS.slice(0, nBars).join(' ')} on tab ${S.tab + 1}` +
+  msg(`Imported ${nBars} bar${nBars > 1 ? 's' : ''} from ${name} → ${PARTS.slice(0, nBars).join(' ')}` +
       ` · key guess ${NAMES[k.root]} ${SCALES[k.scale].name} (${Math.round(k.confidence * 100)}% sure; change Key to correct it)` +
       (dropped > 0 ? ` · ${dropped} overlapping or late note${dropped > 1 ? 's' : ''} dropped` : ''));
   commitVersion();
@@ -1202,9 +1346,10 @@ addEventListener('dragleave', e => { if (!e.relatedTarget) document.body.classLi
 addEventListener('drop', e => { e.preventDefault(); document.body.classList.remove('dragging'); readFile(e.dataTransfer.files[0]); });
 
 // One Standard MIDI File (format 1): a tempo track, then a track per tab that is on, each on its
-// channel; the arrangement bar by bar, swing on the odd steps, ratchets as repeated hits.
+// channel; the arrangement bar by bar, swing on the odd steps, ratchets as repeated hits. The
+// Chords tab plays the lane.
 function exportMidi() {
-  const on = tabs.map((t, i) => [t, i]).filter(([t]) => t.on);
+  const on = tabs.filter(t => t.on);
   if (!on.length) { msg('No tab is on: turn one on in the tab bar to export'); render(); return; }
   const PPQ = 480, stepT = PPQ * 4 / S.numSteps, bpm = +$('bpm').value || 120;
   const seq = arr.length ? arr : [S.cur];
@@ -1216,36 +1361,35 @@ function exportMidi() {
   const usPerBeat = Math.round(60000000 / bpm);
   const tempo = [{ tick: 0, data: [0xff, 0x51, 3, (usPerBeat >> 16) & 255, (usPerBeat >> 8) & 255, usPerBeat & 255] }, { tick: 0, data: [0xff, 0x58, 4, 4, 2, 24, 8] }];
   bytes.push(0x4d, 0x54, 0x68, 0x64, ...u32(6), 0, 1, 0, on.length + 1, (PPQ >> 8) & 255, PPQ & 255, ...track(tempo));
-  const saveT = T;
-  on.forEach(([tab, i]) => {
-    useTab(i); // chord voicing and ranges read the tab shown
+  on.forEach(tab => {
     const ch = tab.ch - 1, ev = [];
-    const name = text(`Midinja tab ${i + 1} ${tab.poly ? 'chords' : 'riff'}`);
+    const name = text(`Midinja ${tab.name}`);
     ev.push({ tick: 0, data: [0xff, 0x03, ...vlq(name.length), ...name] });
     seq.forEach((k, bar) => {
-      const p = tab.parts[k];
+      const p = tab.poly ? (arr.length ? lane[bar].pat : newPat()) : tab.parts[k];
+      const chord = tab.poly && arr.length ? chordNotes(lane[bar].chords[0], tab) : [];
       for (let s = 0; s < p.numSteps; s++) {
         const st = p.steps[s];
         if (!st.on) continue;
-        const notes = tab.poly ? chordNotes(k) : [st.note];
+        const notes = tab.poly ? chord : [st.note];
         const start = Math.round((bar * p.numSteps + s) * stepT + (s % 2 ? S.swing * 0.5 * stepT : 0));
         const total = Math.round(st.length * stepT), reps = Math.max(1, st.repeats), each = Math.floor(total / reps);
         for (let r = 0; r < reps; r++) notes.forEach(note => {
-          const n = Math.max(0, Math.min(127, note));
-          ev.push({ tick: start + r * each, pri: 1, data: [0x90 | ch, n, st.velocity] });
-          ev.push({ tick: start + r * each + Math.max(1, each - 1), pri: 0, data: [0x80 | ch, n, 0] });
+          const nte = Math.max(0, Math.min(127, note));
+          ev.push({ tick: start + r * each, pri: 1, data: [0x90 | ch, nte, st.velocity] });
+          ev.push({ tick: start + r * each + Math.max(1, each - 1), pri: 0, data: [0x80 | ch, nte, 0] });
         });
       }
     });
     ev.sort((a, b) => a.tick - b.tick || (a.pri || 0) - (b.pri || 0));
     bytes.push(...track(ev));
   });
-  useTab(tabs.indexOf(saveT));
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: 'audio/midi' }));
   a.download = `midinja-${NAMES[S.root].replace('#', 's')}-${SCALES[S.scale].name.replace(/[^A-Za-z0-9]+/g, '')}.mid`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  msg('Saved ' + a.download);
   render();
 }
 $('exp').onclick = exportMidi;
@@ -1260,15 +1404,16 @@ function fitW() {
 }
 addEventListener('resize', fitW);
 
-// a new riff: one bar A on tab 1, a whole-bar chord on tab 2
+// a new riff: one bar A on the Riff tab, its chord (I, whole) in the lane
 const h = location.hash;
 if (h.includes('advanced')) S.adv = true;
 {
+  useTab(0);
+  lane = [newCell(0)];
   const g = settings(); g.degree = degreeOf(0);
   tabs[0].parts[0] = core.run('roll', tabs[0].parts[0], g, S.mutAmt);
-  tabs[1].parts[0] = chordRhythm(tabs[1].parts[0], 'whole');
-  useTab(0);
   parts.forEach(rebase);
+  refreshPat();
   commitVersion();
 }
 })();
