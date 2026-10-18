@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-18 15:04 · opus-5.5@raptor#af93 · 47a2c2e
+Updated: 2026-10-18 15:20 · opus-5.5@raptor#af93 · 47a2c2e
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -28,6 +28,10 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 - 2026-10-18 · Scale switch: unlocked notes keep their scale degree; colour notes move to the new scale's colour note nearest in pitch; an augmented-second pair moves as a unit to the new scale's pair (same one if it exists, else nearest), else to plain degrees; always computed from the original position, so any sequence of switches is reversible; scales of different sizes use a snapshot from before the first switch · agreed with the user
 - 2026-10-18 · Locks: locked notes and hand-placed off-scale notes (locked automatically) never move on a scale switch; root and octave changes move everything, locks kept; the range cannot shrink past a locked note; imported off-scale notes are degree + alteration, not locked; an unlocked chromatic note is replaced by the next roll · agreed with the user
 - 2026-10-18 · Pairs: shown as a thin teal arc between the two notes; one locked note splits the pair; a pair folds into the range as a whole · agreed with the user
+- 2026-10-18 · Tabs: 3 like Riffer, tab 1 mono ch 1 on, tab 2 chords ch 2 off, tab 3 mono ch 3 off; parts/arrangement shared; key, root note and scale shared; octave and range per tab; an off tab doesn't play or export; export = one .mid, a track per tab · user decision
+- 2026-10-18 · Chords: per part type a degree (I–VII), a type (triad, 7th, sus2, sus4; quality from the scale) and an inversion; default A,A′ = I (A root, A′ 1st inv), B = IV, C = V, 7th; one held chord per bar, dice vary only the rhythm; riffs start on the part's degree; strings pad in the app's synth · user decision
+- 2026-10-18 · Progression dice: sets A A′ B C and the degrees (A = A′, B, C) from idiomatic lists per mode (Dorian i–IV, Mixolydian I–♭VII–IV, Lydian I–II, Phrygian i–♭II, minor i–VI–III–VII, Andalusian for harmonic minor / Phrygian dominant); C leads home; locked parts keep their degree; 7-note scales only · user decision
+- 2026-10-18 · Extension: new empty bars are a copy of A moved by scale steps to their degree (A′ untransposed); whole bar shifted an octave before folding notes; C's last note goes to root or fifth; locks not copied; existing bars never overwritten · user decision
 
 ## Open issues
 - !  VST3 MIDI bypassed FL (user, 2026-10-18): hardware on the interface played on every FL port because the plugin also opened a system MIDI port directly; VST instruments followed FL's port. Fixed in 82eb984 (host only), awaiting the user's confirmation in FL
@@ -43,8 +47,8 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 - (none)
 
 ## Next
-1. Scale switch without loss (agreed 2026-10-18, see Decisions): engine + mockup + app
-2. Generation: augmented-second pairs resolve into the tonic or fifth (♭6–7–1, 3–♭2–1, ♭3–♯4–5), more often at the end of a part or before a strong beat; colour notes more often on strong beats next to the root
-3. Port the approved mockup to the JUCE app (root chip, range as rows with +/−, one chromatic roll, no Transpose); Windows build only
-4. User: FL check of the new build; then tag v0.2.0
-5. Chords (mockup first), then AU
+1. Mockup, one task (agreed 2026-10-18): lossless scale switch; palette letters only, one bar A by default; 3 tabs; chord mode; Progression dice; extension copies A. Then raptor deploys
+2. Port the mockup to the JUCE app, Windows build only (skip mac)
+3. User: FL check; then tag v0.2.0
+4. Generation: augmented-second pairs resolve into tonic/fifth (♭6–7–1, 3–♭2–1, ♭3–♯4–5); colour notes on strong beats
+5. AU later
