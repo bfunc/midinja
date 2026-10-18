@@ -110,7 +110,7 @@ void PartsBar::paint (juce::Graphics& g)
     if (sess == nullptr)
         return;
     const auto& d = sess->doc;
-    const auto& t = d.riff();
+    const auto& t = d.T().drums ? d.T() : d.riff(); // the locks of the tab shown
     const auto L = layout();
     const auto hit = hitAt (hover);
 
@@ -242,7 +242,7 @@ juce::String PartsBar::getTooltip()
     if (sess == nullptr)
         return {};
     const auto& d = sess->doc;
-    const auto& t = d.riff();
+    const auto& t = d.T().drums ? d.T() : d.riff();
     const auto hit = hitAt (hover);
     const auto nameOf = [] (int k) { return u8 (midinja::partName (k)); };
     const auto hasNotes = [] (const midinja::Pattern& p) {

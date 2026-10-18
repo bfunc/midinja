@@ -13,6 +13,8 @@
 //   drag a note = pitch, snapping to scale rows (Alt: every row)            Shift+click = lock
 //   right-click a note = longer (wraps to 1)
 // The Chords tab shows the lane's hits in the bar with their voicing; a click selects the chord.
+// The Beats tab is a drum grid, one row per GM drum: click = hit / remove, Shift+click = lock,
+// right-click = soft / normal / accent; a dashed crash is the automatic one after a fill.
 // Either tab shows the other's notes faintly underneath (the whole layer moved by octaves to fit).
 class GridComponent : public juce::Component, public juce::TooltipClient
 {
@@ -21,6 +23,7 @@ public:
     std::function<void()> onEdit;
     std::function<void()> onPreview;
     std::function<void()> onSelectChord; // a chord hit was clicked (the selection changed)
+    std::function<void()> onChanged;     // the Beats tab edited a hit (the session recorded it)
     int playStep = -1;
 
     // A chord note the range cuts off: shown as a named ghost above or below the roll.
@@ -51,6 +54,7 @@ private:
     int noteAt (int col, int row) const;
     int polyHitAt (int col, int row) const; // index into hits, or -1
     void drawPadlock (juce::Graphics&, juce::Rectangle<float>, juce::Colour) const;
+    void paintDrums (juce::Graphics&);
 
     std::vector<int> rows;
     std::vector<PolyHit> hits;

@@ -108,6 +108,66 @@ std::vector<std::pair<int, int>> rhythmHits (Rhythm r, int L)
 
 namespace
 {
+// ---- the Beats tab ------------------------------------------------------------------------
+struct HatDef { const char* name; bool (*f) (int s, int q, int n); };
+const HatDef kHats[kNumHats] = {
+    { "offbeat 8ths", [] (int s, int q, int) { return s % q == q / 2; } },
+    { "8ths", [] (int s, int q, int) { return s % std::max (1, q / 2) == 0; } },
+    { "16ths", [] (int, int, int) { return true; } },
+    { "offbeats + pickup", [] (int s, int q, int n) { return s % q == q / 2 || s == n - 1; } },
+    { "broken 16ths", [] (int s, int q, int) { return s % q != 1; } },
+};
+// eight slots over the last two beats, as rows; A' and B use the last four, C all eight
+struct FillDef { const char* name; std::vector<int> slots[8]; };
+const FillDef kFills[kNumFills] = {
+    { "toms down", { { kRowSnare }, {}, { kRowSnare }, { kRowHiTom }, { kRowSnare }, { kRowHiTom }, { kRowMidTom }, { kRowLoTom } } },
+    { "snare roll", { { kRowSnare }, {}, { kRowSnare }, { kRowSnare }, { kRowSnare }, { kRowSnare }, { kRowSnare }, { kRowSnare } } },
+    { "snare and toms", { { kRowSnare }, { kRowHiTom }, { kRowSnare }, { kRowMidTom }, { kRowSnare }, { kRowSnare }, { kRowHiTom }, { kRowLoTom } } },
+    { "tom pairs", { { kRowSnare }, {}, { kRowHiTom }, { kRowHiTom }, { kRowHiTom }, { kRowHiTom }, { kRowMidTom }, { kRowLoTom } } },
+    { "clap build", { { kRowClap }, {}, { kRowClap }, { kRowSnare }, { kRowClap }, { kRowSnare }, { kRowClap, kRowSnare }, { kRowLoTom } } },
+};
+int fillLenOf (const DrumPart& p, int k, int n) { return p.fillOn && k > 0 ? (n / 4) * (k == 3 ? 2 : 1) : 0; }
+void rebuildDrumPart (DrumPart& p, int k, int n, int velMin, int velMax)
+{
+    const int q = std::max (1, n / 4), L = fillLenOf (p, k, n), f0 = n - L;
+    std::array<std::array<float, kMaxSteps>, kNumDrums> want {};
+    const int openAt = p.open * q + q / 2;
+    for (int s = 0; s < n; ++s)
+    {
+        if (s % q == 0 && (s < f0 || (s == f0 && p.kickFill)))
+            want[kRowKick][(size_t) s] = s == 0 ? 1.0f : 0.9f;
+        if (s >= f0)
+            continue;
+        if (s % q == 0 && (s / q) % 2 == 1)
+        {
+            want[kRowSnare][(size_t) s] = 0.95f;
+            if (p.clap)
+                want[kRowClap][(size_t) s] = 0.8f;
+        }
+        if (s == openAt)
+            want[kRowOpenHat][(size_t) s] = 0.8f;
+        else if (kHats[p.hat].f (s, q, n))
+            want[kRowClosedHat][(size_t) s] = s % q == 0 ? 0.75f : s % q == q / 2 ? 0.6f : 0.45f;
+    }
+    for (int i = 0; i < L; ++i)
+    {
+        const int slot = std::min (7, (int) std::lround ((2 * q - L + i) * 8.0 / (2 * q)));
+        for (int row : kFills[p.fill].slots[slot])
+            want[(size_t) row][(size_t) (f0 + i)] = 0.6f + 0.4f * (L > 1 ? (float) i / (float) (L - 1) : 1.0f);
+    }
+    for (int r = 0; r < kNumDrums; ++r)
+        for (int s = 0; s < kMaxSteps; ++s)
+        {
+            auto& h = p.hits[(size_t) r][(size_t) s];
+            if (h.locked)
+                continue;
+            const float w = s < n ? want[(size_t) r][(size_t) s] : 0.0f;
+            h.on = w > 0.0f;
+            if (h.on)
+                h.velocity = drumVel (w, velMin, velMax);
+        }
+}
+
 bool hasNotes (const Pattern& p)
 {
     for (int i = 0; i < std::min (p.numSteps, kMaxSteps); ++i)
@@ -271,6 +331,55 @@ const std::vector<MoodDef>& moods()
 
 // ---------------------------------------------------------------------------------------------
 // Doc
+
+int drumNote (int row)
+{
+    static const int notes[kNumDrums] = { 49, 50, 47, 45, 46, 42, 39, 38, 36 };
+    return notes[std::clamp (row, 0, kNumDrums - 1)];
+}
+const char* drumName (int row)
+{
+    static const char* names[kNumDrums] = { "Crash", "High tom", "Mid tom", "Low tom", "Open hat", "Closed hat", "Clap", "Snare", "Kick" };
+    return names[std::clamp (row, 0, kNumDrums - 1)];
+}
+const char* hatName (int i) { return kHats[std::clamp (i, 0, kNumHats - 1)].name; }
+const char* fillName (int i) { return kFills[std::clamp (i, 0, kNumFills - 1)].name; }
+int drumVel (float weight, int velMin, int velMax)
+{
+    return std::clamp ((int) std::lround ((float) velMin + (float) (velMax - velMin) * weight), 1, 127);
+}
+
+int Doc::fillLen (int k) const
+{
+    return k >= 0 && k < kNumParts ? fillLenOf (beatTab().beats[(size_t) k], k, numSteps()) : 0;
+}
+
+bool Doc::autoCrash (int bar) const
+{
+    if (bar < 0 || bar >= (int) arr.size())
+        return false;
+    const int prev = arr[(size_t) ((bar - 1 + (int) arr.size()) % (int) arr.size())];
+    return fillLen (prev) > 0 && ! beatTab().beats[(size_t) arr[(size_t) bar]].hits[kRowCrash][0].on;
+}
+
+std::vector<DrumEvent> Doc::drumHits (int k, int bar) const
+{
+    std::vector<DrumEvent> out;
+    if (k < 0 || k >= kNumParts)
+        return out;
+    const auto& p = beatTab().beats[(size_t) k];
+    const int n = numSteps();
+    for (int s = 0; s < n; ++s)
+        for (int r = 0; r < kNumDrums; ++r)
+        {
+            const auto& h = p.hits[(size_t) r][(size_t) s];
+            if (h.on)
+                out.push_back ({ s, r, h.velocity });
+        }
+    if (autoCrash (bar))
+        out.insert (out.begin(), { 0, kRowCrash, drumVelocity (1.0f) });
+    return out;
+}
 
 std::vector<int> Doc::playSeq() const
 {
@@ -596,6 +705,19 @@ Session::Session()
     r.channel = 1; r.poly = false; r.on = true; r.rootNote = 40; r.lowNote = 40; r.highNote = 64;
     auto& c = doc.tabs[kChordTab];
     c.channel = 2; c.poly = true; c.on = false; c.rootNote = 52; c.lowNote = 52; c.highNote = 71;
+    auto& b = doc.tabs[kBeatTab];
+    b.channel = 10; b.drums = true; b.on = true; b.rootNote = 36; b.lowNote = 36; b.highNote = 36;
+    for (int k = 0; k < kNumParts; ++k)
+    {
+        auto& p = b.beats[(size_t) k];
+        p.hat = (int) (rng()() % kNumHats);
+        p.open = rng()() % 2 ? 3 : 1;
+        p.clap = (int) (rng()() % 2);
+        p.fill = (int) (rng()() % kNumFills);
+        p.fillOn = k > 0;
+        p.kickFill = rng()() % 2 == 1;
+        rebuildDrumPart (p, k, doc.numSteps(), doc.gen.velMin, doc.gen.velMax);
+    }
     for (auto& t : doc.tabs)
         for (auto& p : t.parts)
             p.numSteps = doc.numSteps();
@@ -793,6 +915,8 @@ void Session::foldTab (Tab& t)
 
 void Session::shiftTab (Tab& t, int d)
 {
+    if (t.drums)
+        return; // GM drum notes are fixed
     t.rootNote += d;
     t.lowNote += d;
     t.highNote += d;
@@ -971,6 +1095,15 @@ void Session::rollMono (Tab& t, int k, Op op)
 void Session::apply (Op op)
 {
     auto& d = doc;
+    if (d.T().drums)
+    {
+        if (d.T().locks[(size_t) d.cur])
+            return;
+        d.gen.seed = newSeed();
+        rollDrum (d.cur);
+        commitVersion();
+        return;
+    }
     if (d.T().poly)
     {
         auto* c = d.chordById (d.csel);
@@ -1007,6 +1140,14 @@ void Session::applyAll (Op op, bool keepSeed)
     auto& d = doc;
     if (! keepSeed)
         d.gen.seed = newSeed();
+    if (d.T().drums)
+    {
+        for (int k = 0; k < kNumParts; ++k)
+            if (! d.T().locks[(size_t) k])
+                rollDrum (k);
+        commitVersion();
+        return;
+    }
     if (d.T().poly)
     {
         for (auto& c : d.chords)
@@ -1104,7 +1245,7 @@ void Session::retune (Tab& t, int k, int from, int to)
 
 bool Session::extendPart (Tab& t, int k)
 {
-    if (t.poly)
+    if (t.poly || t.drums)
         return false;
     const auto& a = t.parts[0];
     auto& p = t.parts[(size_t) k];
@@ -1152,7 +1293,7 @@ void Session::setScale (int scale)
     }
     for (auto& t : doc.tabs)
     {
-        if (t.poly)
+        if (t.poly || t.drums)
             continue;
         for (int k = 0; k < kNumParts; ++k)
             remap (t, k);
@@ -1181,6 +1322,11 @@ void Session::setRootPc (int pc)
 void Session::setOctave (int dir)
 {
     auto& t = doc.T();
+    if (t.drums)
+    {
+        say ("The Beats tab has no octave: GM drum notes are fixed", true);
+        return;
+    }
     const int d = 12 * (dir > 0 ? 1 : -1);
     if (t.rootNote + d < 24 || t.rootNote + d > 96 || t.lowNote + d < 0 || t.highNote + d > 127)
         return;
@@ -1197,6 +1343,8 @@ void Session::setRate (int rate)
             p.numSteps = doc.numSteps();
             fitLengths (p);
         }
+    for (int k = 0; k < kNumParts; ++k)
+        rebuildDrum (k);
     push();
 }
 
@@ -1674,7 +1822,8 @@ void Session::selectSlot (int i)
 
 void Session::toggleLock (int k)
 {
-    doc.riff().locks[(size_t) k] = ! doc.riff().locks[(size_t) k];
+    auto& t = doc.T().drums ? doc.T() : doc.riff();
+    t.locks[(size_t) k] = ! t.locks[(size_t) k];
     push();
 }
 
@@ -1744,6 +1893,8 @@ int Session::barLocks() const
                     ++n;
         return n;
     }
+    if (doc.T().drums)
+        return (doc.T().locks[(size_t) doc.cur] ? 1 : 0) + lockedHits (doc.cur);
     const auto& p = doc.shown();
     int n = doc.riff().locks[(size_t) doc.cur] ? 1 : 0;
     for (int i = 0; i < std::min (p.numSteps, kMaxSteps); ++i)
@@ -1761,12 +1912,122 @@ void Session::unlockBar()
             if (doc.overlapsBar (c, b))
                 c.lock = false;
     }
+    else if (doc.T().drums)
+    {
+        doc.T().locks[(size_t) doc.cur] = false;
+        for (auto& row : doc.T().beats[(size_t) doc.cur].hits)
+            for (auto& h : row)
+                h.locked = false;
+    }
     else
     {
         doc.riff().locks[(size_t) doc.cur] = false;
         for (auto& s : doc.shown().steps)
             s.locked = false;
     }
+    push();
+}
+
+// ---------------------------------------------------------------------------------------------
+// The Beats tab
+
+void Session::rebuildDrum (int k)
+{
+    if (k < 0 || k >= kNumParts)
+        return;
+    rebuildDrumPart (doc.beatTab().beats[(size_t) k], k, doc.numSteps(), doc.gen.velMin, doc.gen.velMax);
+}
+
+void Session::rollDrum (int k)
+{
+    if (k < 0 || k >= kNumParts)
+        return;
+    auto& p = doc.beatTab().beats[(size_t) k];
+    std::vector<int> hats, fills;
+    for (int i = 0; i < kNumHats; ++i)
+        if (i != p.hat)
+            hats.push_back (i);
+    for (int i = 0; i < kNumFills; ++i)
+        if (i != p.fill)
+            fills.push_back (i);
+    p.hat = pick (hats);
+    p.open = rng()() % 2 ? 3 : 1;
+    p.clap = (int) (rng()() % 2);
+    if (k > 0)
+        p.fill = pick (fills);
+    p.kickFill = rng()() % 2 == 1;
+    rebuildDrum (k);
+}
+
+void Session::setFill (int k, bool on)
+{
+    if (k <= 0 || k >= kNumParts)
+        return; // A is the plain groove
+    doc.beatTab().beats[(size_t) k].fillOn = on;
+    rebuildDrum (k);
+    push();
+}
+
+void Session::toggleDrumHit (int row, int step)
+{
+    if (row < 0 || row >= kNumDrums || step < 0 || step >= doc.numSteps())
+        return;
+    auto& h = doc.beatTab().beats[(size_t) doc.cur].hits[(size_t) row][(size_t) step];
+    if (h.on)
+    {
+        h.on = false;
+        h.locked = false;
+    }
+    else
+    {
+        if (h.locked)
+            return;
+        h.on = true;
+        h.velocity = doc.drumVelocity (step % doc.stepsPerBeat() == 0 ? 0.95f : 0.7f);
+    }
+    push();
+}
+
+void Session::toggleDrumLock (int row, int step)
+{
+    if (row < 0 || row >= kNumDrums || step < 0 || step >= doc.numSteps())
+        return;
+    auto& h = doc.beatTab().beats[(size_t) doc.cur].hits[(size_t) row][(size_t) step];
+    h.locked = ! h.locked;
+    push();
+}
+
+void Session::cycleDrumVel (int row, int step)
+{
+    if (row < 0 || row >= kNumDrums || step < 0 || step >= doc.numSteps())
+        return;
+    auto& h = doc.beatTab().beats[(size_t) doc.cur].hits[(size_t) row][(size_t) step];
+    if (! h.on)
+        return;
+    const int soft = doc.drumVelocity (0.5f), normal = doc.drumVelocity (0.8f), accent = doc.drumVelocity (1.0f);
+    h.velocity = h.velocity >= doc.drumVelocity (0.95f) ? soft : h.velocity >= doc.drumVelocity (0.7f) ? accent : normal;
+    push();
+}
+
+int Session::lockedHits (int k) const
+{
+    if (k < 0 || k >= kNumParts)
+        return 0;
+    int n = 0;
+    const auto& p = doc.beatTab().beats[(size_t) k];
+    for (int r = 0; r < kNumDrums; ++r)
+        for (int s = 0; s < doc.numSteps(); ++s)
+            n += p.hits[(size_t) r][(size_t) s].locked ? 1 : 0;
+    return n;
+}
+
+void Session::unlockHits (int k)
+{
+    if (k < 0 || k >= kNumParts)
+        return;
+    for (auto& row : doc.beatTab().beats[(size_t) k].hits)
+        for (auto& h : row)
+            h.locked = false;
     push();
 }
 
@@ -1932,6 +2193,8 @@ bool Session::importMidi (const std::vector<RawNote>& raw, double ppq, const std
             p.numSteps = N;
             fitLengths (p);
         }
+    for (int k = 0; k < kNumParts; ++k)
+        rebuildDrumPart (d.tabs[kBeatTab].beats[(size_t) k], k, N, d.gen.velMin, d.gen.velMax);
     for (auto& p : t.parts)
     {
         p = Pattern {};
@@ -1990,7 +2253,7 @@ std::vector<uint8_t> Session::midiFile (double bpm)
         if (! t.on)
             continue;
         MidiTrack tr;
-        tr.name = std::string ("Midinja ") + (t.poly ? "Chords" : "Riff");
+        tr.name = std::string ("Midinja ") + (t.drums ? "Beats" : t.poly ? "Chords" : "Riff");
         tr.channel = t.channel;
         if (t.poly)
         {
@@ -1998,6 +2261,17 @@ std::vector<uint8_t> Session::midiFile (double bpm)
                 for (const auto& h : doc.barHits (b))
                     for (int note : doc.voice (doc.chords[(size_t) h.chordIndex]))
                         tr.notes.push_back ({ (double) (b * n + h.step) + swingOffset (h.step, doc.swing), (double) h.len, note, 100 });
+        }
+        else if (t.drums)
+        {
+            double offset = 0.0;
+            for (size_t b = 0; b < seq.size(); ++b)
+            {
+                const int bar = doc.sel >= 0 && doc.sel < (int) doc.arr.size() ? doc.sel : doc.arr.empty() ? -1 : (int) b;
+                for (const auto& e : doc.drumHits (seq[b], bar))
+                    tr.notes.push_back ({ offset + (double) e.step + swingOffset (e.step, doc.swing), 1.0, drumNote (e.row), e.velocity });
+                offset += n;
+            }
         }
         else
         {

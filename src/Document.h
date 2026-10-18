@@ -18,8 +18,11 @@ namespace midinja
 {
 
 constexpr int kMaxBars = 4;
-constexpr int kNumTabs = 2;
-constexpr int kRiffTab = 0, kChordTab = 1;
+constexpr int kNumTabs = 3;
+constexpr int kRiffTab = 0, kChordTab = 1, kBeatTab = 2;
+constexpr int kNumDrums = 9, kNumHats = 5, kNumFills = 5;
+// rows of the drum grid, top to bottom
+constexpr int kRowCrash = 0, kRowHiTom = 1, kRowMidTom = 2, kRowLoTom = 3, kRowOpenHat = 4, kRowClosedHat = 5, kRowClap = 6, kRowSnare = 7, kRowKick = 8;
 constexpr int kMaxSpan = 36;       // the range is at most three octaves: more rows get too thin
 constexpr int kMaxChordNotes = 6;
 constexpr int kNumRhythms = 8;
@@ -42,6 +45,25 @@ const char* styleName (int i);            // "Jazz", "R&B", "Funk", "House", "Dr
 const char* styleTip (int i);
 // The chord rhythm in sixteenths from the chord start for a chord len beats long: (start, length).
 std::vector<std::pair<int, int>> rhythmHits (Rhythm r, int len);
+// The Beats tab: GM drums per row (Crash 49 ... Kick 36), the hats patterns and the fills.
+int drumNote (int row);
+const char* drumName (int row);
+const char* hatName (int i);
+const char* fillName (int i);
+int drumVel (float weight, int velMin, int velMax);
+
+struct DrumHit { bool on = false; int velocity = 100; bool locked = false; };
+// A drum part: the hits per row, and the choices the dice make; the hits are rebuilt from the
+// choices (locked hits stay). The groove: kick on every beat, snare (and a clap) on 2 and 4, a hats
+// pattern, one open hat on an offbeat. A' B C end with a fill on the last beat (C on the last
+// two); the kick keeps the fill's downbeat or drops out.
+struct DrumPart
+{
+    std::array<std::array<DrumHit, kMaxSteps>, kNumDrums> hits {};
+    int hat = 0, open = 1, clap = 0, fill = 0;
+    bool fillOn = false, kickFill = false;
+};
+struct DrumEvent { int step, row, velocity; };
 
 // What a riff remembers for the scale switch: its notes in the scale it was made or edited in.
 struct Base
@@ -61,6 +83,8 @@ struct Tab
     std::array<bool, kNumParts> locks {};
     std::array<Src, kNumParts> src { Src::Roll, Src::Roll, Src::Roll, Src::Roll };
     std::array<Base, kNumParts> base;
+    bool drums = false; // the Beats tab: plays its drum parts on GM notes
+    std::array<DrumPart, kNumParts> beats;
 };
 
 // A block of the chord lane. start and len are beats of the arrangement (4 per bar).
@@ -101,6 +125,15 @@ struct Doc
     Tab& riff() { return tabs[kRiffTab]; }
     const Tab& riff() const { return tabs[kRiffTab]; }
     const Tab& chordTab() const { return tabs[kChordTab]; }
+    const Tab& beatTab() const { return tabs[kBeatTab]; }
+    Tab& beatTab() { return tabs[kBeatTab]; }
+    // The Beats tab. fillLen: steps of the fill at the end of part k (0 = none). A crash lands on
+    // step 1 of a bar after a bar with a fill (the form loops: bar 1 follows the last). drumHits:
+    // the events of part k when it plays in bar (an index into arr, or -1), crash included.
+    int fillLen (int k) const;
+    bool autoCrash (int bar) const;
+    std::vector<DrumEvent> drumHits (int k, int bar) const;
+    int drumVelocity (float weight) const { return drumVel (weight, gen.velMin, gen.velMax); }
     Pattern& shown() { return riff().parts[(size_t) cur]; }
     const Pattern& shown() const { return riff().parts[(size_t) cur]; }
     int numSteps() const { return rate == 2 ? 8 : rate == 6 ? 12 : 16; }
@@ -229,6 +262,17 @@ public:
     // Unlock bar: every lock of the bar shown (the part and its notes on Riff, the chords on Chords).
     int barLocks() const;
     void unlockBar();
+
+    // The Beats tab: the dice pick other hats and another fill; Fill on/off per part (never A);
+    // hits toggle, lock, and cycle soft / normal / accent. These record their own undo step.
+    void rebuildDrum (int k);
+    void rollDrum (int k);
+    void setFill (int k, bool on);
+    void toggleDrumHit (int row, int step);
+    void toggleDrumLock (int row, int step);
+    void cycleDrumVel (int row, int step);
+    int lockedHits (int k) const;
+    void unlockHits (int k);
 
     // History.
     void commitVersion();

@@ -37,10 +37,11 @@ void MidinjaProcessor::publish()
         const auto& t = d.tabs[(size_t) i];
         auto& pt = m.tabs[(size_t) i];
         pt.on = t.on;
-        pt.poly = t.poly;
+        pt.poly = t.poly || t.drums;
+        pt.drums = t.drums;
         pt.channel = t.channel;
         pt.parts = t.parts;
-        if (! t.poly)
+        if (! pt.poly)
             continue;
         // the Chords tab plays the lane: one pattern per bar of what Play goes through
         for (int b = 0; b < m.seqLen; ++b)
@@ -52,6 +53,37 @@ void MidinjaProcessor::publish()
             auto& p = pt.barPats[(size_t) b];
             p = midinja::Pattern {};
             p.numSteps = m.numSteps;
+            if (t.drums)
+            {
+                // the Beats tab: the hits of the slot's part, several drums on a step share one hit
+                std::array<int, midinja::kMaxSteps> idx;
+                idx.fill (-1);
+                int h = 0;
+                for (const auto& e : d.drumHits (m.seq[(size_t) b], bar))
+                {
+                    if (e.step < 0 || e.step >= m.numSteps)
+                        continue;
+                    int hi = idx[(size_t) e.step];
+                    if (hi < 0)
+                    {
+                        if (h >= kHitsPerBar)
+                            break;
+                        hi = idx[(size_t) e.step] = h++;
+                        auto& st = p.steps[(size_t) e.step];
+                        st.on = true;
+                        st.note = b * kHitsPerBar + hi;
+                        st.length = 1;
+                        st.velocity = juce::jlimit (1, 127, e.velocity);
+                    }
+                    auto& cnt = pt.noteCount[(size_t) b][(size_t) hi];
+                    if (cnt >= midinja::kMaxChordNotes)
+                        continue;
+                    pt.notes[(size_t) b][(size_t) hi][(size_t) cnt] = midinja::drumNote (e.row);
+                    pt.vels[(size_t) b][(size_t) hi][(size_t) cnt] = juce::jlimit (1, 127, e.velocity);
+                    ++cnt;
+                }
+                continue;
+            }
             if (bar < 0)
                 continue;
             int h = 0;
@@ -300,7 +332,7 @@ void MidinjaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
         }
 
         const int ch = pt.channel;
-        const bool tabSynth = useSynth && pt.on;
+        const bool tabSynth = useSynth && pt.on && ! pt.drums; // no drum sound in the preview synth
         auto& ms = mono[(size_t) i];
         auto& ps = pad[(size_t) i];
         int pos = 0;
@@ -333,8 +365,10 @@ void MidinjaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
                         for (int j = 0; j < heldN; ++j)
                         {
                             held[(size_t) j] = pt.notes[(size_t) b][(size_t) h][(size_t) j];
-                            if (tabSynth) ps.noteOn (held[(size_t) j], e.data2);
-                            outBuffer.addEvent (juce::MidiMessage::noteOn (ch, held[(size_t) j], (juce::uint8) e.data2), at);
+                            const int v = pt.vels[(size_t) b][(size_t) h][(size_t) j];
+                            const int vel = v > 0 ? v : e.data2;
+                            if (tabSynth) ps.noteOn (held[(size_t) j], vel);
+                            outBuffer.addEvent (juce::MidiMessage::noteOn (ch, held[(size_t) j], (juce::uint8) vel), at);
                         }
                     }
                     else
@@ -469,6 +503,29 @@ void MidinjaProcessor::getStateInformation (juce::MemoryBlock& destData)
         tx->setAttribute ("high", t.highNote);
         if (t.poly)
             continue;
+        if (t.drums)
+        {
+            for (int k = 0; k < kNumParts; ++k)
+            {
+                const auto& p = t.beats[(size_t) k];
+                auto* dx = tx->createNewChildElement ("drum");
+                dx->setAttribute ("lock", t.locks[(size_t) k]);
+                dx->setAttribute ("hat", p.hat);
+                dx->setAttribute ("open", p.open);
+                dx->setAttribute ("clap", p.clap);
+                dx->setAttribute ("fill", p.fill);
+                dx->setAttribute ("fillOn", p.fillOn);
+                dx->setAttribute ("kickFill", p.kickFill);
+                for (int r = 0; r < midinja::kNumDrums; ++r)
+                {
+                    juce::StringArray v;
+                    for (const auto& h : p.hits[(size_t) r])
+                        v.add (juce::String (h.on ? h.velocity : 0) + (h.locked ? "L" : ""));
+                    dx->setAttribute ("r" + juce::String (r), v.joinIntoString (","));
+                }
+            }
+            continue;
+        }
         for (int k = 0; k < kNumParts; ++k)
         {
             auto* part = tx->createNewChildElement ("part");
@@ -580,6 +637,35 @@ void MidinjaProcessor::setStateInformation (const void* data, int sizeInBytes)
         t.lowNote = juce::jlimit (0, 127, tx->getIntAttribute ("low", t.lowNote));
         t.highNote = juce::jlimit (t.lowNote, 127, tx->getIntAttribute ("high", t.highNote));
         int part = 0;
+        for (auto* dx : tx->getChildWithTagNameIterator ("drum"))
+        {
+            if (! t.drums || part >= kNumParts)
+                break;
+            t.locks[(size_t) part] = dx->getBoolAttribute ("lock");
+            auto& p = t.beats[(size_t) part];
+            p.hat = juce::jlimit (0, midinja::kNumHats - 1, dx->getIntAttribute ("hat", 0));
+            p.open = dx->getIntAttribute ("open", 1) == 3 ? 3 : 1;
+            p.clap = juce::jlimit (0, 1, dx->getIntAttribute ("clap", 0));
+            p.fill = juce::jlimit (0, midinja::kNumFills - 1, dx->getIntAttribute ("fill", 0));
+            p.fillOn = dx->getBoolAttribute ("fillOn", part > 0);
+            p.kickFill = dx->getBoolAttribute ("kickFill", false);
+            for (int r = 0; r < midinja::kNumDrums; ++r)
+            {
+                int s = 0;
+                for (const auto& tok : juce::StringArray::fromTokens (dx->getStringAttribute ("r" + juce::String (r)), ",", ""))
+                {
+                    if (s >= midinja::kMaxSteps)
+                        break;
+                    auto& h = p.hits[(size_t) r][(size_t) s++];
+                    h.locked = tok.endsWithChar ('L');
+                    const int v = tok.trimCharactersAtEnd ("L").getIntValue();
+                    h.on = v > 0;
+                    h.velocity = juce::jlimit (1, 127, v > 0 ? v : 100);
+                }
+            }
+            ++part;
+        }
+        part = 0;
         for (auto* px : tx->getChildWithTagNameIterator ("part"))
         {
             if (part >= kNumParts)

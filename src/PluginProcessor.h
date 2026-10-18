@@ -75,11 +75,12 @@ private:
     static constexpr int kHitsPerBar = 32;
     struct PlayTab
     {
-        bool on = false, poly = false;
+        bool on = false, poly = false, drums = false; // poly: per-bar hit patterns (Chords and Beats)
         int channel = 1;
         std::array<midinja::Pattern, midinja::kNumParts> parts;
         std::array<midinja::Pattern, midinja::kMaxBars> barPats;
         std::array<std::array<std::array<int, midinja::kMaxChordNotes>, kHitsPerBar>, midinja::kMaxBars> notes {};
+        std::array<std::array<std::array<int, midinja::kMaxChordNotes>, kHitsPerBar>, midinja::kMaxBars> vels {}; // 0 = the step's velocity
         std::array<std::array<int, kHitsPerBar>, midinja::kMaxBars> noteCount {};
     };
     struct PlayModel

@@ -23,6 +23,13 @@ void GridComponent::refresh()
         return;
     const auto& d = doc();
     const auto& t = d.T();
+    if (t.drums)
+    {
+        for (int r = 0; r < midinja::kNumDrums; ++r)
+            rows.push_back (midinja::drumNote (r));
+        repaint();
+        return;
+    }
     for (int n = t.highNote; n >= t.lowNote; --n)
         rows.push_back (n);
     const int b = d.shownBar();
@@ -191,6 +198,14 @@ void GridComponent::paint (juce::Graphics& g)
     juce::Path clip;
     clip.addRoundedRectangle (getLocalBounds().toFloat(), 6.0f);
     g.reduceClipRegion (clip);
+
+    if (t.drums)
+    {
+        paintDrums (g);
+        g.setColour (theme::line);
+        g.drawRoundedRectangle (getLocalBounds().toFloat().reduced (0.5f), 6.0f, 1.0f);
+        return;
+    }
 
     if (rows.empty())
     {
@@ -405,12 +420,92 @@ void GridComponent::paint (juce::Graphics& g)
     g.drawRoundedRectangle (getLocalBounds().toFloat().reduced (0.5f), 6.0f, 1.0f);
 }
 
+void GridComponent::paintDrums (juce::Graphics& g)
+{
+    const auto& d = doc();
+    const auto& p = d.beatTab().beats[(size_t) d.cur];
+    const int n = d.numSteps(), q = std::max (1, d.stepsPerBeat());
+    const float cw = colWidth();
+    const float kw = (float) theme::keyWidth;
+    const int b = d.shownBar();
+    const int L = d.fillLen (d.cur);
+    const bool crash = d.autoCrash (b);
+    for (int r = 0; r < midinja::kNumDrums; ++r)
+    {
+        const float y = 1.0f + (float) r * (float) rowH;
+        g.setColour (theme::panel);
+        g.fillRect (1.0f, y, kw, (float) rowH);
+        g.setColour (juce::Colours::black.withAlpha (0.25f));
+        g.fillRect (1.0f, y + (float) rowH - 1.0f, kw, 1.0f);
+        const bool kick = r == midinja::kRowKick;
+        g.setColour (kick ? theme::ink : theme::ink2);
+        g.setFont (theme::font (10.0f, kick));
+        g.drawText (midinja::drumName (r), juce::Rectangle<float> (1.0f, y, kw - 5.0f, (float) rowH), juce::Justification::centredRight);
+        for (int s = 0; s < n; ++s)
+        {
+            const auto cell = juce::Rectangle<float> (1.0f + kw + (float) s * cw, y, cw, (float) rowH);
+            g.setColour (r % 2 ? juce::Colours::white.withAlpha (0.02f) : juce::Colours::transparentBlack);
+            g.fillRect (cell);
+            if (L > 0 && s >= n - L)
+            {
+                g.setColour (theme::accent.withAlpha (0.04f));
+                g.fillRect (cell);
+            }
+            if (s == playStep)
+            {
+                g.setColour (theme::teal.withAlpha (0.08f));
+                g.fillRect (cell);
+            }
+            g.setColour (juce::Colours::white.withAlpha (s % q == 0 ? 0.11f : 0.03f));
+            g.fillRect (cell.getX(), cell.getY(), 1.0f, cell.getHeight());
+            g.setColour (juce::Colours::black.withAlpha (0.25f));
+            g.fillRect (cell.getX(), cell.getBottom() - 1.0f, cell.getWidth(), 1.0f);
+            const auto& h = p.hits[(size_t) r][(size_t) s];
+            const auto rect = cell.reduced (3.0f, 4.0f);
+            if (h.on)
+            {
+                g.setColour (theme::accent.withAlpha (0.45f + 0.55f * (float) h.velocity / 127.0f));
+                g.fillRoundedRectangle (rect, 4.0f);
+                if (h.locked)
+                {
+                    g.setColour (theme::lock);
+                    g.drawRoundedRectangle (rect.reduced (1.0f), 4.0f, 2.0f);
+                    const float sz = std::min (8.0f, rect.getHeight() - 4.0f);
+                    if (sz >= 4.0f)
+                        drawPadlock (g, juce::Rectangle<float> (rect.getRight() - sz - 3.0f, rect.getCentreY() - sz * 0.5f, sz, sz), theme::lock);
+                }
+            }
+            else if (crash && r == midinja::kRowCrash && s == 0)
+            {
+                g.setColour (juce::Colour (0xff8a5a2c));
+                juce::Path outline, dashed;
+                outline.addRoundedRectangle (rect, 4.0f);
+                const float dashes[] = { 3.0f, 3.0f };
+                juce::PathStrokeType (1.0f).createDashedStroke (dashed, outline, dashes, 2);
+                g.fillPath (dashed);
+            }
+        }
+    }
+}
+
 juce::String GridComponent::getTooltip()
 {
     if (sess == nullptr || rows.empty())
         return {};
     const auto& d = doc();
     const int col = colAt ((float) hover.x), row = rowAt ((float) hover.y);
+    if (d.T().drums)
+    {
+        if (col < 0 || row < 0)
+            return {};
+        const auto& h = d.beatTab().beats[(size_t) d.cur].hits[(size_t) row][(size_t) col];
+        if (h.on)
+            return juce::String (midinja::drumName (row)) + u8 (" \xC2\xB7 velocity ") + juce::String (h.velocity) + (h.locked ? " (locked)" : "")
+                 + u8 (" \xC2\xB7 click removes, Shift+click locks, right-click: soft / normal / accent");
+        if (row == midinja::kRowCrash && col == 0 && d.autoCrash (d.shownBar()))
+            return "Crash after the fill of the bar before (automatic). Click to make it a hit of " + u8 (midinja::partName (d.cur));
+        return juce::String (midinja::drumName (row)) + " (GM note " + juce::String (midinja::drumNote (row)) + ") " + u8 ("\xC2\xB7 click adds a hit");
+    }
     if (d.T().poly)
     {
         const int i = polyHitAt (col, row);
@@ -439,6 +534,15 @@ void GridComponent::mouseDown (const juce::MouseEvent& e)
     if (col < 0 || row < 0)
         return;
     auto& d = sess->doc;
+    if (d.T().drums)
+    {
+        if (e.mods.isPopupMenu()) sess->cycleDrumVel (row, col);
+        else if (e.mods.isShiftDown()) sess->toggleDrumLock (row, col);
+        else if (e.mods.isLeftButtonDown()) sess->toggleDrumHit (row, col);
+        else return;
+        if (onChanged) onChanged();
+        return;
+    }
     if (d.T().poly)
     {
         const int i = polyHitAt (col, row);

@@ -4,7 +4,7 @@
 namespace
 {
 juce::String u8 (const char* s) { return juce::String (juce::CharPointer_UTF8 (s)); }
-const char* tabName (int i) { return i == midinja::kChordTab ? "Chords" : "Riff"; }
+const char* tabName (int i) { return i == midinja::kChordTab ? "Chords" : i == midinja::kBeatTab ? "Beats" : "Riff"; }
 } // namespace
 
 TabBar::TabBar()
@@ -83,7 +83,7 @@ void TabBar::paint (juce::Graphics& g)
     g.drawText ("RANGE", rRange.withWidth (40), juce::Justification::centredLeft);
     g.setColour (theme::ink2);
     g.setFont (theme::font (11.0f));
-    g.drawText (theme::noteName (t.lowNote) + u8 ("\xE2\x80\x93") + theme::noteName (t.highNote), rRange.withTrimmedLeft (0).withX (rRange.getX() + 2).withWidth (68), juce::Justification::centredRight);
+    g.drawText (t.drums ? juce::String ("GM drums") : theme::noteName (t.lowNote) + u8 ("\xE2\x80\x93") + theme::noteName (t.highNote), rRange.withTrimmedLeft (0).withX (rRange.getX() + 2).withWidth (68), juce::Justification::centredRight);
 }
 
 void TabBar::mouseDown (const juce::MouseEvent& e)
@@ -118,7 +118,8 @@ juce::String TabBar::getTooltip()
             return juce::String (tabName (i)) + " on channel " + juce::String (t.channel) + (t.on ? ", on" : ", off") + u8 (" \xC2\xB7 click the name to show it, the dot to turn it on or off");
     }
     if (rRange.contains (hover))
-        return sess->doc.T().poly ? "The rows of the Chords roll: + and - at the edges crop the view only, chords never move; cut notes show as ghosts"
+        return sess->doc.T().drums ? "Nine GM drum notes, Kick 36 to Crash 49; the key and the octave do not apply"
+             : sess->doc.T().poly ? "The rows of the Chords roll: + and - at the edges crop the view only, chords never move; cut notes show as ghosts"
                                   : "The rows of the roll: grow or shrink it with + and - at the top and bottom edges; - and + by the key move it an octave";
-    return "The two tabs share the key, the arrangement and the chord lane; each has its own octave, range and channel (the Riff tab its parts). Export = one .mid, a track per tab that is on";
+    return "The tabs share the key, the arrangement and the chord lane; each has its own channel (Riff and Chords an octave and a range, Riff and Beats their parts). Export = one .mid, a track per tab that is on";
 }

@@ -28,7 +28,7 @@ motif, A′ a variation of A (the **Similarity** knob says how close), B a contr
 The harmony lives in the **chord lane**: every bar starts on the root of the chord it starts in
 (switch it off under Advanced), and wherever a chord starts the riff plays one of its tones.
 
-- **Tabs**: **Riff** (channel 1, on) and **Chords** (channel 2, off). Click the name to show a tab,
+- **Tabs**: **Riff** (channel 1, on), **Chords** (channel 2, off) and **Beats** (channel 10, on). Click the name to show a tab,
   the dot to turn it on or off; an off tab does not play or export. Both share the key, the rate, the
   arrangement and the chord lane; each has its own octave, range and channel (the Riff tab its
   parts). The shown tab's channel and range sit on the right of the tab bar.
@@ -57,6 +57,13 @@ The harmony lives in the **chord lane**: every bar starts on the root of the cho
 - **Chords roll**: the range (+/− at the edges, one to three octaves) only crops the view; the voicing
   sits around a fixed point of the key, so cut notes show as named ghosts above and below the roll.
   The other tab's notes show faintly underneath on either tab.
+- **Beats**: a drum grid of nine GM drums (Kick 36, Snare 38, Clap 39, Closed hat 42, Low tom 45, Open hat 46,
+  Mid tom 47, Crash 49, High tom 50). Each part is a groove: kick on every beat, snare (sometimes a clap)
+  on 2 and 4, a hats pattern, one open hat; **A′, B and C end with a fill** on the last beat (C on the
+  last two) with snare and toms going down, and the bar after a fill starts with a crash (shown dashed).
+  Click = hit / remove, Shift+click = lock, right-click = soft / normal / accent. The dice pick other hats
+  and another fill for the part shown, All for every unlocked part; **Fill on / off** per part (A has
+  none). The key, the octave and the range do not apply here.
 - **Riff roll**: every semitone of the range is a row, out-of-scale rows dimmed. Click an empty cell to
   add a note (an off-scale one is locked at once), click a note to remove it, drag it to change the
   pitch (it snaps to scale rows, Alt for every row), **Shift+click** to lock it, **right-click** to

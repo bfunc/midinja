@@ -78,7 +78,7 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     setWantsKeyboardFocus (true);
 
     // ---- Row A: the dice, Rhythm / Notes toggles, Mutate as a mode, All ----
-    dice.onClick = [this] { midinja::Op op; if (sess.currentOp (op)) { sess.apply (op); changed(); } };
+    dice.onClick = [this] { midinja::Op op = midinja::Op::Roll; if (sess.doc.T().drums || sess.currentOp (op)) { sess.apply (op); changed(); } };
     addAndMakeVisible (dice);
     rhythmB.setButtonText (u8 ("\xE2\x99\xA9 Rhythm"));
     rhythmB.setTooltip ("New rhythm (keeps the pitches unless Notes is on too)");
@@ -102,7 +102,7 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     };
     for (auto* b : { &rhythmB, &notesB, &mutateB })
         addAndMakeVisible (*b);
-    rollAll.onClick = [this] { midinja::Op op; if (sess.currentOp (op)) { sess.applyAll (op); changed(); } };
+    rollAll.onClick = [this] { midinja::Op op = midinja::Op::Roll; if (sess.doc.T().drums || sess.currentOp (op)) { sess.applyAll (op); changed(); } };
     addAndMakeVisible (rollAll);
 
     versions.sess = &sess;
@@ -268,6 +268,12 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     grid.onEdit = [this] { edited(); };
     grid.onPreview = [this] { preview(); };
     grid.onSelectChord = [this] { render(); };
+    grid.onChanged = [this] { changed(); };
+    fillB.setClickingTogglesState (false);
+    fillB.onClick = [this] { const int k = sess.doc.cur; sess.setFill (k, ! sess.doc.beatTab().beats[(size_t) k].fillOn); changed(); };
+    addAndMakeVisible (fillB);
+    unlockHitsB.onClick = [this] { sess.unlockHits (sess.doc.cur); changed(); };
+    addAndMakeVisible (unlockHitsB);
     addAndMakeVisible (grid);
     for (auto* l : { &velLane, &lenLane, &repLane })
     {
@@ -468,7 +474,7 @@ void MidinjaEditor::render()
     shownVersion = proc.publishedVersion();
     const auto& d = sess.doc;
     const auto& t = d.T();
-    const bool adv = sess.adv, poly = t.poly;
+    const bool adv = sess.adv, poly = t.poly, drums = t.drums;
     const bool hosted = proc.isHosted() && proc.hostBpm.load() > 0.0f;
 
     // the dice block
@@ -478,24 +484,30 @@ void MidinjaEditor::render()
     notesB.setToggleState (! sess.mutateMode && sess.doNotes, juce::dontSendNotification);
     mutateB.setToggleState (sess.mutateMode, juce::dontSendNotification);
     mutateB.setButtonText ("~ Mutate " + juce::String ((int) std::lround (sess.mutAmt * 100)) + "%");
-    const bool lockedPart = ! poly && d.riff().locks[(size_t) d.cur];
+    const bool lockedPart = ! poly && (drums ? t : d.riff()).locks[(size_t) d.cur];
     const auto* csel = d.chordById (d.csel);
-    dice.setEnabled (hasOp && ! lockedPart && ! (poly && csel == nullptr));
+    dice.setEnabled (drums ? ! lockedPart : (hasOp && ! lockedPart && ! (poly && csel == nullptr)));
+    for (auto* b : { &rhythmB, &notesB, &mutateB })
+        b->setVisible (! drums);
     static const char* whatTips[] = { "Roll the part shown: new rhythm and new notes", "Roll a new rhythm for the part shown, keep its pitches",
                                       "Roll new pitches for the part shown, keep its rhythm", "Mutate the part shown: change some notes, keep the riff" };
-    dice.setTooltip (! hasOp ? juce::String ("Choose what the dice change: Rhythm, Notes or Mutate")
+    dice.setTooltip (drums ? (lockedPart ? u8 (midinja::partName (d.cur)) + " is locked: unlock it on its bar to roll"
+                                        : "Other hats and another fill for " + u8 (midinja::partName (d.cur)) + " (Space). Locked hits stay")
+                   : ! hasOp ? juce::String ("Choose what the dice change: Rhythm, Notes or Mutate")
                    : lockedPart ? u8 (midinja::partName (d.cur)) + " is locked: unlock it on its bar to roll"
                    : poly ? juce::String (csel != nullptr ? "A new rhythm for the selected chord (Space)" : "Select a chord in the lane first")
                           : juce::String (whatTips[(int) op]) + " (Space). Locked notes stay; the riff plays a chord tone where a chord starts");
-    rollAll.setEnabled (hasOp);
-    rollAll.setTooltip (poly ? "New rhythms for every unlocked chord (Shift+Space)" : u8 ("The same for all four parts: A, then A\xE2\x80\xB2 B C from it (Shift+Space). Locked parts stay"));
+    rollAll.setEnabled (hasOp || drums);
+    rollAll.setTooltip (drums ? "Other hats and fills for every unlocked part (Shift+Space)" : poly ? "New rhythms for every unlocked chord (Shift+Space)" : u8 ("The same for all four parts: A, then A\xE2\x80\xB2 B C from it (Shift+Space). Locked parts stay"));
     undoB.setEnabled (sess.canUndo());
     redoB.setEnabled (sess.canRedo());
     undoB.setVisible (adv);
     redoB.setVisible (adv);
     versions.repaint();
 
-    const int oct = t.rootNote / 12 - 1;
+    const int oct = (drums ? d.riff().rootNote : t.rootNote) / 12 - 1;
+    ocD.setEnabled (! drums);
+    ocU.setEnabled (! drums);
     if (oct != rootOctShown)
     {
         rootOctShown = oct;
@@ -518,7 +530,7 @@ void MidinjaEditor::render()
     for (auto* c : std::initializer_list<juce::Component*> { &lenR, &velR, &repR, &repPill, &rootPill, &seedBox })
         c->setVisible (adv);
     for (auto* c : std::initializer_list<juce::Component*> { &velLane, &lenLane, &repLane })
-        c->setVisible (adv && ! poly);
+        c->setVisible (adv && ! poly && ! drums);
     repR.dimmed = ! d.gen.repeatsOn;
     repPill.on = d.gen.repeatsOn;
     rootPill.on = d.gen.startOnRoot;
@@ -531,6 +543,7 @@ void MidinjaEditor::render()
     unlockBarB.setEnabled (nl > 0);
     unlockBarB.setTooltip (nl == 0 ? juce::String ("Nothing is locked in this bar")
                          : poly ? "Unlock the " + juce::String (nl) + (nl > 1 ? " locked chords of bar " : " locked chord of bar ") + juce::String (d.shownBar() + 1)
+                         : drums ? "Remove every lock of " + u8 (midinja::partName (d.cur)) + ": the part's lock and its locked hits"
                                 : "Remove every lock of " + u8 (midinja::partName (d.cur)) + ": the part's lock and its locked notes, chromatic ones included");
 
     // the generators
@@ -552,9 +565,26 @@ void MidinjaEditor::render()
 
     // the selected chord
     for (auto* c : std::initializer_list<juce::Component*> { &degBox, &typeBox, &rhythmBox, &rhythmAllB, &lockB })
-        c->setVisible (csel != nullptr);
+        c->setVisible (csel != nullptr && ! drums);
     for (auto& b : invBs)
-        b.setVisible (csel != nullptr);
+        b.setVisible (csel != nullptr && ! drums);
+    fillB.setVisible (drums);
+    unlockHitsB.setVisible (drums);
+    if (drums)
+    {
+        const auto& bp = d.beatTab().beats[(size_t) d.cur];
+        const bool fillOn = bp.fillOn && d.cur > 0;
+        fillB.setButtonText (fillOn ? "Fill on" : "Fill off");
+        fillB.setToggleState (fillOn, juce::dontSendNotification);
+        fillB.setEnabled (d.cur > 0);
+        fillB.setTooltip (d.cur == 0 ? juce::String ("A is the plain groove: fills belong to A\xE2\x80\xB2, B and C")
+                        : fillOn ? "Turn the fill off: " + u8 (midinja::partName (d.cur)) + " ends like a plain bar"
+                                 : "Turn the fill on: " + u8 (midinja::partName (d.cur)) + (d.cur == 3 ? " ends with a fill over two beats" : " ends with a fill on the last beat"));
+        const int nh = sess.lockedHits (d.cur);
+        unlockHitsB.setButtonText ("Unlock " + juce::String (nh) + (nh == 1 ? " hit" : " hits"));
+        unlockHitsB.setEnabled (nh > 0);
+        unlockHitsB.setTooltip (nh > 0 ? "Remove the locks of the hits in " + u8 (midinja::partName (d.cur)) : "No locked hit in " + u8 (midinja::partName (d.cur)) + " (Shift+click a hit to lock it)");
+    }
     if (csel != nullptr)
     {
         degBox.clear (juce::dontSendNotification);
@@ -574,7 +604,9 @@ void MidinjaEditor::render()
         lockB.setTooltip (csel->lock ? "Unlock: rolls may change this chord again" : "Lock: rolls keep this chord");
     }
 
-    // the range edges
+    // the range edges (not on the Beats tab)
+    edgeTop.setVisible (! drums);
+    edgeBot.setVisible (! drums);
     std::string why;
     edgeTop.label = theme::noteName (t.highNote);
     edgeBot.label = theme::noteName (t.lowNote);
@@ -690,8 +722,8 @@ bool MidinjaEditor::keyPressed (const juce::KeyPress& k)
     const auto mods = k.getModifiers();
     if (k.getKeyCode() == juce::KeyPress::spaceKey)
     {
-        midinja::Op op;
-        if (sess.currentOp (op))
+        midinja::Op op = midinja::Op::Roll;
+        if (sess.doc.T().drums || sess.currentOp (op))
         {
             if (mods.isShiftDown()) sess.applyAll (op);
             else sess.apply (op);
@@ -1024,8 +1056,10 @@ void MidinjaEditor::resized()
 
     // the selected chord row
     rInsp = { gx, y, gw, kInspH };
-    rInspName = { gx, y, 170, kInspH };
+    rInspName = { gx, y, d.T().drums ? 300 : 170, kInspH };
     x = rInspName.getRight() + 6;
+    fillB.setBounds (x, y, textButtonWidth ("Fill off"), kInspH);
+    unlockHitsB.setBounds (fillB.getRight() + 6, y, textButtonWidth ("Unlock 99 hits"), kInspH);
     smallLabels.push_back ({ { x, y, 46, kInspH }, "DEGREE" });
     x += 48;
     degBox.setBounds (x, y, 110, kInspH);
@@ -1066,7 +1100,7 @@ void MidinjaEditor::resized()
     rGhostTop = anyUp ? juce::Rectangle<int> (gx, y, gw, kGhostH) : juce::Rectangle<int>();
     if (anyUp)
         y += kGhostH + 2;
-    const int lanesH = adv && ! poly ? velLane.preferredHeight() + 5 + lenLane.preferredHeight() + 5 + repLane.preferredHeight() + 6 : 0;
+    const int lanesH = adv && ! poly && ! d.T().drums ? velLane.preferredHeight() + 5 + lenLane.preferredHeight() + 5 + repLane.preferredHeight() + 6 : 0;
     const int legendH = 46, stepsH = 14, playH = 4 + 10, edgeBotH = EdgeBar::height + 2 + (anyDown ? kGhostH + 2 : 0);
     const int budget = fy - 10 - legendH - stepsH - lanesH - playH - edgeBotH - y;
     const int gh = grid.layoutHeight (budget);
@@ -1079,7 +1113,7 @@ void MidinjaEditor::resized()
     y = edgeBot.getBottom() + 2;
     rPlayRow = { gx, y, gw, 4 };
     y += 4 + 6;
-    if (adv && ! poly)
+    if (adv && ! poly && ! d.T().drums)
     {
         velLane.setBounds (gx, y, gw, velLane.preferredHeight());
         y = velLane.getBottom() + 5;
@@ -1170,7 +1204,20 @@ void MidinjaEditor::paint (juce::Graphics& g)
     g.setColour (theme::line);
     g.drawRoundedRectangle (rGen.toFloat().expanded (4.0f, 3.0f).reduced (0.5f), 7.0f, 1.0f);
     g.drawRoundedRectangle (rInsp.toFloat().expanded (4.0f, 3.0f).reduced (0.5f), 7.0f, 1.0f);
-    if (const auto* c = d.chordById (d.csel))
+    if (d.T().drums)
+    {
+        const auto& bp = d.beatTab().beats[(size_t) d.cur];
+        const int L = d.fillLen (d.cur), b = d.shownBar();
+        g.setColour (theme::ink);
+        g.setFont (theme::font (14.0f, true));
+        g.drawText ((b >= 0 ? "Bar " + juce::String (b + 1) + kDot : juce::String()) + u8 (midinja::partName (d.cur)), rInspName.withHeight (14), juce::Justification::centredLeft, true);
+        g.setColour (theme::ink3);
+        g.setFont (theme::font (9.5f));
+        g.drawText (juce::String ("hats: ") + midinja::hatName (bp.hat) + (bp.clap ? kDot + "clap" : juce::String())
+                    + kDot + (L > 0 ? juce::String ("fill: ") + midinja::fillName (bp.fill) + (d.cur == 3 ? " (two beats)" : "") : juce::String ("no fill")),
+                    rInspName.withTop (rInspName.getY() + 14), juce::Justification::centredLeft, true);
+    }
+    else if (const auto* c = d.chordById (d.csel))
     {
         g.setColour (theme::ink);
         g.setFont (theme::font (14.0f, true));

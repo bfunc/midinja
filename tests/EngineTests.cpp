@@ -835,15 +835,67 @@ static void testDocument()
         s.selectTab (kRiffTab);
     }
 
-    // Export: a track per tab that is on; the Chords track plays the lane.
+    // The Beats tab: channel 10, on; A is a plain groove, A' B C end with a fill (C over two beats);
+    // a crash lands on step 1 of the bar after a fill; the dice change the hats and the fill; locks hold.
+    {
+        const auto& bt = d.beatTab();
+        CHECK (bt.drums && bt.on && bt.channel == 10);
+        const int n = d.numSteps(), q = d.stepsPerBeat();
+        const auto kick = [&] (int k, int step) { return bt.beats[(size_t) k].hits[kRowKick][(size_t) step].on; };
+        CHECK (d.fillLen (0) == 0 && d.fillLen (1) == q && d.fillLen (2) == q && d.fillLen (3) == 2 * q);
+        CHECK (kick (0, 0) && kick (0, q) && kick (0, 2 * q) && kick (0, 3 * q));
+        CHECK (bt.beats[0].hits[kRowSnare][(size_t) q].on && bt.beats[0].hits[kRowSnare][(size_t) (3 * q)].on);
+        bool fillHit = false;
+        for (int st = n - q; st < n; ++st)
+            fillHit = fillHit || bt.beats[1].hits[kRowSnare][(size_t) st].on || bt.beats[1].hits[kRowHiTom][(size_t) st].on || bt.beats[1].hits[kRowClap][(size_t) st].on;
+        CHECK (fillHit);
+        CHECK (! kick (3, 3 * q)); // C's two-beat fill drops the kick on beat 4
+        // a bar gets the crash exactly when the bar before it (the form loops) ends with a fill
+        CHECK (d.arr.size() >= 2);
+        bool anyCrash = false;
+        for (int b = 0; b < (int) d.arr.size(); ++b)
+        {
+            const int prev = d.arr[(size_t) ((b - 1 + (int) d.arr.size()) % (int) d.arr.size())];
+            CHECK (d.autoCrash (b) == (d.fillLen (prev) > 0));
+            anyCrash = anyCrash || d.autoCrash (b);
+            const auto ev = d.drumHits (d.arr[(size_t) b], b);
+            CHECK (! ev.empty() && ((ev[0].row == kRowCrash && ev[0].step == 0) == d.autoCrash (b)));
+        }
+        CHECK (anyCrash);
+        s.selectTab (kBeatTab);
+        s.selectPart (1);
+        const auto before = bt.beats[1];
+        s.toggleDrumLock (kRowKick, 0);
+        CHECK (s.lockedHits (1) == 1 && s.barLocks() == 1);
+        s.apply (Op::Roll);
+        CHECK (bt.beats[1].hat != before.hat && bt.beats[1].fill != before.fill && kick (1, 0));
+        s.setFill (1, false);
+        CHECK (d.fillLen (1) == 0 && kick (1, 3 * q));
+        s.setFill (1, true);
+        CHECK (d.fillLen (1) == q);
+        s.toggleDrumHit (kRowClap, 2);
+        CHECK (bt.beats[1].hits[kRowClap][2].on);
+        s.cycleDrumVel (kRowClap, 2);
+        CHECK (bt.beats[1].hits[kRowClap][2].velocity == d.drumVelocity (1.0f));
+        s.unlockBar();
+        CHECK (s.lockedHits (1) == 0);
+        s.setOctave (1);
+        CHECK (s.messageIsError && bt.rootNote == 36);
+        s.selectTab (kRiffTab);
+        s.selectPart (0);
+    }
+
+    // Export: a track per tab that is on; the Chords track plays the lane, the Beats track is on channel 10.
     s.setTabOn (kChordTab, true);
     const auto bytes = s.midiFile (120.0);
-    CHECK (bytes.size() > 30 && bytes[0] == 'M' && bytes[9] == 1 && bytes[11] == 3);
-    bool ch2 = false;
+    CHECK (bytes.size() > 30 && bytes[0] == 'M' && bytes[9] == 1 && bytes[11] == 4);
+    bool ch2 = false, ch10 = false;
     for (size_t i = 0; i + 2 < bytes.size(); ++i)
-        if (bytes[i] == 0x91 && bytes[i + 2] > 0)
-            ch2 = true;
-    CHECK (ch2);
+    {
+        if (bytes[i] == 0x91 && bytes[i + 2] > 0) ch2 = true;
+        if (bytes[i] == 0x99 && bytes[i + 1] == 36 && bytes[i + 2] > 0) ch10 = true;
+    }
+    CHECK (ch2 && ch10);
     s.setTabOn (kChordTab, false);
     CHECK (s.exportName().rfind ("midinja-", 0) == 0);
 

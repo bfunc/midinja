@@ -95,6 +95,7 @@ private:
     juce::ComboBox degBox, typeBox, rhythmBox;
     std::array<juce::TextButton, 4> invBs;
     juce::TextButton rhythmAllB { "Rhythm to all" }, lockB { "Lock" };
+    juce::TextButton fillB { "Fill" }, unlockHitsB { "Unlock hits" }; // the Beats tab's part
     EdgeBar edgeTop, edgeBot;
     GridComponent grid;
     LaneComponent velLane { LaneComponent::Kind::Velocity }, lenLane { LaneComponent::Kind::Length },
