@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-18 17:07 · fable-5.1@home#24cf · 29cf768
+Updated: 2026-10-18 18:32 · fable-5.1@home#24cf · 4d7a1dd
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -24,6 +24,8 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 - 2026-10-18 · New UI features go to the web mockup first (served on Home at localhost), into the JUCE app only after the user approves the mockup · user: "continue to ui tasks, for this only web maket"
 - 2026-10-18 · Root+range: one root chip (note + octave) that the range and all four parts follow; range = the visible rows of the roll with +/− at each edge, one step = one row of the view, min 1 note, max ~3 octaves; shrinking folds notes in by octave, locked notes never change; the bottom may go below the root · agreed with the user via raptor; replaces the Octave control and the Advanced Note range of 4ed5944
 - 2026-10-18 · Transpose: removed from the mockup, the root chip moves everything · user decision ("No need in transpose")
+- 2026-10-18 · Chord part (approved prototype): two tabs Riff/Chords with on/off dots; Rhythm/Notes toggles + Mutate mode; equal roll rows; ghost notes of the other tab; a chord lane of blocks {start, length in beats, degree, type, inversion, lock, rhythm} with drag/resize/snap, + repeats the last chord; Progression, moods (Bright/Colour/Fable/Drama/Dark, diatonic only), styles (Jazz/R&B/Funk/House/D&B), typed progression; Chords roll crops a key-anchored voicing with named ghosts; the riff plays a chord tone on every chord start · user, via raptor 2026-10-18
+- 2026-10-18 · App: built-in synths OFF by default; in the VST the host's Play/Stop, position and tempo drive playback, the plugin's Play is hidden there; Unlock bar clears every lock of the bar shown; a square + after the arrangement repeats the last bar · user
 - 2026-10-18 · View: one chromatic roll, scale rows highlighted, out-of-scale rows dimmed (height under review: half by default, ?rows=full for full); edges step by semitone; the range keeps at least one scale note; drag snaps to scale rows, Alt-drag chromatic · user via raptor; replaces the Riff/Scale/All switch
 - 2026-10-18 · Scale switch: unlocked notes keep their scale degree; colour notes move to the new scale's colour note nearest in pitch; an augmented-second pair moves as a unit to the new scale's pair (same one if it exists, else nearest), else to plain degrees; always computed from the original position, so any sequence of switches is reversible; scales of different sizes use a snapshot from before the first switch · agreed with the user
 - 2026-10-18 · Locks: locked notes and hand-placed off-scale notes (locked automatically) never move on a scale switch; root and octave changes move everything, locks kept; the range cannot shrink past a locked note; imported off-scale notes are degree + alteration, not locked; an unlocked chromatic note is replaced by the next roll · agreed with the user
@@ -39,16 +41,16 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 -    Not clicked through by hand: Start-on-root toggle, root marker at narrow widths (preview)
 
 ## Waiting for you
-- Preview for review on bfunc.cc (29cf768): two tabs Riff/Chords with a settings block, Rhythm/Notes toggles + Mutate mode, equal rows, ghost notes, chord lane per bar with rhythms, Progression + mood fills. OK or not? Then Decisions and the JUCE port · since 2026-10-18
+- Chord part: the prototype's lane is built in the mockup (75125a6) and the app (4d7a1dd); the user tests both (bfunc.cc, latest zip) · since 2026-10-18
 - Start-on-root: per-bar override (click the marker)? · since 2026-10-17
 - Start-on-root: a middle setting "root on a strong beat"? · since 2026-10-17
 - C in scales without a fifth falls back to ii (Locrian ♭II); keep it? · since 2026-10-17
 
 ## In progress
-- fable-5.1@home#24cf · the chord part after the prototype: mockup done (75125a6), JUCE port + synths off + host transport + Unlock bar + riff "+" in progress · since 2026-10-18 18:11
+- (none)
 
 ## Next
-1. Raptor deploys the preview (29cf768); the user says ok or not; then Decisions + the JUCE port
+1. Raptor deploys the mockup (75125a6); the user tests the mockup and the new Windows zip (4d7a1dd); report via raptor
 2. User: the new Midinja-windows.zip from the latest pre-release (the app follows the mockup: tabs, chords, range edges, scale switch); report via raptor
 3. User: FL check; then tag v0.2.0
 4. Generation: augmented-second pairs resolve into tonic/fifth (♭6–7–1, 3–♭2–1, ♭3–♯4–5); colour notes on strong beats
