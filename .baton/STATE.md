@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-18 18:32 · fable-5.1@home#24cf · 4d7a1dd
+Updated: 2026-10-18 19:59 · fable-5.1#24cf · 04220cc
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -34,6 +34,9 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 - 2026-10-18 · Chords: per part type a degree (I–VII), a type (triad, 7th, sus2, sus4; quality from the scale) and an inversion; default A,A′ = I (A root, A′ 1st inv), B = IV, C = V, 7th; one held chord per bar, dice vary only the rhythm; riffs start on the part's degree; strings pad in the app's synth · user decision
 - 2026-10-18 · Progression dice: sets A A′ B C and the degrees (A = A′, B, C) from idiomatic lists per mode (Dorian i–IV, Mixolydian I–♭VII–IV, Lydian I–II, Phrygian i–♭II, minor i–VI–III–VII, Andalusian for harmonic minor / Phrygian dominant); C leads home; locked parts keep their degree; 7-note scales only · user decision
 - 2026-10-18 · Extension: new empty bars are a copy of A moved by scale steps to their degree (A′ untransposed); whole bar shifted an octave before folding notes; C's last note goes to root or fifth; locks not copied; existing bars never overwritten · user decision
+
+- 2026-10-18 · Highlights: four levels: primary (what the inspector edits) = orange frame + tint, exactly one on screen; context (the bar or part the primary belongs to) = thin muted outline; state (lock = icon + grey frame, tab on/off = the dot, the open tab = underline) never orange; chosen options share one teal segment style · four orange things at once were unreadable
+- 2026-10-18 · Layout by levels (mockup first): song bar (Play+BPM, Key, Rate, Preset, Versions, undo, Import/Export, ⚙ for synth and MIDI out) → form (bar chips with lock and a part picker, + repeats the last bar; harmony under it: read-only strip on Riff, the lane on Chords) → track tabs → roll with Generator, Inspector, Advanced and ? on the right; palette and Unlock bar removed · the levels were mixed; JUCE port after the user approves
 
 ## Open issues
 - !  VST3 MIDI bypassed FL (user, 2026-10-18): hardware on the interface played on every FL port because the plugin also opened a system MIDI port directly; VST instruments followed FL's port. Fixed in 82eb984 (host only), awaiting the user's confirmation in FL
