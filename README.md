@@ -51,9 +51,10 @@ root. Every bar starts on the root of its chord (switch it off under Advanced).
 - **Synth**: the built-in mono synth (Saw / Square, cutoff, resonance, decay, volume), on by default;
   switch it off to use another instrument. In the standalone app pick the audio device with **Options →
   Audio/MIDI Settings** (top-left of the window).
-- **MIDI Out**: the notes also go out as MIDI on the chosen **channel** (1–16). The VST3 sends them to
-  the host (in FL Studio set the plugin's MIDI output port and give another instrument that input
-  port); both the app and the plugin can also open a system MIDI port (hardware, loopMIDI, IAC).
+- **MIDI Out**: the notes also go out as MIDI on the chosen **channel** (1–16). The VST3 sends them
+  only to the host, which routes them (in FL Studio: wrapper settings → MIDI → **Output port**, and the
+  same **Input port** on the instrument that should play; hardware then follows FL's MIDI output
+  settings). The Standalone app has a **MIDI Out** port picker instead (hardware, loopMIDI, IAC).
 - **Import MIDI** (or drop a `.mid` on the window): up to 4 bars become A A′ B C, monophonic, on a 1/16
   grid, key guessed. **Export MIDI** saves the arrangement as one `.mid`. **Drag to DAW** drags the
   same file: drop it on FL Studio's playlist or a channel.

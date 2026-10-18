@@ -35,6 +35,8 @@ void MidinjaProcessor::publish()
 bool MidinjaProcessor::openMidiOut (const juce::String& identifier)
 {
     std::unique_ptr<juce::MidiOutput> next;
+    if (isHosted() && identifier.isNotEmpty())
+        return false; // in a host the MIDI goes to the host only, and the host routes it (FL: wrapper MIDI output port)
     if (identifier.isNotEmpty())
     {
         next = juce::MidiOutput::openDevice (identifier);
@@ -224,7 +226,7 @@ void MidinjaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
 
     if (! outBuffer.isEmpty())
     {
-        midi.addEvents (outBuffer, 0, numSamples, 0); // to the host (VST3)
+        midi.addEvents (outBuffer, 0, numSamples, 0); // to the host (VST3); midiOut is only ever open in the Standalone
         const juce::SpinLock::ScopedTryLockType lock (midiOutLock);
         if (lock.isLocked() && midiOut != nullptr)
             midiOut->sendBlockOfMessages (outBuffer, juce::Time::getMillisecondCounterHiRes() + 1.0,

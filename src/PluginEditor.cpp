@@ -241,7 +241,7 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     for (auto* k : { &cutoffK, &resoK, &decayK, &volK })
         k->onChange = [this, k] { k->setTooltip (k->getName() + ": " + k->format (k->get()) + ". Drag or scroll; Ctrl+click resets"); };
 
-    midiOutBox.setTooltip ("A MIDI port for a hardware synth or a virtual port into a DAW. In FL Studio, MIDI also goes out through the plugin's MIDI output port");
+    midiOutBox.setTooltip ("A system MIDI port: a hardware synth, loopMIDI, IAC");
     midiOutBox.onChange = [this] {
         const int idx = midiOutBox.getSelectedId() - 2; // id 1 = None
         const auto id = idx >= 0 && idx < midiPortIds.size() ? midiPortIds[idx] : juce::String();
@@ -254,6 +254,7 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     };
     midiOutBox.addMouseListener (this, false); // rescan the ports when the list is opened
     addAndMakeVisible (midiOutBox);
+    midiOutBox.setVisible (! proc.isHosted()); // in a host the MIDI goes through the host's routing only
     for (int i = 1; i <= 16; ++i)
         channelBox.addItem ("Ch " + juce::String (i), i);
     channelBox.setTooltip ("MIDI channel of the notes: live MIDI out, Export and Drag to DAW");
@@ -509,7 +510,7 @@ void MidinjaEditor::timerCallback()
     else if (proc.isHosted() && proc.hostBpm.load() > 0.0f && ! dirty)
         bpmBox.setText (juce::String ((int) std::lround (proc.hostBpm.load())), juce::dontSendNotification);
 
-    if (++portTick >= 90) // every 3 s: the MIDI port list follows plugging and unplugging
+    if (! proc.isHosted() && ++portTick >= 90) // every 3 s: the MIDI port list follows plugging and unplugging
     {
         portTick = 0;
         juce::StringArray ids;
@@ -769,9 +770,12 @@ void MidinjaEditor::resized()
     rx -= 12;
     channelBox.setBounds (rx - 64, fy + 12, 64, 26);
     rx = channelBox.getX() - 6;
-    const int midiW = std::max (90, std::min (170, rx - x - 60));
-    midiOutBox.setBounds (rx - midiW, fy + 12, midiW, 26);
-    labels.push_back ({ { midiOutBox.getX() - 58, fy + 17, 54, 16 }, "MIDI Out" });
+    if (! proc.isHosted()) // the VST3 has no port of its own
+    {
+        const int midiW = std::max (90, std::min (170, rx - x - 60));
+        midiOutBox.setBounds (rx - midiW, fy + 12, midiW, 26);
+        labels.push_back ({ { midiOutBox.getX() - 58, fy + 17, 54, 16 }, "MIDI Out" });
+    }
 
     // ---- Main: side panel and the grid area ----
     const int mainY = kRowA + kRowB, mainH = fy - mainY;
