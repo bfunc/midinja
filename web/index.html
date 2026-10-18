@@ -8,10 +8,10 @@
 body{font:12px/1.25 "Segoe UI",Inter,system-ui,sans-serif;color:var(--ink);padding:20px}
 button,select,input{font:inherit;color:inherit}
 button{cursor:pointer}
-.plug{width:1120px;background:var(--bg);border-radius:12px;border:1px solid #000;box-shadow:0 20px 60px #000a;overflow:hidden;user-select:none}
+.plug{width:1216px;background:var(--bg);border-radius:12px;border:1px solid #000;box-shadow:0 20px 60px #000a;overflow:hidden;user-select:none}
 .row{display:flex;align-items:center;gap:12px;padding:9px 14px}
 .rowA{gap:8px;background:linear-gradient(#22262f,#1b1e25);border-bottom:1px solid #000}
-.rowB{background:var(--panel);border-bottom:1px solid var(--line);padding:7px 14px 12px;gap:10px}
+.rowB{background:var(--panel);border-bottom:1px solid var(--line);padding:7px 14px 12px;gap:8px}
 .logo{font-weight:800;font-size:18px;letter-spacing:.5px}.logo b{color:var(--acc)}
 .sp{flex:1}.vsep{width:1px;align-self:stretch;background:var(--line);margin:0 2px}
 .btn{padding:7px 10px;border-radius:7px;background:var(--panel2);border:1px solid var(--line);white-space:nowrap}
@@ -180,6 +180,7 @@ body.dragging .drop{display:grid}
     <div class="kv"><div class="knob" id="kSwing"><i></i></div><div><span>Swing</span><br><b id="vSwing"></b></div></div>
     <div class="kv" title="How close A′ stays to A (next roll of A′): high changes only the last beat, low keeps just the shape. Ctrl+click resets"><div class="knob" id="kSimilarity"><i></i></div><div><span>Similarity</span><br><b id="vSimilarity"></b></div></div>
     <div class="ctl"><small>Transpose</small><div style="display:flex;gap:3px;align-items:center"><button class="btn sm" id="trD" title="All four parts down a scale step">−</button><span class="num" id="vTr">0</span><button class="btn sm" id="trU" title="All four parts up a scale step">+</button></div></div>
+    <div class="ctl"><small id="lOct">Octave</small><div style="display:flex;gap:3px;align-items:center"><button class="btn sm" id="ocD" title="An octave down: the note range and all four parts">−</button><span class="num" id="vOct" title="The root of the key at the bottom of the note range (Advanced → Note range). FL Studio names notes one octave higher: E2 here is E3 there">E2</span><button class="btn sm" id="ocU" title="An octave up: the note range and all four parts">+</button></div></div>
     <div class="mus" id="mus">
       <div class="kv" id="colorWrap"><div class="knob t" id="kColor"><i></i></div><div><span>Color</span><br><b id="vColor"></b></div></div>
       <div class="kv" title="How often the riff breaks the rules (next roll)"><div class="knob t" id="kSurprise"><i></i></div><div><span>Surprise</span><br><b id="vSurprise"></b></div></div>
@@ -191,7 +192,7 @@ body.dragging .drop{display:grid}
 
   <div class="main">
     <div class="side">
-      <div><h4>Pitch range</h4><div class="range" id="rgPitch"></div><div class="rl"><span id="lPitchLo"></span><span id="lPitchHi"></span></div></div>
+      <div><h4>Note range</h4><div class="range" id="rgPitch"></div><div class="rl"><span id="lPitchLo"></span><span id="lPitchHi"></span></div></div>
       <div><h4>Length</h4><div class="range" id="rgLen"></div><div class="rl"><span id="lLenLo"></span><span id="lLenHi"></span></div></div>
       <div><h4>Velocity</h4><div class="range" id="rgVel"></div><div class="rl"><span id="lVelLo"></span><span id="lVelHi"></span></div></div>
       <div id="rptbox"><h4>Ratchets <span class="pill" id="rptpill">OFF</span></h4><div class="range" id="rgRep"></div><div class="rl"><span id="lRepLo"></span><span id="lRepHi"></span></div></div>
@@ -289,10 +290,10 @@ function applyAll(op, keepSeed) {
   }
   commitVersion();
 }
-function snapshot() { return { parts: clone(parts), locks: [...locks], src: [...src], arr: [...arr], sel: S.sel, cur: S.cur, root: S.root, scale: S.scale, rate: S.rate, star: false }; }
+function snapshot() { return { parts: clone(parts), locks: [...locks], src: [...src], arr: [...arr], sel: S.sel, cur: S.cur, root: S.root, scale: S.scale, rate: S.rate, lowNote: S.lowNote, highNote: S.highNote, star: false }; }
 function restore(h) {
   parts = clone(h.parts); locks = [...h.locks]; src = [...h.src]; arr = [...h.arr]; S.sel = h.sel;
-  S.cur = h.cur; S.root = h.root; S.scale = h.scale; S.rate = h.rate; S.numSteps = parts[0].numSteps;
+  S.cur = h.cur; S.root = h.root; S.scale = h.scale; S.rate = h.rate; if (h.lowNote) { S.lowNote = h.lowNote; S.highNote = h.highNote; } S.numSteps = parts[0].numSteps;
   $('root').value = S.root; $('scale').value = S.scale; $('rate').value = S.rate;
   pat = parts[S.cur];
 }
@@ -474,6 +475,7 @@ function render() {
   $('adv').classList.toggle('on', S.adv);
   $('mutAmt').textContent = Math.round(S.mutAmt * 100) + '%';
   $('vTr').textContent = (S.transpose > 0 ? '+' : '') + S.transpose;
+  $('vOct').textContent = nn(rootLow()); $('lOct').textContent = 'Octave · ' + nn(S.lowNote) + '–' + nn(S.highNote);
   $('seed').value = S.seed;
   $('colorWrap').title = colorWords();
   $('roll').disabled = locks[S.cur];
@@ -681,6 +683,17 @@ document.querySelectorAll('#what button').forEach(b => b.onclick = e => {
 });
 $('trU').onclick = () => { parts.forEach((p, k) => setPart(k, core.transpose(p, 1, S.root, S.scale))); S.transpose++; push(); };
 $('trD').onclick = () => { parts.forEach((p, k) => setPart(k, core.transpose(p, -1, S.root, S.scale))); S.transpose--; push(); };
+// the octave buttons move the note range and every part by 12 semitones; the root at the bottom of the range is shown
+const rootLow = () => { let n = S.lowNote; while (n % 12 !== S.root) n++; return n; };
+function shiftOctave(d) {
+  const lo = S.lowNote + 12 * d, hi = S.highNote + 12 * d;
+  if (lo < 24 || hi > 96) return;
+  S.lowNote = lo; S.highNote = hi;
+  parts.forEach((p, k) => setPart(k, { ...p, steps: p.steps.map(s => ({ ...s, note: s.note + 12 * d })) }));
+  push();
+}
+$('ocU').onclick = () => shiftOctave(1);
+$('ocD').onclick = () => shiftOctave(-1);
 $('adv').onclick = () => { S.adv = !S.adv; render(); };
 $('rptpill').onclick = () => { S.repeatsOn = !S.repeatsOn; render(); };
 $('rootpill').onclick = () => { S.startOnRoot = !S.startOnRoot; render(); };
