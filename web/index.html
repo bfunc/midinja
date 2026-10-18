@@ -107,7 +107,7 @@ input.num{width:64px}
 .tabinfo.lockmsg{color:var(--lock)}
 .msg{color:var(--acc2);font-size:11px;margin:-2px 0 6px}
 .msg:empty{display:none}
-.roll{border:1px solid var(--line);border-radius:6px;overflow:hidden;position:relative}
+.roll{border:1px solid var(--line);border-radius:6px;overflow:hidden;position:relative;touch-action:pan-x pan-y pinch-zoom}
 .key{overflow:hidden;font-size:9.5px;color:var(--ink3);display:flex;align-items:center;justify-content:flex-end;gap:4px;padding-right:5px;border-bottom:1px solid #00000040;background:var(--panel)}
 .key.root{color:var(--acc);font-weight:700}
 .key.out{color:#454b58}
@@ -683,18 +683,31 @@ function noteDown(e, s) {
   e.stopPropagation();
   const st = pat.steps[s];
   if (e.shiftKey) { st.locked = !st.locked; push(); return; }
-  const y0 = e.clientY;
-  let moved = false;
-  const mv = ev => {
-    if (!moved && Math.abs(ev.clientY - y0) < 4) return;
+  const y0 = e.clientY, n0 = st.note, id = e.pointerId;
+  let moved = false, armed = e.pointerType !== 'touch', done = false;
+  // a touch moves a note only after a short hold, so a scroll or a pinch never does
+  const arm = armed ? 0 : setTimeout(() => { armed = true; }, 250);
+  const h = {};
+  const stop = () => { done = true; clearTimeout(arm); for (const t in h) removeEventListener(t, h[t], true); };
+  // a second finger, or the browser taking the gesture: the note goes back, nothing is recorded
+  const cancel = () => { if (done) return; stop(); if (st.note !== n0) { st.note = n0; render(); } };
+  h.pointerdown = ev => { if (ev.pointerId !== id) cancel(); };
+  h.pointercancel = ev => { if (ev.pointerId === id) cancel(); };
+  h.pointermove = ev => {
+    if (ev.pointerId !== id) return;
+    if (!moved && (!armed || Math.abs(ev.clientY - y0) < 6)) return;
     // the note follows the pointer over the rows: scale rows, or every row with Alt
     const note = noteAtY(ev.clientY, ev.altKey);
     if (note === null) return;
     moved = true;
     if (note !== st.note) { st.note = note; render(); }
   };
-  const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); if (moved) push(); else { pat.steps[s] = { ...st, on: false, locked: false }; push(); } };
-  addEventListener('pointermove', mv); addEventListener('pointerup', up);
+  h.pointerup = ev => {
+    if (ev.pointerId !== id) return;
+    stop();
+    if (moved) push(); else { pat.steps[s] = { ...st, on: false, locked: false }; push(); }
+  };
+  for (const t in h) addEventListener(t, h[t], true);
 }
 function laneDrag(l, set, max) {
   l.addEventListener('pointerdown', e => {
