@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-18 19:59 · fable-5.1#24cf · 04220cc
+Updated: 2026-10-18 21:40 · fable-5.1#24cf · 670c3f4
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -37,6 +37,8 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 
 - 2026-10-18 · Highlights: four levels: primary (what the inspector edits) = orange frame + tint, exactly one on screen; context (the bar or part the primary belongs to) = thin muted outline; state (lock = icon + grey frame, tab on/off = the dot, the open tab = underline) never orange; chosen options share one teal segment style · four orange things at once were unreadable
 - 2026-10-18 · Layout by levels (mockup first): song bar (Play+BPM, Key, Rate, Preset, Versions, undo, Import/Export, ⚙ for synth and MIDI out) → form (bar chips with lock and a part picker, + repeats the last bar; harmony under it: read-only strip on Riff, the lane on Chords) → track tabs → roll with Generator, Inspector, Advanced and ? on the right; palette and Unlock bar removed · the levels were mixed; JUCE port after the user approves
+
+- 2026-10-18 · Beats tab: a third tab on channel 10, on by default; nine GM drums (Kick 36 … Crash 49) as rows; groove = kick on every beat, snare/clap on 2 and 4, a hats pattern, one open hat; A has no fill, A′ B C end with a fill (C over two beats), a crash opens the bar after a fill; built in the mockup AND the app at once ("build the VST for Windows right away") · overrides "mockup first" for this feature only, by the user
 
 ## Open issues
 - !  VST3 MIDI bypassed FL (user, 2026-10-18): hardware on the interface played on every FL port because the plugin also opened a system MIDI port directly; VST instruments followed FL's port. Fixed in 82eb984 (host only), awaiting the user's confirmation in FL
