@@ -3,20 +3,21 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Midinja preview</title>
 <style>
-:root{--bg:#15171c;--panel:#1d2027;--panel2:#242832;--line:#2e3340;--line2:#3d4350;--ink:#e6e8ee;--ink2:#9aa1b2;--ink3:#626a7c;--acc:#ff9f43;--acc2:#5ad1c7;--lock:#f5d76e;--len:#7aa2f7;--rpt:#c792ea;--bad:#e76f51}
+:root{--bg:#15171c;--panel:#1d2027;--panel2:#242832;--line:#2e3340;--line2:#3d4350;--ink:#e6e8ee;--ink2:#9aa1b2;--ink3:#626a7c;--acc:#ff9f43;--acc2:#5ad1c7;--lock:#f5d76e;--len:#7aa2f7;--rpt:#c792ea;--bad:#e76f51;--prim:#ff9f43;--primbg:#ff9f4322;--ctx:#8a5a2c;--state:#4a5163;--pick:#5ad1c71f}
 *{box-sizing:border-box}html,body{margin:0;background:#0d0e11;overflow-x:hidden}
 body{font:12px/1.25 "Segoe UI",Inter,system-ui,sans-serif;color:var(--ink);padding:20px}
 button,select,input{font:inherit;color:inherit}
 button{cursor:pointer}
 .plug{width:1216px;background:var(--bg);border-radius:12px;border:1px solid #000;box-shadow:0 20px 60px #000a;overflow:hidden;user-select:none}
 .row{display:flex;align-items:center;gap:12px;padding:9px 14px}
-.rowA{gap:8px;background:linear-gradient(#22262f,#1b1e25);border-bottom:1px solid #000}
-.rowB{background:var(--panel);border-bottom:1px solid var(--line);padding:7px 14px 12px;gap:8px}
+.song{gap:8px;background:linear-gradient(#22262f,#1b1e25);border-bottom:1px solid #000;padding:7px 14px}
+.song .hist{gap:3px}
+.song .btn{padding:6px 9px}
 .logo{font-weight:800;font-size:18px;letter-spacing:.5px}.logo b{color:var(--acc)}
 .sp{flex:1}.vsep{width:1px;align-self:stretch;background:var(--line);margin:0 2px}
 .btn{padding:7px 10px;border-radius:7px;background:var(--panel2);border:1px solid var(--line);white-space:nowrap}
 .btn:hover{border-color:#4a5163}
-.btn.on{background:#5ad1c722;border-color:var(--acc2);color:var(--acc2)}
+.btn.on{background:var(--pick);border-color:var(--acc2);color:var(--acc2)}
 .btn.ghost{background:transparent}
 .btn[disabled]{opacity:.35;cursor:default}
 .sm{padding:3px 8px}
@@ -24,7 +25,7 @@ button{cursor:pointer}
 .dim{color:var(--ink3)}
 .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
 .seg button{border:0;background:transparent;padding:7px 11px;color:var(--ink2)}
-.seg button.on{background:#ff9f4322;color:var(--acc);font-weight:700}
+.seg button.on{background:var(--pick);color:var(--acc2);font-weight:700}
 .seg.small button{padding:5px 9px}
 .seg.xs button{padding:3px 8px;font-size:11px}
 .seg button:disabled{opacity:.35;cursor:default}
@@ -33,7 +34,7 @@ button{cursor:pointer}
 .dice:active{transform:translateY(1px)}
 .dice[disabled]{opacity:.35;cursor:default;box-shadow:none}
 .mutamt{display:inline-block;margin-left:5px;padding:0 5px;border-radius:999px;background:#ffffff14;color:var(--ink2);font-size:10px}
-.seg button.on .mutamt{background:#ff9f4333;color:var(--acc)}
+.seg button.on .mutamt{background:#5ad1c733;color:var(--acc2)}
 .ctl{display:flex;flex-direction:column;gap:3px}
 .ctl small,.lbl{color:var(--ink3);font-size:10px;text-transform:uppercase;letter-spacing:.8px}
 .sel{padding:6px 9px;border-radius:7px;background:var(--panel2);border:1px solid var(--line);white-space:nowrap;appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:22px;background-image:linear-gradient(45deg,transparent 50%,#626a7c 50%),linear-gradient(135deg,#626a7c 50%,transparent 50%);background-position:calc(100% - 12px) 50%,calc(100% - 8px) 50%;background-size:4px 4px;background-repeat:no-repeat}
@@ -46,10 +47,10 @@ button{cursor:pointer}
 .mus{display:flex;gap:12px;align-items:center;padding-left:12px;border-left:1px solid var(--line)}
 .hist{display:flex;align-items:center;gap:4px}
 .th{width:40px;height:26px;border-radius:5px;background:var(--panel);border:1px solid var(--line);position:relative;overflow:hidden;cursor:pointer}
-.th.cur{border-color:var(--acc)}
+.th.cur{border-color:var(--ink2)}
 .th.empty{opacity:.25;cursor:default}
 .th i{position:absolute;width:2px;height:2px;background:var(--ink3)}
-.th.cur i{background:var(--acc)}
+.th.cur i{background:var(--ink)}
 .th .star{position:absolute;right:1px;top:-2px;font-size:9px;color:var(--lock)}
 .pg{padding:3px 5px;border:0;background:transparent;color:var(--ink2)}
 .pg[disabled]{opacity:.25;cursor:default}
@@ -60,21 +61,55 @@ button{cursor:pointer}
 .tog.on{color:var(--acc2)}
 .num{padding:5px 8px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);color:var(--ink);font-variant-numeric:tabular-nums;min-width:44px;text-align:center}
 input.num{width:64px}
-.tabbar{display:flex;align-items:center;gap:8px;padding:6px 14px;background:var(--panel);border-bottom:1px solid var(--line);min-height:40px}
+.tabbar{display:flex;align-items:center;gap:8px;padding:6px 14px;background:var(--bg);border-bottom:1px solid var(--line);min-height:40px}
 .tb{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 9px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink2);cursor:pointer;font-weight:700;font-size:13px}
 .tb:hover{border-color:#4a5163}
-.tb.cur{border-color:var(--acc);color:var(--acc)}
+.tb.cur{color:var(--ink);border-color:var(--line2);box-shadow:inset 0 -2px 0 var(--ink)}
 .tb .dot{width:11px;height:11px;border-radius:50%;border:2px solid var(--ink3);background:transparent;flex:none}
 .tb .dot.on{background:var(--acc2);border-color:var(--acc2);box-shadow:0 0 6px var(--acc2)}
-.tb.off{opacity:.6}
+.tb.off .dot{border-color:var(--ink3)}
 .tabset{margin-left:auto;display:flex;align-items:center;gap:6px;color:var(--ink2);font-size:11px}
 .tabset .lbl{margin:0 2px 0 8px}
 .tabset .lbl:first-child{margin-left:0}
-.main{display:flex}
-.side{width:156px;padding:12px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:13px}
+.main{display:flex;align-items:stretch}
 .undoredo{display:flex}
-.adv-off .side,.adv-off .lanes,.adv-off .undoredo{display:none}
-.side h4{margin:0;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px;display:flex;justify-content:space-between;align-items:center}
+.adv-off .advbox,.adv-off .lanes,.adv-off .undoredo{display:none}
+.rside{width:318px;flex:none;padding:10px 12px 12px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:10px}
+.ctxhead{display:flex;align-items:center;justify-content:space-between}
+.box{border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:9px 10px;display:flex;flex-direction:column;gap:8px}
+.box h4{margin:0;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px}
+.box h4.iname{font-size:13px;font-weight:800;color:var(--prim);text-transform:none;letter-spacing:0;line-height:1.2}
+.box h4.iname small{display:block;font-size:10px;font-weight:400;color:var(--ink3);margin-top:2px}
+.box h5{margin:0 0 2px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px;display:flex;justify-content:space-between;align-items:center}
+.advR{display:flex;flex-direction:column;gap:10px}
+.advC{display:flex;flex-direction:column;gap:6px}
+.advC input{padding:4px 8px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);color:var(--ink);font-size:11px;width:100%}
+.poly #riffGen,.poly .advR,.poly .hstrip{display:none}
+.plug:not(.poly) .cgen,.plug:not(.poly) .advC,.plug:not(.poly) .clane{display:none}
+.knobs{flex-wrap:wrap;gap:8px 10px}
+.knobs .kv{gap:5px}.knobs .kv span{font-size:10px}
+.form{padding:8px 14px 6px;background:var(--panel);border-bottom:1px solid var(--line)}
+.ruler{display:flex;gap:6px;align-items:stretch;margin-bottom:6px}
+.ruler .addcol{width:30px;flex:none}
+.hstrip{display:grid;gap:6px;margin-right:36px}
+.hbar{min-height:24px;border:1px solid var(--line);border-radius:6px;background:var(--panel2);display:flex;gap:3px;padding:2px;cursor:pointer}
+.hbar:hover{border-color:#4a5163}
+.hbar .hc{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;border-radius:4px;background:#2b303a;font-size:11px;color:var(--ink2);white-space:nowrap;overflow:hidden;padding:0 4px}
+.hbar .hc b{color:var(--ink);font-weight:800}
+.hbar .hc.ctx{box-shadow:0 0 0 1px var(--ctx) inset}
+.hbar .none{flex:1;text-align:center;color:var(--ink3);font-size:11px;align-self:center}
+.pop{position:fixed;display:none;z-index:60;min-width:160px;max-width:420px;padding:8px;border-radius:9px;border:1px solid var(--line2);background:var(--panel2);box-shadow:0 10px 30px #000a;color:var(--ink);font-size:12px}
+.pop .pi{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;color:var(--ink2)}
+.pop .pi:hover{background:#ffffff10;color:var(--ink)}
+.pop .pi.on{color:var(--ink);box-shadow:0 0 0 1px var(--ctx) inset}
+.pop .pi b{min-width:22px;color:var(--ink);font-size:13px}
+.pop .legend{margin:0;max-width:400px;gap:8px 12px}
+.pop h4{margin:0 0 6px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px}
+.pop .grp{padding:4px 0}
+.narrow .song,.narrow .tabbar{flex-wrap:wrap}
+.narrow .main{flex-direction:column}
+.narrow .rside{width:auto;border-left:0;border-top:1px solid var(--line)}
+.narrow .sp{display:none}
 .range{position:relative;height:6px;border-radius:3px;background:#333845;margin:9px 6px 5px}
 .range b{position:absolute;top:0;bottom:0;background:var(--acc2);border-radius:3px}
 .range u{position:absolute;top:-4px;width:12px;height:14px;margin-left:-6px;border-radius:4px;background:#e6e8ee;cursor:ew-resize}
@@ -84,17 +119,25 @@ input.num{width:64px}
 .pill.on{color:var(--acc2);border-color:var(--acc2)}
 .gridw{flex:1;padding:8px 12px 10px;min-width:0}
 .cols{display:grid;grid-template-columns:44px repeat(var(--n),1fr)}
-.tabs{display:flex;align-items:center;gap:6px;margin-bottom:6px}
-.arr,.pal{display:flex;align-items:center;gap:6px}
-.pal{margin-left:auto;padding-left:10px;border-left:1px solid var(--line)}
-.slot{display:flex;align-items:center;gap:6px;padding:3px 4px 3px 6px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink2);cursor:pointer;position:relative}
+.arr{flex:1;display:grid;gap:6px;min-width:0}
+.slot{display:flex;align-items:center;gap:6px;padding:3px 4px 3px 6px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink2);cursor:pointer;position:relative;min-width:0}
+.arrhint{color:var(--ink3);font-size:11px;padding:6px 2px}
+.slot .bn{font-size:10px;color:var(--ink3);min-width:10px}
+.slot .tn i{font-style:normal;font-size:9px;color:var(--ink3);margin-left:2px}
+.slot .tn:hover i{color:var(--ink)}
+.slot .tt{flex:1;width:auto}
+.slot .x{margin-left:auto}
+.slot.prim .bn{color:var(--prim)}
 .slot:hover{border-color:#4a5163}
-.slot.same{color:var(--ink)}
-.slot.on{background:#ff9f4322;border-color:var(--acc);color:var(--acc)}
-.slot.locked{border-color:var(--lock)}
-.tn{font-weight:700;font-size:13px;min-width:16px;text-align:center;line-height:1.1}
+.slot.ctx{border-color:var(--ctx);color:var(--ink)}
+.slot.prim{background:var(--primbg);border-color:var(--prim);color:var(--prim);box-shadow:0 0 0 1px var(--prim) inset}
+.slot.locked{border-color:var(--state)}
+.slot.locked.prim{border-color:var(--prim)}
+.slot.locked.ctx{border-color:var(--ctx)}
+.tn{font-weight:700;font-size:13px;min-width:16px;text-align:center;line-height:1.1;padding:2px 4px;border-radius:5px}
+.tn:hover{background:#ffffff14}
 .tn small{display:block;font-size:9px;font-weight:400;color:var(--ink3);line-height:1.1}
-.slot.on .tn small,.tab.on .tn small{color:var(--acc)}
+.slot.prim .tn small{color:var(--prim)}
 .slot .lk{font-size:11px;opacity:.3;padding:2px 3px;border-radius:4px;line-height:1}
 .slot .lk:hover{opacity:.9;background:#ffffff14}
 .slot.locked .lk{opacity:1}
@@ -102,26 +145,18 @@ input.num{width:64px}
 .slot .x:hover{color:var(--ink);background:#ffffff14}
 .slot .pp{position:absolute;left:8px;right:8px;bottom:-1px;height:2px;background:var(--acc2);display:none;box-shadow:0 0 6px var(--acc2)}
 .slot.playing .pp{display:block}
-.slot.on .tt i{background:var(--acc)}
-.arrhint{color:var(--ink3);font-size:11px;padding:6px 2px}
-.aadd{width:26px;height:26px;padding:0;display:grid;place-items:center;color:var(--acc);border-radius:7px;background:var(--panel2);border:1px solid var(--line);font-size:16px;line-height:1}
+.slot.prim .tt i{background:var(--prim)}
+.aadd{width:30px;height:30px;padding:0;display:grid;place-items:center;color:var(--acc);border-radius:7px;background:var(--panel2);border:1px solid var(--line);font-size:18px;line-height:1}
 .aadd:disabled{opacity:.35;cursor:default}
-.tab.add:hover{border-color:var(--acc2)}
-.tab.full{cursor:default;opacity:.4}
-.tab.full:hover{border-color:var(--line)}
-.tab{display:flex;align-items:center;gap:7px;padding:5px 11px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink2);cursor:pointer;position:relative}
-.tab:hover{border-color:#4a5163}
-.tab.on{background:#ff9f4322;border-color:var(--acc);color:var(--acc)}
 .tt{width:44px;height:16px;border-radius:4px;background:#00000040;position:relative;overflow:hidden}
 .tt i{position:absolute;width:2px;height:2px;background:var(--ink2)}
-.tabinfo{flex:1;text-align:center;color:var(--ink3);font-size:10.5px;padding:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tabinfo.lockmsg{color:var(--lock)}
-.msg{color:var(--acc2);font-size:11px;margin:-2px 0 6px}
+.msg{color:var(--acc2);font-size:11px;margin:6px 0 0;min-height:14px}
 .msg.err{color:var(--bad)}
 .msg:empty{display:none}
 /* the chord lane: a square + on the left, then blocks on a beat grid */
-.clane{display:grid;grid-template-columns:44px 1fr;gap:0;margin:0 0 6px}
-.addcol{display:flex;align-items:center;justify-content:center}
+.clane{display:flex;gap:6px;margin:0}
+.clane .lanebox{flex:1}
+.addcol{display:flex;align-items:center;justify-content:center;width:30px;flex:none}
 .addcol button{width:30px;height:30px;padding:0;display:grid;place-items:center;color:var(--acc);border-radius:7px;background:var(--panel2);border:1px solid var(--line);font-size:18px;line-height:1}
 .addcol button:disabled{opacity:.35;cursor:default}
 .lanebox{position:relative;height:72px;border:1px solid var(--line);border-radius:6px;background:var(--panel);overflow:hidden;touch-action:none}
@@ -129,33 +164,36 @@ input.num{width:64px}
 .tick.bl{background:var(--line2);width:2px}
 .tick.ph{background:var(--acc2);width:2px;opacity:.6}
 .chord{position:absolute;top:4px;bottom:4px;background:#2b303a;border:1px solid #4a5263;border-radius:7px;display:flex;flex-direction:column;justify-content:space-between;padding:2px 5px;user-select:none;cursor:grab;overflow:hidden}
-.chord.sel{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc) inset}
-.chord.locked{border-color:var(--lock)}
+.chord.locked{border-color:var(--state);background:#2b303a}
+.chord.sel{border-color:var(--prim);box-shadow:0 0 0 1px var(--prim) inset;background:#3a3127}
 .chord.dragging{cursor:grabbing;opacity:.9}
 .chord .crow{display:flex;justify-content:space-between;align-items:center;gap:3px;min-height:16px}
 .chord .mid{text-align:center;line-height:1.05;pointer-events:none}
-.chord .numr{font-weight:800;font-size:15px;color:var(--acc)}
+.chord .numr{font-weight:800;font-size:15px;color:var(--ink)}
+.chord.sel .numr{color:var(--prim)}
 .chord .cname{font-size:10.5px;color:var(--ink2);white-space:nowrap}
 .chord .ib{height:16px;min-width:16px;padding:0 3px;font-size:10px;border-radius:4px;background:transparent;border:1px solid transparent;color:var(--ink2);line-height:14px}
 .chord .ib:hover{border-color:var(--line2);color:var(--ink)}
-.chord .ib.on{color:var(--lock)}
+.chord .ib.on{opacity:1}
+.chord .ib[data-act="lock"]{opacity:.45}
 .chord .rh{font-size:9.5px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
-.cedge{position:absolute;top:0;bottom:0;width:9px;cursor:ew-resize;z-index:2}
+.cedge{position:absolute;top:0;bottom:0;width:13px;cursor:ew-resize;z-index:2}
 .cedge.l{left:-2px}.cedge.r{right:-2px}
-.cedge::after{content:"";position:absolute;top:30%;bottom:30%;left:4px;width:2px;border-radius:2px;background:var(--line2)}
-.chord.sel .cedge::after{background:#8a5a2c}
+.cedge::after{content:"";position:absolute;top:30%;bottom:30%;left:5px;width:4px;border-radius:2px;background:var(--line2)}
+.cedge.r::after{left:auto;right:5px}
+.chord.sel .cedge::after{background:var(--ctx)}
 .empty-lane{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink3);pointer-events:none;font-size:11px}
-.cgen{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 6px;padding:5px 8px;border:1px solid var(--line);border-radius:7px;background:var(--panel)}
+.cgen{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .cgen .lbl{margin-left:6px}
 .cgen input{flex:1;min-width:150px;padding:3px 8px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);color:var(--ink);font-size:11px}
-.cinsp{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 6px;padding:5px 8px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--ink2);font-size:11px}
-.cinsp .big{font-size:15px;font-weight:800;color:var(--ink);min-width:70px}
+.cinsp{display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:var(--ink2);font-size:11px}
+.cinsp .big{font-size:15px;font-weight:800;color:var(--prim);min-width:70px}
 .cinsp .big small{display:block;font-size:10px;color:var(--ink3);font-weight:400}
 .cinsp .lbl{margin-left:4px}
 .gstrip{position:relative;height:0;overflow:visible}
 .gstrip.has{height:20px;margin:1px 0}
 .gnote{position:absolute;top:2px;height:16px;border:1px dashed #8a5a2c;border-radius:3px;background:#ff9f4312;font-size:10px;color:var(--ink2);padding:0 4px;line-height:14px;overflow:hidden;white-space:nowrap}
-.gnote.sel{border-color:var(--acc);color:var(--ink)}
+.gnote.sel{border-color:var(--prim);color:var(--ink)}
 .roll{border:1px solid var(--line);border-radius:6px;overflow:hidden;position:relative;touch-action:pan-x pan-y pinch-zoom}
 .key{overflow:hidden;font-size:9.5px;color:var(--ink3);display:flex;align-items:center;justify-content:flex-end;gap:4px;padding-right:5px;border-bottom:1px solid #00000040;background:var(--panel)}
 .poly .key{font-size:12px}
@@ -202,9 +240,8 @@ input.num{width:64px}
 .lane.offlane{height:24px;align-items:center;cursor:default}
 .laneoff{grid-column:2/-1;align-self:center;color:var(--ink3);font-size:11px;padding-left:6px}
 .steps div{text-align:center;color:var(--ink3);font-size:9.5px}
-.legend{display:flex;gap:14px;align-items:center;color:var(--ink3);font-size:10.5px;margin-top:4px;flex-wrap:wrap}
+.legend{display:flex;gap:14px;align-items:center;color:var(--ink2);font-size:11px;margin-top:4px;flex-wrap:wrap;line-height:1.5}
 .legend i{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
-.foot{display:flex;align-items:center;gap:12px;padding:8px 14px;border-top:1px solid #000;background:#1a1d23;color:var(--ink2)}
 .playb{width:34px;height:34px;border-radius:50%;border:0;background:var(--acc2);color:#15171c;font-size:14px;display:grid;place-items:center}
 .playb.on{background:var(--acc)}
 .grp{display:flex;align-items:center;gap:8px}
@@ -217,54 +254,40 @@ body.dragging .drop{display:grid}
 <body>
 <div class="drop" id="drop">Drop the .mid file here<small>up to 4 bars → A A′ B C · monophonic · quantised to 1/16 · into the Riff tab</small></div>
 <div id="wrap"><div class="plug adv-off" id="plug">
-  <div class="row rowA">
+  <!-- level 1: the song bar -->
+  <div class="row song">
     <div class="logo">Midi<b>nja</b></div>
-    <div class="ctl"><small>Preset</small><div style="display:flex;gap:3px" class="inert" title="Presets come later"><button class="btn ghost sm">◂</button><div class="btn" style="min-width:80px">Init</div><button class="btn ghost sm">▸</button></div></div>
-    <div class="vsep"></div>
-    <div class="gen">
-      <button class="dice" id="roll" title="Roll the part shown (Space)">⚄</button>
-      <div class="seg small" id="what" title="What the dice change: Rhythm, Notes, both (a new riff), or Mutate">
-        <button data-w="rhythm" title="New rhythm (keeps the pitches unless Notes is on too)">♩ Rhythm</button>
-        <button data-w="notes" title="New pitches (keeps the rhythm unless Rhythm is on too)">♪ Notes</button>
-      </div>
-      <div class="vsep" style="height:22px;align-self:center"></div>
-      <div class="seg small" id="mutseg"><button data-w="mutate" title="Mutate: change some notes, keep the riff. Click again for 15 / 33 / 50 %">~ Mutate<span class="mutamt" id="mutAmt">15%</span></button></div>
-      <button class="btn sm" id="rollAll" title="The same for all four parts of this tab: A, then A′ B C from it (Shift+Space). Locked parts stay">🎲 All</button>
+    <div class="grp">
+      <button class="playb" id="pl" title="Play / Stop: loops the arrangement, or only the selected bar (no sound in the preview)">▶</button>
+      <div class="ctl"><small id="playinfo">BPM</small><input class="num" id="bpm" value="122" type="number" min="40" max="240"></div>
     </div>
-    <div class="sp"></div>
-    <div class="ctl"><small>Versions</small><div class="hist"><button class="pg" id="hPrev" title="Older">◂</button><div class="hist" id="hist"></div><button class="pg" id="hNext" title="Newer">▸</button></div></div>
-    <div class="undoredo"><button class="btn ghost" id="undo" title="Undo (Ctrl+Z)">↶</button><button class="btn ghost" id="redo" title="Redo (Ctrl+Shift+Z)">↷</button></div>
-  </div>
-  <div class="row rowB">
+    <div class="vsep"></div>
     <div class="ctl"><small>Key</small><div style="display:flex;gap:4px"><select class="sel" id="root" title="The root: pick the note here (both tabs move with it), − / + move this tab an octave. The range and the parts follow the root"></select><button class="btn sm" id="ocD" title="This tab an octave down: its root, range and parts">−</button><button class="btn sm" id="ocU" title="This tab an octave up: its root, range and parts">+</button><select class="sel" id="scale" title="The scale: notes keep their degree, colour notes and augmented-second pairs move to the new scale's; locked notes stay; chords take their quality from the scale"></select></div></div>
     <div class="ctl"><small>Rate · steps/bar</small><select class="sel" id="rate" title="One part is one bar of 4/4; the rate sets how many steps it has"><option value="2">1/8 · 8</option><option value="4" selected>1/16 · 16</option><option value="6">1/16T · 12</option></select></div>
-    <div class="vsep"></div>
-    <div class="kv" title="How many steps get a note (next roll). Ctrl+click resets"><div class="knob" id="kDensity"><i></i></div><div><span>Density</span><br><b id="vDensity"></b></div></div>
-    <div class="kv"><div class="knob" id="kSwing"><i></i></div><div><span>Swing</span><br><b id="vSwing"></b></div></div>
-    <div class="kv" title="How close A′ stays to A (next roll of A′): high changes only the last beat, low keeps just the shape. Ctrl+click resets"><div class="knob" id="kSimilarity"><i></i></div><div><span>Similarity</span><br><b id="vSimilarity"></b></div></div>
-    <div class="mus" id="mus">
-      <div class="kv" id="colorWrap"><div class="knob t" id="kColor"><i></i></div><div><span>Color</span><br><b id="vColor"></b></div></div>
-      <div class="kv" title="How often the riff breaks the rules (next roll)"><div class="knob t" id="kSurprise"><i></i></div><div><span>Surprise</span><br><b id="vSurprise"></b></div></div>
-    </div>
     <div class="sp"></div>
-    <div class="tog" id="adv" title="Ranges, velocity, length, ratchets, seed and the undo buttons"><div class="sw"></div>Advanced</div>
+    <div class="ctl"><small>Preset</small><div style="display:flex;gap:3px" class="inert" title="Presets come later"><button class="btn ghost sm">◂</button><div class="btn sm" style="min-width:56px;text-align:center">Init</div><button class="btn ghost sm">▸</button></div></div>
+    <div class="ctl"><small>Versions</small><div class="hist"><button class="pg" id="hPrev" title="Older">◂</button><div class="hist" id="hist"></div><button class="pg" id="hNext" title="Newer">▸</button></div></div>
+    <div class="undoredo"><button class="btn ghost" id="undo" title="Undo (Ctrl+Z)">↶</button><button class="btn ghost" id="redo" title="Redo (Ctrl+Shift+Z)">↷</button></div>
+    <div class="vsep"></div>
+    <button class="btn" id="imp" title="Import a .mid file (or drop one on the page) into the Riff tab: up to 4 bars become A A′ B C">⤒ Import</button>
+    <input type="file" id="impFile" accept=".mid,.midi,audio/midi" hidden>
+    <button class="btn" id="exp" title="Save the arrangement as one .mid file: a track per tab that is on, each on its channel">⤓ Export</button>
+    <button class="btn" id="gear" data-pop title="Set once: the preview synth and the MIDI out port">⚙</button>
   </div>
-  <div class="tabbar" id="tabbar" title="The two tabs share the key, the arrangement and the chord lane; each has its own octave, range and channel (the Riff tab its parts). Export = one .mid, a track per tab that is on"></div>
 
+  <!-- level 2: the form, the bars with their parts and the harmony under them -->
+  <div class="form">
+    <div class="ruler"><div class="arr" id="arr"></div><div class="addcol" id="radd"></div></div>
+    <div class="hstrip" id="hstrip"></div>
+    <div class="clane"><div class="lanebox" id="lane"></div><div class="addcol"><button id="cadd" title="Repeat the last chord after it">+</button></div></div>
+  </div>
+
+  <!-- level 3: the track tabs -->
+  <div class="tabbar" id="tabbar" title="The two tabs share the key, the form and the harmony; each has its own octave, range and channel (the Riff tab its parts). Export = one .mid, a track per tab that is on"></div>
+
+  <!-- level 4: the roll and, on the right, the generator, the inspector and Advanced -->
   <div class="main">
-    <div class="side">
-      <div><h4>Length</h4><div class="range" id="rgLen"></div><div class="rl"><span id="lLenLo"></span><span id="lLenHi"></span></div></div>
-      <div><h4>Velocity</h4><div class="range" id="rgVel"></div><div class="rl"><span id="lVelLo"></span><span id="lVelHi"></span></div></div>
-      <div id="rptbox"><h4>Ratchets <span class="pill" id="rptpill">OFF</span></h4><div class="range" id="rgRep"></div><div class="rl"><span id="lRepLo"></span><span id="lRepHi"></span></div></div>
-      <div><h4>Start on chord root <span class="pill on" id="rootpill" title="Every bar begins with the root of the chord it starts in. Imported bars are left as they are">ON</span></h4></div>
-      <div><h4>Seed</h4><input class="num" id="seed" style="width:100%" title="The seed of the last roll. Type one and press Enter to roll the whole form from it"></div>
-    </div>
     <div class="gridw">
-      <div class="tabs" id="tabs"><div class="arr" id="arr"></div><span class="tabinfo" id="tabinfo"></span><button class="btn xs" id="unlockBar">Unlock bar</button><div class="pal" id="pal"></div></div>
-      <div class="clane"><div class="addcol"><button id="cadd" title="Repeat the last chord after it">+</button></div><div class="lanebox" id="lane"></div></div>
-      <div class="cgen" id="cgen"></div>
-      <div class="cinsp" id="cinsp"></div>
-      <div class="msg" id="msg"></div>
       <div class="edge" id="edgeTop"></div>
       <div class="gstrip" id="gtop"></div>
       <div class="roll cols" id="grid"></div>
@@ -273,24 +296,54 @@ body.dragging .drop{display:grid}
       <div class="cols play" id="play"></div>
       <div class="lanes" id="lanes"></div>
       <div class="cols steps" id="stepn"></div>
-      <div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>the other tab (ghost)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add / remove · drag = pitch (Alt = chromatic, locks the note) · Shift+click = lock · right-click = longer · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, 🔒 keeps it when you roll · keys 1–4 = part · Space = dice, Shift+Space = All</span></div>
+      <div class="msg" id="msg"></div>
+    </div>
+    <div class="rside">
+      <div class="ctxhead"><div class="tog" id="adv" title="Riff: length, velocity, ratchets, seed, start on root and the lanes under the roll. Chords: a typed progression and the rhythm for all. Also the undo buttons"><div class="sw"></div>Advanced</div><button class="btn sm" id="help" data-pop title="Legend and keyboard shortcuts">?</button></div>
+      <div class="box">
+        <h4>Generator</h4>
+        <div id="riffGen">
+          <div class="gen">
+            <button class="dice" id="roll" title="Roll the part shown (Space)">⚄</button>
+            <div class="seg small" id="what" title="What the dice change: Rhythm, Notes, both (a new riff), or Mutate">
+              <button data-w="rhythm" title="New rhythm (keeps the pitches unless Notes is on too)">♩ Rhythm</button>
+              <button data-w="notes" title="New pitches (keeps the rhythm unless Rhythm is on too)">♪ Notes</button>
+            </div>
+            <div class="seg small" id="mutseg"><button data-w="mutate" title="Mutate: change some notes, keep the riff. Click again for 15 / 33 / 50 %">~ Mutate<span class="mutamt" id="mutAmt">15%</span></button></div>
+          </div>
+          <div class="gen knobs">
+            <div class="kv" title="How many steps get a note (next roll). Ctrl+click resets"><div class="knob" id="kDensity"><i></i></div><div><span>Density</span><br><b id="vDensity"></b></div></div>
+            <div class="kv"><div class="knob" id="kSwing"><i></i></div><div><span>Swing</span><br><b id="vSwing"></b></div></div>
+            <div class="kv" title="How close A′ stays to A (next roll of A′): high changes only the last beat, low keeps just the shape. Ctrl+click resets"><div class="knob" id="kSimilarity"><i></i></div><div><span>Similarity</span><br><b id="vSimilarity"></b></div></div>
+            <div class="kv" id="colorWrap"><div class="knob t" id="kColor"><i></i></div><div><span>Color</span><br><b id="vColor"></b></div></div>
+            <div class="kv" title="How often the riff breaks the rules (next roll)"><div class="knob t" id="kSurprise"><i></i></div><div><span>Surprise</span><br><b id="vSurprise"></b></div></div>
+            <button class="btn sm" id="rollAll" title="The same for all four parts: A, then A′ B C from it (Shift+Space). Locked parts stay">🎲 All</button>
+          </div>
+        </div>
+        <div class="cgen" id="cgen"></div>
+      </div>
+      <div class="box insp">
+        <h4 class="iname" id="inspName"></h4>
+        <div class="cinsp" id="cinsp"></div>
+      </div>
+      <div class="box advbox">
+        <h4>Advanced</h4>
+        <div class="advR">
+          <div><h5>Length</h5><div class="range" id="rgLen"></div><div class="rl"><span id="lLenLo"></span><span id="lLenHi"></span></div></div>
+          <div><h5>Velocity</h5><div class="range" id="rgVel"></div><div class="rl"><span id="lVelLo"></span><span id="lVelHi"></span></div></div>
+          <div id="rptbox"><h5>Ratchets <span class="pill" id="rptpill">OFF</span></h5><div class="range" id="rgRep"></div><div class="rl"><span id="lRepLo"></span><span id="lRepHi"></span></div></div>
+          <div><h5>Start on chord root <span class="pill on" id="rootpill" title="Every bar begins with the root of the chord it starts in. Imported bars are left as they are">ON</span></h5></div>
+          <div><h5>Seed</h5><input class="num" id="seed" style="width:100%" title="The seed of the last roll. Type one and press Enter to roll the whole form from it"></div>
+        </div>
+        <div class="advC" id="advC"></div>
+      </div>
     </div>
   </div>
-
-  <div class="foot">
-    <button class="playb" id="pl" title="Play / Stop: loops the arrangement, or only the selected bar (no sound in the preview)">▶</button>
-    <div class="grp"><span class="lbl">BPM</span><input class="num" id="bpm" value="122" type="number" min="40" max="240"></div>
-    <div class="vsep"></div>
-    <div class="grp inert" title="In the app only (off by default there)"><div class="tog"><div class="sw"></div>Synth</div><span class="btn sm">Saw</span></div>
-    <div class="sp"></div>
-    <div class="grp inert" title="In the app only"><span class="lbl">MIDI Out</span><span class="btn sm">None</span></div>
-    <div class="vsep"></div>
-    <button class="btn" id="imp" title="Import a .mid file (or drop one on the page) into the Riff tab: up to 4 bars become A A′ B C">⤒ Import MIDI</button>
-    <input type="file" id="impFile" accept=".mid,.midi,audio/midi" hidden>
-    <button class="btn" id="exp" title="Save the arrangement as one .mid file: a track per tab that is on, each on its channel">⤓ Export MIDI</button>
-  </div>
 </div></div>
+<div class="pop" id="pop"></div>
+<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>the other tab (ghost)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add / remove · drag = pitch (Alt = chromatic, locks the note) · Shift+click = lock · right-click = longer · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, 🔒 keeps it when you roll · keys 1–4 = part · Space = dice, Shift+Space = All</span></div></template>
 <script src="midinja-core.js"></script>
+
 <script>
 (async () => {
 const core = await MidinjaCore();
@@ -351,7 +404,7 @@ const lockMask = () => locks.reduce((m, l, k) => m | (l ? 1 << k : 0), 0);
 const hasNotes = p => p.steps.slice(0, p.numSteps).some(s => s.on);
 const lastOnIdx = p => { for (let i = p.numSteps - 1; i >= 0; i--) if (p.steps[i].on) return i; return -1; };
 function setPart(k, p) { parts[k] = p; refreshPat(); }
-const shownBar = () => S.sel >= 0 && S.sel < arr.length ? S.sel : arr.indexOf(S.cur);
+const shownBar = () => S.sel >= 0 && S.sel < arr.length ? S.sel : T && T.poly && selChord() ? Math.min(arr.length - 1, chordBar(selChord())) : arr.indexOf(S.cur); // Chords: the bar of the selected chord
 function refreshPat() { pat = T.poly ? chordPat(shownBar()) : parts[S.cur]; }
 function selectPart(k) { S.cur = k; refreshPat(); render(); }
 function selectSlot(i) { S.sel = S.sel === i ? -1 : i; if (S.sel >= 0) S.cur = arr[i]; stepIdx = 0; playPos = 0; refreshPat(); render(); }
@@ -559,6 +612,7 @@ function rollMono(k, op, p) {
   return core.run(op, p, g, S.mutAmt);
 }
 const selChord = () => chords.find(c => c.id === S.csel) || null;
+const chordBar = c => c ? Math.floor(c.start / 4) : -1;
 // the dice on the part shown (Riff), or a new rhythm for the selected chord (Chords)
 function apply(op) {
   if (!op) return;
@@ -754,17 +808,6 @@ function removeBar(i) {
 }
 // Unlock bar: every lock in the bar shown goes (the part's lock and its notes on the Riff tab, the
 // chords of the bar on the Chords tab)
-function barLocks() {
-  const b = shownBar();
-  if (T.poly) return b >= 0 ? chords.filter(c => c.lock && overlapsBar(c, b)).length : 0;
-  return (locks[S.cur] ? 1 : 0) + pat.steps.slice(0, pat.numSteps).filter(s => s.locked).length;
-}
-function unlockBar() {
-  const b = shownBar();
-  if (T.poly) chords.forEach(c => { if (overlapsBar(c, b)) c.lock = false; });
-  else { locks[S.cur] = false; pat.steps.forEach(s => { s.locked = false; }); }
-  push();
-}
 // a riff moves from one degree to another by scale steps; the whole bar shifts an octave before single notes fold
 function retune(tab, k, from, to) {
   const p = tab.parts[k], n = nScale();
@@ -1040,6 +1083,18 @@ function renderLane() {
   }
   if (!chords.length) h += '<div class="empty-lane">Empty lane: roll ⚄ Progression, pick a mood or a style, type one, or double-click to add a chord</div>';
   lane.innerHTML = h;
+  // the Riff tab sees the harmony as one line per bar; a click opens it on the Chords tab
+  const HS = $('hstrip'); HS.innerHTML = '';
+  HS.style.gridTemplateColumns = `repeat(${Math.max(1, arr.length)}, 1fr)`;
+  arr.forEach((k, b) => {
+    const d = document.createElement('div'); d.className = 'hbar';
+    const cs = sortedChords().filter(c => overlapsBar(c, b));
+    d.title = `Bar ${b + 1}: ${cs.length ? cs.map(chordName).join(', ') : 'no chord'} · click to edit the harmony on the Chords tab`;
+    if (!cs.length) d.innerHTML = '<span class="none">no chord</span>';
+    cs.forEach(c => { const e = document.createElement('span'); e.className = 'hc' + (k === S.cur && !T.poly && c.id === S.csel ? '' : ''); e.style.flex = String(Math.min(c.start + c.len, b * 4 + 4) - Math.max(c.start, b * 4)); e.innerHTML = `<b>${numeral(c.deg, c.type)}</b> · ${chordName(c)}`; e.onclick = ev => { ev.stopPropagation(); S.csel = c.id; useTab(1); render(); }; d.appendChild(e); });
+    d.onclick = () => { if (cs.length) S.csel = cs[0].id; useTab(1); render(); };
+    HS.appendChild(d);
+  });
   const s = sortedChords(), end = s.length ? s[s.length - 1].start + s[s.length - 1].len : 0, full = end >= Tt && arr.length >= 4;
   $('cadd').disabled = full;
   $('cadd').title = full ? 'All 4 bars are filled: shorten or remove a chord to add one' : 'Repeat the last chord after it' + (end >= Tt ? ' (adds a bar)' : '');
@@ -1053,16 +1108,26 @@ function renderLane() {
   MOODS.forEach(m => { const mv = moodMoves(m); mkb(m.label, mv.length ? m.tip + ' · ' + [...new Set(mv.map(x => numeral(x.d)))].join(', ') : 'No ' + m.label.toLowerCase() + ' move exists in ' + SCALES[S.scale].name + '. Try another scale', !mv.length, () => mood(m)); });
   lbl('style');
   STYLES.forEach(st => mkb(st.label, st.label + ': ' + st.tip + (st.lists[scaleKey()] ? '' : ' · ' + SCALES[S.scale].name + ' uses the ' + (tonicMinor() ? 'minor' : 'major') + ' list'), false, () => styleProgression(st)));
-  const inp = document.createElement('input'); inp.id = 'typed'; inp.placeholder = 'type a progression: i IV i VII · one bar per chord; more chords than bars share the bars'; inp.autocomplete = 'off'; inp.value = typedText;
+  const AC = $('advC'); AC.innerHTML = '';
+  const inp = document.createElement('input'); inp.id = 'typed'; inp.placeholder = 'type a progression: i IV i VII'; inp.title = 'One bar per chord; more chords than bars share the bars. Enter applies'; inp.autocomplete = 'off'; inp.value = typedText;
   inp.oninput = () => { typedText = inp.value; }; inp.onkeydown = e => { if (e.key === 'Enter') applyTyped(); e.stopPropagation(); };
-  G.appendChild(inp);
-  mkb('Apply', 'Set the lane to the typed numerals', false, applyTyped);
+  const arow = document.createElement('div'); arow.className = 'gen'; arow.appendChild(inp);
+  const ap = document.createElement('button'); ap.className = 'btn xs'; ap.textContent = 'Apply'; ap.title = 'Set the lane to the typed numerals'; ap.onclick = applyTyped; arow.appendChild(ap);
+  AC.appendChild(arow);
 
   // the selected chord
   const I = $('cinsp'); I.innerHTML = '';
+  const IN = $('inspName');
+  if (!T.poly) {
+    const b0 = shownBar(), k = S.cur, p = parts[k], nOn = p.steps.slice(0, p.numSteps).filter(x => x.on).length, nl = p.steps.slice(0, p.numSteps).filter(x => x.locked).length;
+    IN.innerHTML = `${b0 >= 0 ? 'Bar ' + (b0 + 1) + ' · ' : ''}${PARTS[k]}<small>${PART_HINT[k]} · on ${numeral(degreeOf(k))} · ${nOn} note${nOn === 1 ? '' : 's'}${src[k] === 'import' ? ' · imported' : ''}${arr.filter(x => x === k).length > 1 ? ' · in ' + arr.filter(x => x === k).length + ' bars' : ''}</small>`;
+    const lk = document.createElement('button'); lk.className = 'btn xs' + (locks[k] ? ' on' : ''); lk.textContent = locks[k] ? '🔒 Locked' : '🔓 Lock'; lk.title = locks[k] ? 'Unlock: the dice and All may change ' + PARTS[k] + ' again' : 'Lock: the dice and All keep ' + PARTS[k] + ' as it is (Shift+click on its bar does the same)'; lk.onclick = () => { locks[k] = !locks[k]; push(); }; I.appendChild(lk);
+    const un = document.createElement('button'); un.className = 'btn xs'; un.textContent = `Unlock ${nl} note${nl === 1 ? '' : 's'}`; un.disabled = !nl; un.title = nl ? 'Remove the locks of the notes in ' + PARTS[k] + ', chromatic ones included' : 'No locked note in ' + PARTS[k] + ' (Shift+click a note to lock it)'; un.onclick = () => { p.steps.forEach(x => { x.locked = false; }); push(p); }; I.appendChild(un);
+    return;
+  }
   const c = selChord();
-  if (!c) { I.innerHTML = '<span class="dim">Select a chord in the lane to edit it</span>'; return; }
-  const big = document.createElement('div'); big.className = 'big'; big.innerHTML = `${chordName(c)}<small>${numeral(c.deg, c.type)} · beats ${c.start + 1}–${c.start + c.len} (${c.len} beat${c.len > 1 ? 's' : ''})</small>`; I.appendChild(big);
+  if (!c) { IN.innerHTML = 'No chord<small>select a chord in the lane to edit it</small>'; I.innerHTML = ''; return; }
+  IN.innerHTML = `Bar ${chordBar(c) + 1} · ${numeral(c.deg, c.type)} · ${chordName(c)}<small>beats ${c.start + 1}–${c.start + c.len} (${c.len} beat${c.len > 1 ? 's' : ''})</small>`;
   const ilbl = t => { const x = document.createElement('span'); x.className = 'lbl'; x.textContent = t; I.appendChild(x); };
   const sel = (title, opts, val, fn) => { const s2 = document.createElement('select'); s2.className = 'sel xs'; s2.title = title; s2.innerHTML = opts.map(([v, t]) => `<option value="${v}">${t}</option>`).join(''); s2.value = val; s2.onchange = () => fn(s2.value); I.appendChild(s2); };
   const edit = fn => { const fromDeg = [0, 1, 2, 3].map(degreeOf); fn(); laneChanged(fromDeg); push(); };
@@ -1076,7 +1141,8 @@ function renderLane() {
   I.appendChild(segi);
   ilbl('rhythm');
   sel('The chord rhythm (Chords tab)', RHYTHM_NAMES.map(r => [r, RHYTHMS[r].label]), c.rhythm, v => edit(() => { c.rhythm = v; }));
-  const all = document.createElement('button'); all.className = 'btn xs'; all.textContent = 'Rhythm to all'; all.title = 'Use this rhythm for every chord'; all.onclick = () => edit(() => { chords.forEach(x => { x.rhythm = c.rhythm; }); say('Rhythm "' + RHYTHMS[c.rhythm].label + '" on every chord'); }); I.appendChild(all);
+  const rd = document.createElement('button'); rd.className = 'btn xs'; rd.textContent = '⚄ New rhythm'; rd.title = 'Another rhythm for this chord (Space); Shift+Space for every unlocked chord'; rd.disabled = c.lock; rd.onclick = () => apply('roll'); I.appendChild(rd);
+  const all = document.createElement('button'); all.className = 'btn xs'; all.textContent = 'Rhythm to all'; all.title = 'Use the selected chord\'s rhythm (' + RHYTHMS[c.rhythm].label + ') for every chord'; all.onclick = () => edit(() => { chords.forEach(x => { x.rhythm = c.rhythm; }); say('Rhythm "' + RHYTHMS[c.rhythm].label + '" on every chord'); }); AC.appendChild(all);
   const lk = document.createElement('button'); lk.className = 'btn xs' + (c.lock ? ' on' : ''); lk.textContent = c.lock ? '🔒 Locked' : '🔓 Lock'; lk.title = c.lock ? 'Unlock: rolls may change this chord again' : 'Lock: rolls keep this chord'; lk.onclick = () => edit(() => { c.lock = !c.lock; }); I.appendChild(lk);
 }
 let typedText = '';
@@ -1130,46 +1196,32 @@ function render() {
 
   // arrangement and palette
   const A = $('arr'); A.innerHTML = '';
-  const ps = playingSlot();
+  const ps = playingSlot(), b0 = shownBar();
+  A.style.gridTemplateColumns = `repeat(${Math.max(1, arr.length)}, 1fr)`;
   arr.forEach((k, i) => {
     const t = document.createElement('div');
-    t.className = 'slot' + (i === S.sel ? ' on' : k === S.cur ? ' same' : '') + (locks[k] ? ' locked' : '') + (i === ps ? ' playing' : '');
-    t.title = `Bar ${i + 1}: ${PARTS[k]} on ${numeral(barDegree(i))} · ${i === S.sel ? 'selected: Play loops this bar; click again to deselect' : 'click to select it and edit ' + PARTS[k]} (every ${PARTS[k]} bar changes with it)`;
-    t.innerHTML = `<span class="lk" title="${locks[k] ? 'Unlock (Shift+click): ' + PARTS[k] + ' is locked, the dice and All skip it' : 'Lock (Shift+click): the dice and All keep ' + PARTS[k] + ' as it is'}">${locks[k] ? '🔒' : '🔓'}</span><span class="tn">${PARTS[k]}<small>${numeral(barDegree(i))}</small></span><div class="tt"></div><button class="x" title="Remove this bar from the arrangement (its chords go with it)">×</button><i class="pp"></i>`;
+    const cb = T.poly ? chordBar(selChord()) : -1;
+    const level = T.poly ? (i === cb || (cb < 0 && i === b0) ? ' ctx' : '') : i === b0 ? ' prim' : k === S.cur ? ' ctx' : '';
+    t.className = 'slot' + level + (locks[k] ? ' locked' : '') + (i === ps ? ' playing' : '');
+    t.title = `Bar ${i + 1}: part ${PARTS[k]} · ${i === S.sel ? 'selected: Play loops this bar; click again to deselect' : 'click to select it and edit ' + PARTS[k]} (every ${PARTS[k]} bar changes with it)`;
+    t.innerHTML = `<span class="bn">${i + 1}</span><span class="lk" title="${locks[k] ? 'Unlock (Shift+click): ' + PARTS[k] + ' is locked, the dice and All skip it' : 'Lock (Shift+click): the dice and All keep ' + PARTS[k] + ' as it is'}">${locks[k] ? '🔒' : '🔓'}</span><span class="tn" title="Which part plays in bar ${i + 1}: click to choose">${PARTS[k]}<i>▾</i></span><div class="tt"></div><button class="x" title="Remove this bar from the form (its chords go with it)">×</button><i class="pp"></i>`;
     thumb(t.querySelector('.tt'), [parts[k]], 44, 16);
     const toggleLock = () => { locks[k] = !locks[k]; push(); };
     t.onclick = e => e.shiftKey ? toggleLock() : selectSlot(i);
     t.querySelector('.lk').onclick = e => { e.stopPropagation(); toggleLock(); };
+    t.querySelector('.tn').onclick = e => { e.stopPropagation(); partPicker(t.querySelector('.tn'), i); };
     t.querySelector('.x').onclick = e => { e.stopPropagation(); removeBar(i); };
     A.appendChild(t);
   });
-  if (!arr.length) { const h = document.createElement('span'); h.className = 'arrhint'; h.textContent = 'No bars yet: click a part on the right to add it'; A.appendChild(h); }
+  if (!arr.length) { const h = document.createElement('span'); h.className = 'arrhint'; h.textContent = 'No bars yet: + adds bar 1 with part A'; A.appendChild(h); }
   // the square + repeats the last bar: A → A A → A A A (the same part, so the same riff)
   const ab = document.createElement('button'); ab.className = 'aadd'; ab.textContent = '+';
-  ab.disabled = arr.length >= MAX_BARS || !arr.length;
-  ab.title = arr.length >= MAX_BARS ? '4 bars at most' : arr.length ? `Repeat the last bar after it (${PARTS[arr[arr.length - 1]]} again)` : 'Add a part from the palette first';
-  ab.onclick = () => { arr.push(arr[arr.length - 1]); S.sel = -1; laneChanged(); push(); };
-  A.appendChild(ab);
-  const info = $('tabinfo');
-  info.className = 'tabinfo' + (lockedPart ? ' lockmsg' : '');
-  const b0 = shownBar();
-  info.title = T.poly ? `Chords · bar ${b0 + 1}` : `Riff · editing ${PARTS[S.cur]} (${PART_HINT[S.cur]}, on ${numeral(degreeOf(S.cur))}); 1 bar = ${n} steps`;
-  info.textContent = lockedPart ? `🔒 ${PARTS[S.cur]} locked: dice skip it`
-    : `${T.name} · ${T.poly ? (b0 >= 0 ? 'bar ' + (b0 + 1) : 'no bar') : PARTS[S.cur]} · ${S.sel >= 0 ? 'Play: bar ' + (S.sel + 1) : arr.length ? 'Play: ' + arr.length + ' bar' + (arr.length > 1 ? 's' : '') : 'Play: this part'}`;
-  const nl = barLocks();
-  $('unlockBar').disabled = !nl;
-  $('unlockBar').title = nl ? (T.poly ? `Unlock the ${nl} locked chord${nl > 1 ? 's' : ''} of bar ${b0 + 1}` : `Remove every lock of ${PARTS[S.cur]}: the part's lock and its ${pat.steps.slice(0, n).filter(s => s.locked).length} locked note(s), chromatic ones included`) : 'Nothing is locked in this bar';
-  const Pl = $('pal'); Pl.innerHTML = '';
-  const full = arr.length >= MAX_BARS;
-  parts.forEach((p, k) => {
-    const t = document.createElement('div');
-    t.className = 'tab' + (k === S.cur ? ' on' : '') + (full ? ' full' : ' add');
-    t.title = full ? 'Arrangement is full (4 bars) — remove a bar with ×' : `${PARTS[k]} · ${PART_HINT[k]}` + (src[k] === 'import' ? ' · imported' : '') + (hasNotes(p) ? '' : ' · empty: added as a copy of A on its bar\'s chord') + ' · click to add a bar to the arrangement';
-    t.innerHTML = `<span class="tn">${PARTS[k]}</span>`;
-    if (!full) t.onclick = () => { S.cur = k; arr.push(k); S.sel = -1; tabs.forEach(tab => extendPart(tab, k)); laneChanged(); push(); };
-    Pl.appendChild(t);
-  });
-
+  ab.disabled = arr.length >= MAX_BARS;
+  ab.title = arr.length >= MAX_BARS ? '4 bars at most' : arr.length ? `Repeat the last bar after it (${PARTS[arr[arr.length - 1]]} again); the ▾ on a bar changes its part` : 'Add bar 1 with part A';
+  ab.onclick = () => { arr.push(arr.length ? arr[arr.length - 1] : 0); S.sel = -1; laneChanged(); push(); };
+  $('radd').innerHTML = ''; $('radd').appendChild(ab);
+  $('playinfo').textContent = 'BPM · ' + (S.sel >= 0 ? 'bar ' + (S.sel + 1) : arr.length ? arr.length + ' bar' + (arr.length > 1 ? 's' : '') : 'this part');
+  $('playinfo').title = S.sel >= 0 ? 'Play loops only the selected bar (Esc deselects)' : 'Play loops the whole form';
   renderLane();
 
   // piano roll
@@ -1411,7 +1463,34 @@ function revertDrag() { if (!drag) return; const c = chords.find(x => x.id === d
 laneEl.addEventListener('pointerup', endDrag);
 laneEl.addEventListener('pointercancel', e => { if (drag && e.pointerId === drag.pid) revertDrag(); });
 $('cadd').onclick = appendChord;
-$('unlockBar').onclick = unlockBar;
+
+// ---- popovers: the part of a bar, ⚙, ? ---------------------------------------------------------
+const POP = $('pop');
+function openPop(anchor, build) {
+  POP.innerHTML = ''; build(POP); POP.style.display = 'block';
+  const r = anchor.getBoundingClientRect(), w = POP.offsetWidth, h = POP.offsetHeight, vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
+  POP.style.left = Math.max(6, Math.min(vw - w - 6, r.left)) + 'px';
+  POP.style.top = (r.bottom + 6 + h > vh ? Math.max(6, r.top - h - 6) : r.bottom + 6) + 'px';
+}
+const closePop = () => { POP.style.display = 'none'; };
+addEventListener('pointerdown', e => { if (POP.style.display === 'block' && !POP.contains(e.target) && !e.target.closest('[data-pop]')) closePop(); }, true);
+addEventListener('keydown', e => { if (e.key === 'Escape') closePop(); }, true);
+function partPicker(anchor, i) {
+  openPop(anchor, P => {
+    const h = document.createElement('h4'); h.textContent = 'Part in bar ' + (i + 1); P.appendChild(h);
+    PARTS.forEach((nm, k) => {
+      const d = document.createElement('div'); d.className = 'pi' + (k === arr[i] ? ' on' : '');
+      d.innerHTML = `<b>${nm}</b><span>${PART_HINT[k]}${src[k] === 'import' ? ' · imported' : hasNotes(parts[k]) ? '' : ' · empty: comes in as a copy of A on this bar\'s chord'}</span>`;
+      d.onclick = () => { closePop(); if (k === arr[i]) return; arr[i] = k; S.cur = k; if (S.sel >= 0) S.sel = i; tabs.forEach(tab => extendPart(tab, k)); laneChanged(); push(); };
+      P.appendChild(d);
+    });
+  });
+}
+$('gear').onclick = () => openPop($('gear'), P => {
+  const h = document.createElement('h4'); h.textContent = 'Set once'; P.appendChild(h);
+  P.insertAdjacentHTML('beforeend', '<div class="grp inert" title="In the app only (off by default there)"><div class="tog"><div class="sw"></div>Synth</div><span class="btn sm">Saw</span></div><div class="grp inert" title="In the app only"><span class="lbl">MIDI Out</span><span class="btn sm">None</span></div><div class="dim" style="font-size:11px;max-width:220px">The preview has no sound: the synth and the MIDI port live in the app.</div>');
+});
+$('help').onclick = () => openPop($('help'), P => { const h = document.createElement('h4'); h.textContent = 'Legend and keys'; P.appendChild(h); P.appendChild($('legendT').content.cloneNode(true)); });
 
 // ---- controls ------------------------------------------------------------------------------
 $('root').innerHTML = NAMES.map((n, i) => `<option value="${i}">${n}</option>`).join('');
@@ -1620,7 +1699,8 @@ $('exp').onclick = exportMidi;
 
 function plugScale() { const w = document.documentElement.clientWidth; return Math.min(1, (w - 24) / 1220); }
 function fitW() {
-  const k = plugScale(), w = document.documentElement.clientWidth;
+  const w = document.documentElement.clientWidth, narrow = w < 720, k = narrow ? 1 : plugScale();
+  plug.classList.toggle('narrow', narrow); plug.style.width = narrow ? (w - 24) + 'px' : '';
   plug.style.transformOrigin = '0 0'; plug.style.transform = k < 1 ? `scale(${k})` : '';
   $('wrap').style.height = (plug.offsetHeight * k) + 'px';
   document.body.style.padding = k < 1 ? '12px' : '20px';
