@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-18 21:40 · fable-5.1#24cf · 670c3f4
+Updated: 2026-10-18 21:56 · fable-5.1#24cf · a775f09
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -40,8 +40,10 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 
 - 2026-10-18 · Beats tab: a third tab on channel 10, on by default; nine GM drums (Kick 36 … Crash 49) as rows; groove = kick on every beat, snare/clap on 2 and 4, a hats pattern, one open hat; A has no fill, A′ B C end with a fill (C over two beats), a crash opens the bar after a fill; built in the mockup AND the app at once ("build the VST for Windows right away") · overrides "mockup first" for this feature only, by the user
 
+- 2026-10-18 · MIDI Out in the VST: an exclusive picker, Host (default: the host routes, e.g. FL's Output port) or one system device (then the device gets everything and the host nothing); saved in the state, a missing device falls back to Host with a message; Standalone unchanged · user: FL's Output port did not reach their Minitaur, they want the port in the plugin as before
+
 ## Open issues
-- !  VST3 MIDI bypassed FL (user, 2026-10-18): hardware on the interface played on every FL port because the plugin also opened a system MIDI port directly; VST instruments followed FL's port. Fixed in 82eb984 (host only), awaiting the user's confirmation in FL
+- !  VST3 MIDI bypassed FL (user, 2026-10-18): hardware on the interface played on every FL port because the plugin also opened a system MIDI port directly; VST instruments followed FL's port. Fixed in 82eb984 (host only); 2026-10-18 the picker returns, exclusive host-or-device (see Decisions), awaiting the user's FL check with the Minitaur
 -    Not tried yet: host tempo/transport sync. The mac zip (app + vst3) is built by CI but never opened.
 -    Not clicked through by hand: Start-on-root toggle, root marker at narrow widths (preview)
 
@@ -55,8 +57,8 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 - (none)
 
 ## Next
-1. Raptor deploys the mockup (75125a6); the user tests the mockup and the new Windows zip (4d7a1dd); report via raptor
-2. User: the new Midinja-windows.zip from the latest pre-release (the app follows the mockup: tabs, chords, range edges, scale switch); report via raptor
-3. User: FL check; then tag v0.2.0
+1. User reviews on Home at http://localhost:8765/: the restructured mockup (04220cc) and the Beats tab (e33f657); Raptor deploys to bfunc.cc only on the user's word; the layout port to JUCE only after the user says so
+2. User tests the Windows zip from the latest pre-release in FL: Beats on channel 10, fills and the crash, the MIDI Out picker reaching the Minitaur directly (no double notes); report via raptor
+3. Tag v0.2.0 after the user's FL confirmation
 4. Generation: augmented-second pairs resolve into tonic/fifth (♭6–7–1, 3–♭2–1, ♭3–♯4–5); colour notes on strong beats
 5. AU later
