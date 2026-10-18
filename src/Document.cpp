@@ -6,8 +6,10 @@
 #include <cctype>
 #include <chrono>
 #include <cmath>
+#include <map>
 #include <random>
 #include <set>
+#include <sstream>
 
 namespace midinja
 {
@@ -36,37 +38,70 @@ const char* chordTypeName (ChordType t)
     switch (t)
     {
         case ChordType::Seventh: return "7th";
+        case ChordType::Ninth:   return "9th";
         case ChordType::Sus2:    return "sus2";
         case ChordType::Sus4:    return "sus4";
+        case ChordType::Add9:    return "add9";
         case ChordType::Triad:   break;
     }
     return "Triad";
 }
 
-std::string numeral (int degree, int scale)
+const char* rhythmName (Rhythm r)
 {
-    const auto& iv = scales()[(size_t) std::clamp (scale, 0, (int) scales().size() - 1)].intervals;
-    const int n = (int) iv.size();
-    const int d = ((degree % n) + n) % n;
-    const int r = iv[(size_t) d];
-    const int third = (iv[(size_t) ((d + 2) % n)] - r + 12) % 12;
-    const int fifth = (iv[(size_t) ((d + 4) % n)] - r + 12) % 12;
-    static const char* roman[] = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII" };
-    std::string s = d < 12 ? roman[d] : std::to_string (d + 1);
-    if (n == 7)
+    static const char* names[] = { "Whole", "Halves", "Quarters", "Stabs", "Push", "Offbeat", "Charleston", "Funk 16ths" };
+    return names[std::clamp ((int) r, 0, kNumRhythms - 1)];
+}
+
+const char* moodName (int i)
+{
+    static const char* names[] = { "Bright", "Colour", "Fable", "Drama", "Dark" };
+    return names[std::clamp (i, 0, kNumMoods - 1)];
+}
+
+const char* moodTip (int i)
+{
+    static const char* tips[] = { "calm, light, friendly", "unusual, curious, a hint of fantasy", "fairy tale, wide landscapes, folk",
+                                  "sad, heroic, cinematic", "tense, gloomy, danger" };
+    return tips[std::clamp (i, 0, kNumMoods - 1)];
+}
+
+const char* styleName (int i)
+{
+    static const char* names[] = { "Jazz", "R&B", "Funk", "House", "Drum & Bass" };
+    return names[std::clamp (i, 0, kNumStyles - 1)];
+}
+
+const char* styleTip (int i)
+{
+    static const char* tips[] = { "ii\xE2\x80\x93V\xE2\x80\x93I and turnarounds in 7th chords, Charleston comping",
+                                  "neo-soul colours: maj9, m9, chords that push into the next bar",
+                                  "one- and two-chord vamps, 9th chords, syncopated 16th stabs; best in Dorian or Mixolydian",
+                                  "deep-house loops of minor 7th and 9th chords, organ stabs on the offbeat",
+                                  "liquid drum & bass: long pads of minor 9th and major 7th chords" };
+    return tips[std::clamp (i, 0, kNumStyles - 1)];
+}
+
+std::vector<std::pair<int, int>> rhythmHits (Rhythm r, int L)
+{
+    std::vector<std::pair<int, int>> o;
+    const int S16 = L * 4;
+    switch (r)
     {
-        static const int major[] = { 0, 2, 4, 5, 7, 9, 11 };
-        const int diff = r - major[d];
-        if (diff == -1) s = "\xE2\x99\xAD" + s;
-        else if (diff == 1) s = "\xE2\x99\xAF" + s;
+        case Rhythm::Whole:    o.push_back ({ 0, S16 }); break;
+        case Rhythm::Halves:   for (int b = 0; b < L; b += 2) o.push_back ({ b * 4, 8 }); break;
+        case Rhythm::Quarters: for (int b = 0; b < L; ++b) o.push_back ({ b * 4, 3 }); break;
+        case Rhythm::Stabs:    for (int s = 0; s < S16; s += 16) for (auto [a, l] : { std::pair { 0, 2 }, std::pair { 6, 2 }, std::pair { 10, 2 } }) o.push_back ({ s + a, l }); break;
+        case Rhythm::Push:     if (S16 > 2) { o.push_back ({ 0, S16 - 2 }); o.push_back ({ S16 - 2, 2 }); } else o.push_back ({ 0, S16 }); break;
+        case Rhythm::Offbeat:  for (int b = 0; b < L; ++b) o.push_back ({ b * 4 + 2, 2 }); break;
+        case Rhythm::Charleston: for (int s = 0; s < S16; s += 16) for (auto [a, l] : { std::pair { 0, 2 }, std::pair { 6, 2 }, std::pair { 8, 2 }, std::pair { 14, 2 } }) o.push_back ({ s + a, l }); break;
+        case Rhythm::Funk:     for (int s = 0; s < S16; s += 16) for (auto [a, l] : { std::pair { 0, 1 }, std::pair { 3, 1 }, std::pair { 6, 2 }, std::pair { 10, 1 }, std::pair { 12, 1 }, std::pair { 14, 1 } }) o.push_back ({ s + a, l }); break;
     }
-    const bool minor = third == 3, dim = minor && fifth == 6, aug = third == 4 && fifth == 8;
-    if (minor)
-        for (auto& c : s)
-            c = (char) std::tolower ((unsigned char) c);
-    if (dim) s += "\xC2\xB0";
-    else if (aug) s += "\xE2\x81\xBA";
-    return s;
+    std::vector<std::pair<int, int>> out;
+    for (auto [a, l] : o)
+        if (a < S16)
+            out.push_back ({ a, std::min (l, S16 - a) });
+    return out;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -125,18 +160,112 @@ void run (Op op, Pattern& p, const GenSettings& g, float amount)
     }
 }
 
-// The chord rhythms, in sixteenths of a bar: (start, length).
-const std::vector<std::vector<std::pair<int, int>>>& rhythms()
+std::mt19937& rng()
 {
-    static const std::vector<std::vector<std::pair<int, int>>> r = {
-        { { 0, 16 } },                                              // whole
-        { { 0, 8 }, { 8, 8 } },                                     // halves
-        { { 0, 4 }, { 4, 4 }, { 8, 4 }, { 12, 4 } },                // quarters
-        { { 0, 2 }, { 6, 2 }, { 8, 2 }, { 14, 2 } },                // stabs
-        { { 0, 3 }, { 3, 3 }, { 6, 2 }, { 10, 2 }, { 12, 4 } },     // push
-        { { 2, 2 }, { 6, 2 }, { 10, 2 }, { 14, 2 } },               // offbeat
-    };
+    static std::mt19937 r ((uint32_t) std::chrono::steady_clock::now().time_since_epoch().count());
     return r;
+}
+
+template <typename T>
+const T& pick (const std::vector<T>& v)
+{
+    return v[(size_t) (rng()() % (uint32_t) v.size())];
+}
+
+std::string lower (std::string s)
+{
+    for (auto& c : s)
+        c = (char) std::tolower ((unsigned char) c);
+    return s;
+}
+
+// typical progressions per scale, as scale degrees (0 = I); "*" for the others
+const std::map<std::string, std::vector<std::vector<int>>>& progs()
+{
+    static const std::map<std::string, std::vector<std::vector<int>>> p = {
+        { "Major", { { 0, 4, 5, 3 }, { 0, 5, 3, 4 }, { 0, 3, 4, 0 }, { 0, 3, 5, 4 }, { 5, 3, 0, 4 }, { 0, 1, 3, 4 } } },
+        { "Natural Minor", { { 0, 5, 2, 6 }, { 0, 3, 4, 0 }, { 0, 6, 5, 6 }, { 0, 5, 3, 4 }, { 0, 3, 6, 2 }, { 0, 2, 6, 3 } } },
+        { "Dorian", { { 0, 3, 0, 3 }, { 0, 3, 6, 0 }, { 0, 1, 3, 0 }, { 0, 6, 3, 0 }, { 0, 2, 3, 0 } } },
+        { "Phrygian", { { 0, 1, 0, 1 }, { 0, 1, 6, 0 }, { 0, 1, 2, 1 }, { 0, 6, 1, 0 } } },
+        { "Lydian", { { 0, 1, 0, 1 }, { 0, 1, 6, 0 }, { 0, 1, 4, 0 }, { 0, 4, 1, 0 } } },
+        { "Mixolydian", { { 0, 6, 3, 0 }, { 0, 3, 6, 0 }, { 0, 6, 0, 3 }, { 0, 4, 6, 3 } } },
+        { "Locrian", { { 0, 1, 0, 1 }, { 0, 1, 5, 0 } } },
+        { "Harmonic Minor", { { 0, 3, 4, 0 }, { 0, 5, 4, 0 }, { 0, 5, 3, 4 }, { 0, 3, 5, 4 } } },
+        { "Melodic Minor", { { 0, 3, 4, 0 }, { 0, 1, 4, 0 }, { 0, 5, 3, 4 } } },
+        { "Phrygian Dominant", { { 0, 1, 0, 1 }, { 3, 6, 1, 0 }, { 0, 6, 1, 0 }, { 0, 1, 6, 1 } } },
+        { "*", { { 0, 3, 4, 0 }, { 0, 5, 3, 4 }, { 0, 1, 4, 0 } } },
+    };
+    return p;
+}
+
+std::string scaleKey (int scale)
+{
+    const std::string name = scales()[(size_t) scale].name;
+    return name.rfind ("Major", 0) == 0 ? "Major" : name;
+}
+
+// styles: [degree, type] per bar, a rhythm, lists per scale, else by the scale's third
+struct StyleDef
+{
+    Rhythm rhythm;
+    std::map<std::string, std::vector<std::vector<std::pair<int, ChordType>>>> lists; // "maj", "min" or a scale name
+};
+
+std::vector<std::pair<int, ChordType>> P (const std::string& s)
+{
+    std::vector<std::pair<int, ChordType>> out;
+    std::istringstream in (s);
+    std::string tok;
+    while (in >> tok)
+    {
+        const auto colon = tok.find (':');
+        const int d = std::stoi (tok.substr (0, colon));
+        const char t = colon == std::string::npos ? '7' : tok[colon + 1];
+        out.push_back ({ d, t == '9' ? ChordType::Ninth : t == 'T' ? ChordType::Triad : ChordType::Seventh });
+    }
+    return out;
+}
+
+const std::vector<StyleDef>& styles()
+{
+    static const std::vector<StyleDef> s = {
+        { Rhythm::Charleston, { { "Harmonic Minor", { P ("1:7 4:7 0:7 0:7"), P ("0:7 5:7 1:7 4:7") } },
+                                { "maj", { P ("1:7 4:7 0:7 0:7"), P ("0:7 5:7 1:7 4:7"), P ("2:7 5:7 1:7 4:7"), P ("0:7 3:7 2:7 5:7") } },
+                                { "min", { P ("1:7 4:7 0:7 0:7"), P ("0:7 3:7 6:7 2:7"), P ("0:7 5:7 1:7 4:7") } } } },
+        { Rhythm::Push, { { "maj", { P ("3:9 2:7 5:9 4:7"), P ("1:9 4:9 0:9 5:9"), P ("0:9 5:9 1:9 4:9"), P ("3:9 4:9 2:7 5:9") } },
+                          { "min", { P ("0:9 3:9 6:7 2:7"), P ("5:7 4:7 0:9 0:9"), P ("0:9 5:9 3:9 4:7") } } } },
+        { Rhythm::Funk, { { "Dorian", { P ("0:9 3:7 0:9 3:7"), P ("0:9 1:7 0:9 1:7"), P ("0:9 0:9 3:9 3:9"), P ("0:9 6:7 0:9 6:7"), P ("0:9 0:9 0:9 3:7") } },
+                          { "Mixolydian", { P ("0:9 6:7 0:9 6:7"), P ("0:9 0:9 0:9 0:9"), P ("0:9 3:7 0:9 3:7"), P ("0:9 6:7 3:7 0:9") } },
+                          { "Phrygian", { P ("0:7 1:7 0:7 1:7"), P ("0:7 0:7 6:7 6:7") } },
+                          { "maj", { P ("1:9 4:9 1:9 4:9"), P ("0:9 3:7 0:9 3:7"), P ("1:7 4:7 0:9 0:9") } },
+                          { "min", { P ("0:9 3:7 0:9 3:7"), P ("0:9 6:7 5:7 6:7"), P ("0:9 0:9 3:9 3:9") } } } },
+        { Rhythm::Offbeat, { { "Dorian", { P ("0:9 3:9 0:9 3:9"), P ("0:9 6:9 3:9 0:9") } },
+                             { "maj", { P ("5:9 3:9 0:9 4:9"), P ("1:9 4:9 5:9 3:9"), P ("0:9 5:9 3:9 4:9") } },
+                             { "min", { P ("0:9 3:9 0:9 3:9"), P ("0:7 5:7 6:7 3:7"), P ("0:9 2:7 3:9 2:7"), P ("0:9 5:9 6:9 5:9") } } } },
+        { Rhythm::Whole, { { "maj", { P ("5:9 3:7 0:7 4:7"), P ("0:7 2:7 5:9 3:7") } },
+                           { "min", { P ("0:9 5:7 2:7 6:7"), P ("0:9 0:9 5:7 5:7"), P ("0:9 3:9 5:7 4:7"), P ("0:9 5:7 3:9 6:7") } } } },
+    };
+    return s;
+}
+
+// mood moves "tonic -> chord": semitones from the tonic, major (true) / minor chord, strong
+struct Move { int semis; bool major; bool strong; };
+struct MoodDef { std::vector<Move> maj, min; };
+const std::vector<MoodDef>& moods()
+{
+    static const std::vector<MoodDef> m = {
+        { { { 2, true, true }, { 5, true, false }, { 7, true, false }, { 10, true, false }, { 2, false, false }, { 9, false, true } },
+          { { 7, true, false }, { 10, true, false }, { 0, true, false } } },
+        { { { 1, true, false }, { 6, true, true }, { 8, true, true }, { 11, true, false }, { 5, false, true }, { 11, false, false } },
+          { { 1, true, false }, { 6, true, false }, { 9, true, false }, { 2, false, false } } },
+        { { { 3, true, false }, { 4, true, false }, { 9, true, false }, { 7, false, true }, { 10, false, false } },
+          { { 3, true, false }, { 4, true, false }, { 5, true, true }, { 7, false, true } } },
+        { { { 1, false, false }, { 4, false, true }, { 0, false, false } },
+          { { 2, true, true }, { 8, true, true }, { 11, true, true }, { 5, false, false }, { 10, false, false } } },
+        { { { 3, false, false }, { 6, false, false }, { 8, false, false } },
+          { { 1, false, false }, { 3, false, true }, { 4, false, false }, { 6, false, true }, { 8, false, true }, { 9, false, false }, { 11, false, false } } },
+    };
+    return m;
 }
 } // namespace
 
@@ -154,90 +283,278 @@ std::vector<int> Doc::playSeq() const
 
 bool Doc::anyLocked() const
 {
-    for (bool l : T().locks)
+    for (bool l : riff().locks)
         if (l)
             return true;
     return false;
 }
 
+int Doc::shownBar() const
+{
+    if (sel >= 0 && sel < (int) arr.size())
+        return sel;
+    const auto it = std::find (arr.begin(), arr.end(), cur);
+    return it == arr.end() ? -1 : (int) (it - arr.begin());
+}
+
 int Doc::scaleSize() const { return (int) scales()[(size_t) gen.scale].intervals.size(); }
 
-int Doc::degreeOf (int k) const
-{
-    const int n = scaleSize();
-    return ((chords[(size_t) k].degree % n) + n) % n;
-}
-
-int Doc::degreePc (int k) const { return scales()[(size_t) gen.scale].intervals[(size_t) degreeOf (k)]; }
-
-int Doc::pcOf (int note) const { return ((note - gen.root) % 12 + 12) % 12; }
-
-bool Doc::inScale (int note) const { return midinja::inScale (note, gen.root, gen.scale); }
-
-std::vector<int> Doc::chordNotes (int k, const Tab& t) const
+int Doc::at (int k) const
 {
     const auto& iv = scales()[(size_t) gen.scale].intervals;
-    const int n = (int) iv.size(), d = degreeOf (k);
-    const auto& c = chords[(size_t) k];
-    std::vector<int> degs = c.type == ChordType::Sus2 ? std::vector<int> { 0, 1, 4 }
-                          : c.type == ChordType::Sus4 ? std::vector<int> { 0, 3, 4 }
-                          : c.type == ChordType::Seventh ? std::vector<int> { 0, 2, 4, 6 }
-                                                         : std::vector<int> { 0, 2, 4 };
-    const int base = iv[(size_t) d];
-    std::vector<int> offs;
-    for (int x : degs)
-        offs.push_back ((iv[(size_t) ((d + x) % n)] - base + 12) % 12);
-    for (size_t i = 1; i < offs.size(); ++i)
-        while (offs[i] <= offs[i - 1])
-            offs[i] += 12;
-    const int inv = ((c.inv % (int) offs.size()) + (int) offs.size()) % (int) offs.size();
-    for (int i = 0; i < inv; ++i)
-    {
-        offs.push_back (offs.front() + 12);
-        offs.erase (offs.begin());
-    }
-    const int m = offs.front();
-    for (auto& o : offs)
-        o -= m;
-    const int bassPc = (gen.root + base + m) % 12;
-    int bass = std::max (0, t.lowNote);
-    while (((bass % 12) + 12) % 12 != bassPc)
-        ++bass;
-    std::vector<int> notes;
-    for (int o : offs)
-        notes.push_back (bass + o);
-    while (notes.back() > t.highNote && notes.front() - 12 >= t.lowNote)
-        for (auto& x : notes)
-            x -= 12;
-    return notes;
+    const int n = (int) iv.size();
+    const int idx = ((k % n) + n) % n;
+    return iv[(size_t) idx] + 12 * (int) std::floor ((double) k / n);
 }
 
-std::vector<std::pair<int, int>> Doc::pairsOf (const Pattern& p) const
+Quality Doc::qual (int d) const
 {
-    std::vector<std::pair<int, int>> out;
-    const auto mi = modeInfo (gen.scale);
-    if (mi.moves.empty())
-        return out;
-    std::vector<int> on;
-    for (int i = 0; i < std::min (p.numSteps, kMaxSteps); ++i)
-        if (p.steps[(size_t) i].on)
-            on.push_back (i);
-    for (size_t j = 0; j + 1 < on.size(); ++j)
+    const int t = rel (d, d + 2), f = rel (d, d + 4);
+    if (t == 4 && f == 7) return Quality::Maj;
+    if (t == 3 && f == 7) return Quality::Min;
+    if (t == 3 && f == 6) return Quality::Dim;
+    if (t == 4 && f == 8) return Quality::Aug;
+    return Quality::Maj;
+}
+
+int Doc::pcOf (int note) const { return ((note - gen.root) % 12 + 12) % 12; }
+bool Doc::inScale (int note) const { return midinja::inScale (note, gen.root, gen.scale); }
+bool Doc::tonicMinor() const { const auto& iv = scales()[(size_t) gen.scale].intervals; return iv.size() > 2 && iv[2] == 3; }
+
+std::vector<int> Doc::degsOf (const Chord& c) const
+{
+    const int d = c.deg;
+    switch (c.type)
     {
-        const auto& a = p.steps[(size_t) on[j]];
-        const auto& b = p.steps[(size_t) on[j + 1]];
-        if (a.locked || b.locked || std::abs (a.note - b.note) > 4)
-            continue;
-        const int pa = pcOf (a.note), pb = pcOf (b.note);
-        for (const auto& mv : mi.moves)
-            if ((mv.first == pa && mv.second == pb) || (mv.first == pb && mv.second == pa))
-            {
-                out.push_back ({ on[j], on[j + 1] });
-                ++j;
-                break;
-            }
+        case ChordType::Seventh: return { d, d + 2, d + 4, d + 6 };
+        case ChordType::Ninth:   return { d, d + 2, d + 4, d + 6, d + 8 };
+        case ChordType::Sus2:    return { d, d + 1, d + 4 };
+        case ChordType::Sus4:    return { d, d + 3, d + 4 };
+        case ChordType::Add9:    return { d, d + 2, d + 4, d + 8 };
+        case ChordType::Triad:   break;
+    }
+    return { d, d + 2, d + 4 };
+}
+
+int Doc::maxInv (const Chord& c) const { return std::min (3, (int) degsOf (c).size() - 1); }
+
+std::string Doc::chordName (const Chord& c) const
+{
+    const std::string r = noteNames()[(size_t) (((gen.root + at (c.deg)) % 12 + 12) % 12)];
+    const Quality q = qual (c.deg);
+    static const char* flat = "\xE2\x99\xAD";
+    static const char* sharp = "\xE2\x99\xAF";
+    if (c.type == ChordType::Sus2 || c.type == ChordType::Sus4)
+        return r + chordTypeName (c.type);
+    const std::string tri = q == Quality::Maj ? "" : q == Quality::Min ? "m" : q == Quality::Dim ? "dim" : "+";
+    if (c.type == ChordType::Add9)
+        return r + tri + "add9";
+    if (c.type == ChordType::Seventh)
+    {
+        const int s = rel (c.deg, c.deg + 6);
+        std::string m;
+        if (q == Quality::Maj) m = s == 11 ? "maj7" : s == 10 ? "7" : "";
+        else if (q == Quality::Min) m = s == 10 ? "m7" : s == 11 ? "m(maj7)" : "";
+        else if (q == Quality::Dim) m = s == 10 ? std::string ("m7") + flat + "5" : s == 9 ? "dim7" : "";
+        else m = s == 11 ? std::string ("maj7") + sharp + "5" : s == 10 ? std::string ("7") + sharp + "5" : "";
+        return r + (m.empty() ? tri + "7" : m);
+    }
+    if (c.type == ChordType::Ninth)
+    {
+        const int s = rel (c.deg, c.deg + 6), nine = rel (c.deg, c.deg + 8) - 12;
+        const std::string b9 = nine == 1 ? std::string (flat) + "9" : nine == 3 ? std::string (sharp) + "9" : "9";
+        std::string base = tri;
+        if (q == Quality::Maj) base = s == 11 ? "maj" : s == 10 ? "" : tri;
+        else if (q == Quality::Min) base = s == 10 ? "m" : s == 11 ? "m(maj)" : tri;
+        else if (q == Quality::Dim) base = s == 10 ? "m" : s == 9 ? "dim" : tri;
+        else base = s == 11 ? "maj" : s == 10 ? "" : tri;
+        const std::string fifth = q == Quality::Dim && s == 10 ? std::string (flat) + "5" : "";
+        return b9 == "9" ? r + base + "9" + fifth : r + base + "7" + fifth + b9;
+    }
+    return r + tri;
+}
+
+std::string Doc::numeral (int deg, const ChordType* type) const
+{
+    const auto& iv = scales()[(size_t) gen.scale].intervals;
+    const int n = (int) iv.size();
+    const int d = ((deg % n) + n) % n;
+    static const char* roman[] = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII" };
+    std::string s = d < 12 ? roman[d] : std::to_string (d + 1);
+    std::string acc;
+    if (n == 7)
+    {
+        static const int major[] = { 0, 2, 4, 5, 7, 9, 11 };
+        const int diff = iv[(size_t) d] - major[d];
+        if (diff == -1) acc = "\xE2\x99\xAD";
+        else if (diff == 1) acc = "\xE2\x99\xAF";
+    }
+    const Quality q = qual (d);
+    if (type != nullptr && (*type == ChordType::Sus2 || *type == ChordType::Sus4))
+        return acc + s + chordTypeName (*type);
+    if (q == Quality::Min || q == Quality::Dim)
+        s = lower (s);
+    std::string suf = q == Quality::Dim ? "\xC2\xB0" : q == Quality::Aug ? "+" : "";
+    if (type != nullptr)
+    {
+        if (*type == ChordType::Seventh)
+        {
+            const int x = rel (d, d + 6);
+            suf = q == Quality::Dim ? (x == 10 ? "\xC3\xB8" "7" : "\xC2\xB0" "7") : (q == Quality::Maj && x == 11 ? "maj7" : "7");
+        }
+        else if (*type == ChordType::Ninth)
+        {
+            const int x = rel (d, d + 6);
+            suf = std::string (q == Quality::Dim ? "\xC3\xB8" : "") + (q == Quality::Maj && x == 11 ? "maj9" : "9");
+        }
+        else if (*type == ChordType::Add9)
+            suf += "add9";
+    }
+    return acc + s + suf;
+}
+
+std::vector<int> Doc::voice (const Chord& c) const
+{
+    const int base = chordTab().rootNote;
+    std::vector<int> notes;
+    for (int k : degsOf (c))
+        notes.push_back (base + at (k));
+    std::sort (notes.begin(), notes.end());
+    for (int i = 0; i < c.inv && i < (int) notes.size(); ++i)
+    {
+        notes.front() += 12;
+        std::sort (notes.begin(), notes.end());
+    }
+    const double anchor = base + 9.5;
+    std::vector<int> best;
+    double bestDist = 1.0e9;
+    for (int k = -4; k <= 4; ++k)
+    {
+        std::vector<int> v;
+        for (int n : notes)
+            v.push_back (n + 12 * k);
+        const double dist = std::abs ((v.front() + v.back()) / 2.0 - anchor);
+        if (dist < bestDist)
+        {
+            bestDist = dist;
+            best = v;
+        }
+    }
+    return best;
+}
+
+std::vector<int> Doc::chordPcs (const Chord& c) const
+{
+    std::vector<int> out;
+    for (int k : degsOf (c))
+        out.push_back (((gen.root + at (k)) % 12 + 12) % 12);
+    return out;
+}
+
+std::vector<int> Doc::sortedChordIndices() const
+{
+    std::vector<int> idx;
+    for (int i = 0; i < (int) chords.size(); ++i)
+        idx.push_back (i);
+    std::stable_sort (idx.begin(), idx.end(), [this] (int a, int b) { return chords[(size_t) a].start < chords[(size_t) b].start; });
+    return idx;
+}
+
+const Chord* Doc::chordById (int id) const
+{
+    for (const auto& c : chords)
+        if (c.id == id)
+            return &c;
+    return nullptr;
+}
+
+Chord* Doc::chordById (int id)
+{
+    for (auto& c : chords)
+        if (c.id == id)
+            return &c;
+    return nullptr;
+}
+
+int Doc::chordAtBeat (int beat) const
+{
+    for (int i = 0; i < (int) chords.size(); ++i)
+        if (chords[(size_t) i].start <= beat && beat < chords[(size_t) i].start + chords[(size_t) i].len)
+            return i;
+    return -1;
+}
+
+int Doc::firstChordInBar (int bar) const
+{
+    for (int i : sortedChordIndices())
+        if (chords[(size_t) i].start >= bar * 4 && chords[(size_t) i].start < bar * 4 + 4)
+            return i;
+    return -1;
+}
+
+int Doc::barDegree (int bar) const
+{
+    int i = chordAtBeat (bar * 4);
+    if (i < 0)
+        i = firstChordInBar (bar);
+    const int n = scaleSize();
+    if (i >= 0)
+        return ((chords[(size_t) i].deg % n) + n) % n;
+    const int part = bar >= 0 && bar < (int) arr.size() ? arr[(size_t) bar] : 0;
+    return partDegree (part, gen.scale) % n;
+}
+
+int Doc::degreeOf (int part) const
+{
+    const auto it = std::find (arr.begin(), arr.end(), part);
+    if (it != arr.end())
+        return barDegree ((int) (it - arr.begin()));
+    return partDegree (part, gen.scale) % scaleSize();
+}
+
+std::vector<Hit> Doc::barHits (int bar) const
+{
+    std::vector<Hit> out;
+    const int n = numSteps(), spb = stepsPerBeat();
+    const auto toSteps = [n] (int x16) { return (int) std::lround (x16 * n / 16.0); };
+    for (int i : sortedChordIndices())
+    {
+        const auto& c = chords[(size_t) i];
+        const int cs = c.start * spb, ce = (c.start + c.len) * spb;
+        for (auto [s16, l16] : rhythmHits (c.rhythm, c.len))
+        {
+            const int a = cs + toSteps (s16), l = std::max (1, toSteps (l16));
+            const int local = a - bar * n;
+            if (local < 0 || local >= n)
+                continue;
+            out.push_back ({ local, std::max (1, std::min ({ l, ce - a, (bar + 1) * n - a })), i });
+        }
     }
     return out;
+}
+
+Pattern Doc::chordPat (int bar) const
+{
+    Pattern q;
+    q.numSteps = numSteps();
+    if (bar < 0)
+        return q;
+    for (const auto& h : barHits (bar))
+    {
+        auto& st = q.steps[(size_t) h.step];
+        st.on = true;
+        st.length = std::min (kMaxLength, h.len);
+        st.note = 60;
+    }
+    return q;
+}
+
+int Doc::laneEnd() const
+{
+    int end = 0;
+    for (const auto& c : chords)
+        end = std::max (end, c.start + c.len);
+    return end;
 }
 
 GenSettings Doc::genFor (const Tab& t, int k) const
@@ -254,43 +571,55 @@ GenSettings Doc::genFor (const Tab& t, int k) const
 
 uint32_t Session::newSeed()
 {
-    static std::mt19937 rng ((uint32_t) std::chrono::steady_clock::now().time_since_epoch().count());
-    const uint32_t s = rng();
+    const uint32_t s = rng()();
     return s != 0 ? s : 1u;
+}
+
+Chord Session::mk (int start, int len, int deg, ChordType type, int inv, Rhythm rhythm)
+{
+    Chord c;
+    c.id = doc.nextChordId++;
+    c.start = start;
+    c.len = len;
+    c.deg = deg;
+    c.type = type;
+    c.inv = inv;
+    c.rhythm = rhythm;
+    return c;
 }
 
 Session::Session()
 {
     doc.gen.mode = kMusician;
     doc.gen.seed = 4821;
-    doc.tabs[0].channel = 1; doc.tabs[0].poly = false; doc.tabs[0].on = true;
-    doc.tabs[0].rootNote = 40; doc.tabs[0].lowNote = 40; doc.tabs[0].highNote = 64;
-    doc.tabs[1].channel = 2; doc.tabs[1].poly = true; doc.tabs[1].on = false;
-    doc.tabs[1].rootNote = 52; doc.tabs[1].lowNote = 52; doc.tabs[1].highNote = 76;
-    doc.tabs[2].channel = 3; doc.tabs[2].poly = false; doc.tabs[2].on = false;
-    doc.tabs[2].rootNote = 52; doc.tabs[2].lowNote = 52; doc.tabs[2].highNote = 76;
+    auto& r = doc.tabs[kRiffTab];
+    r.channel = 1; r.poly = false; r.on = true; r.rootNote = 40; r.lowNote = 40; r.highNote = 64;
+    auto& c = doc.tabs[kChordTab];
+    c.channel = 2; c.poly = true; c.on = false; c.rootNote = 52; c.lowNote = 52; c.highNote = 71;
     for (auto& t : doc.tabs)
         for (auto& p : t.parts)
             p.numSteps = doc.numSteps();
-    for (int k = 0; k < kNumParts; ++k)
-        doc.chords[(size_t) k] = { partDegree (k, doc.gen.scale), k == kPartC ? ChordType::Seventh : ChordType::Triad, k == kPartAPrime ? 1 : 0 };
-
-    // A new riff: one bar A on tab 1, a whole-bar chord on tab 2.
-    {
-        auto& t = doc.tabs[0];
-        generate (t.parts[0], doc.genFor (t, 0));
-        rebase (t, 0);
-    }
-    doc.tabs[1].parts[0] = chordRhythm (0);
-    doc.tabs[1].tpl[0] = 0;
+    doc.chords.push_back (mk (0, 4, 0, ChordType::Triad, 0, Rhythm::Whole));
+    doc.csel = doc.chords.front().id;
+    generate (r.parts[0], doc.genFor (r, 0));
+    rebase (r, 0);
     commitVersion();
+}
+
+bool Session::currentOp (Op& out) const
+{
+    if (mutateMode) { out = Op::Mutate; return true; }
+    if (doRhythm && doNotes) { out = Op::Roll; return true; }
+    if (doRhythm) { out = Op::Rhythm; return true; }
+    if (doNotes) { out = Op::Notes; return true; }
+    return false;
 }
 
 unsigned Session::lockMask() const
 {
     unsigned m = 0;
     for (int k = 0; k < kNumParts; ++k)
-        if (doc.T().locks[(size_t) k])
+        if (doc.riff().locks[(size_t) k])
             m |= 1u << k;
     return m;
 }
@@ -306,10 +635,6 @@ void Session::rebase (Tab& t, int k)
         b.notes[(size_t) i] = t.parts[(size_t) k].steps[(size_t) i].note;
 }
 
-// A riff into the current scale from its remembered notes: a note keeps its degree; a colour
-// note goes to the new scale's colour note nearest in pitch; an augmented-second pair moves as
-// a unit to the new scale's pair (the same one if it exists, else the nearest), else to plain
-// degrees; an altered note keeps its degree plus its alteration. Locked notes stay.
 void Session::remap (Tab& t, int k)
 {
     auto& p = t.parts[(size_t) k];
@@ -351,12 +676,10 @@ void Session::remap (Tab& t, int k)
         int alt = 1;
         while (! has (from, pcOf (bn - alt)) && alt < 12)
             ++alt;
-        const int lower = bn - alt, lpc = pcOf (lower);
+        const int lowerN = bn - alt, lpc = pcOf (lowerN);
         const size_t li = (size_t) (std::find (from.begin(), from.end(), lpc) - from.begin());
-        return (li < to.size() ? lower - lpc + to[li] : nearestTo (lower, to)) + alt;
+        return (li < to.size() ? lowerN - lpc + to[li] : nearestTo (lowerN, to)) + alt;
     };
-
-    // pairs in the remembered notes
     std::vector<int> on;
     for (int i = 0; i < std::min (p.numSteps, kMaxSteps); ++i)
         if (p.steps[(size_t) i].on)
@@ -413,31 +736,44 @@ void Session::remap (Tab& t, int k)
 
 // ---- the range ------------------------------------------------------------------------------
 
-// Notes outside the range fold in by octave (pitch class kept); a pair folds as a whole; locked
-// notes never move.
 void Session::foldPattern (Pattern& p, int lo, int hi) const
 {
+    const auto mi = modeInfo (doc.gen.scale);
     std::set<int> done;
-    for (const auto& pr : doc.pairsOf (p))
+    if (! mi.moves.empty())
     {
-        auto& a = p.steps[(size_t) pr.first];
-        auto& b = p.steps[(size_t) pr.second];
-        const auto inR = [&] (int x) { return x >= lo && x <= hi; };
-        if (inR (a.note) && inR (b.note))
+        std::vector<int> on;
+        for (int i = 0; i < std::min (p.numSteps, kMaxSteps); ++i)
+            if (p.steps[(size_t) i].on)
+                on.push_back (i);
+        for (size_t j = 0; j + 1 < on.size(); ++j)
         {
-            done.insert (pr.first);
-            done.insert (pr.second);
-            continue;
-        }
-        for (int k : { -1, 1, -2, 2, -3, 3 })
-            if (inR (a.note + 12 * k) && inR (b.note + 12 * k))
+            auto& a = p.steps[(size_t) on[j]];
+            auto& b = p.steps[(size_t) on[j + 1]];
+            if (a.locked || b.locked || std::abs (a.note - b.note) > 4)
+                continue;
+            const int pa = doc.pcOf (a.note), pb = doc.pcOf (b.note);
+            bool isPair = false;
+            for (const auto& mv : mi.moves)
+                isPair = isPair || (mv.first == pa && mv.second == pb) || (mv.first == pb && mv.second == pa);
+            if (! isPair)
+                continue;
+            const auto inR = [&] (int x) { return x >= lo && x <= hi; };
+            if (inR (a.note) && inR (b.note))
             {
-                a.note += 12 * k;
-                b.note += 12 * k;
-                done.insert (pr.first);
-                done.insert (pr.second);
-                break;
+                done.insert (on[j]); done.insert (on[j + 1]); ++j;
+                continue;
             }
+            for (int k : { -1, 1, -2, 2, -3, 3 })
+                if (inR (a.note + 12 * k) && inR (b.note + 12 * k))
+                {
+                    a.note += 12 * k;
+                    b.note += 12 * k;
+                    done.insert (on[j]); done.insert (on[j + 1]);
+                    break;
+                }
+            ++j;
+        }
     }
     for (int i = 0; i < kMaxSteps; ++i)
     {
@@ -455,7 +791,6 @@ void Session::foldTab (Tab& t)
         foldPattern (p, t.lowNote, t.highNote);
 }
 
-// The tab's root, range and parts move together by d semitones; the remembered notes too.
 void Session::shiftTab (Tab& t, int d)
 {
     t.rootNote += d;
@@ -505,6 +840,15 @@ bool Session::canShrink (bool top, std::string* why) const
     const auto& t = doc.T();
     const int cur = top ? t.highNote : t.lowNote;
     const std::string name = std::string (noteNames()[(size_t) ((cur % 12) + 12) % 12]) + std::to_string (cur / 12 - 1);
+    if (t.poly)
+    {
+        if (t.highNote - t.lowNote <= 12)
+        {
+            if (why) *why = "One octave at least: a four-note chord needs it";
+            return false;
+        }
+        return true;
+    }
     if (t.highNote - t.lowNote < 1)
     {
         if (why) *why = "The range is one note";
@@ -544,41 +888,73 @@ void Session::shrinkRange (bool top)
     push();
 }
 
+// ---- the riff follows the lane --------------------------------------------------------------
+
+void Session::fixChordTones (int k)
+{
+    auto& tab = doc.riff();
+    auto& p = tab.parts[(size_t) k];
+    const auto it = std::find (doc.arr.begin(), doc.arr.end(), k);
+    if (it == doc.arr.end() || tab.locks[(size_t) k] || ! hasNotes (p))
+        return;
+    const int b = (int) (it - doc.arr.begin()), n = p.numSteps, spb = doc.stepsPerBeat();
+    for (int i : doc.sortedChordIndices())
+    {
+        const auto& c = doc.chords[(size_t) i];
+        const int s = c.start * spb - b * n;
+        if (s < 0 || s >= n)
+            continue;
+        auto& st = p.steps[(size_t) s];
+        if (st.locked)
+            continue;
+        const auto pcs = doc.chordPcs (c);
+        if (! st.on)
+        {
+            int prev = s - 1;
+            while (prev >= 0 && ! p.steps[(size_t) prev].on)
+                --prev;
+            const int ref = prev >= 0 ? p.steps[(size_t) prev].note : (tab.lowNote + tab.highNote) / 2;
+            st = Step {};
+            st.on = true;
+            st.note = ref;
+            st.velocity = prev >= 0 ? p.steps[(size_t) prev].velocity : 100;
+            if (prev >= 0)
+                p.steps[(size_t) prev].length = std::min (p.steps[(size_t) prev].length, s - prev);
+        }
+        const std::vector<int> want = s == 0 && doc.gen.startOnRoot ? std::vector<int> { pcs.front() } : pcs;
+        st.note = nearestOfPcs (st.note, want, tab.lowNote, tab.highNote);
+    }
+    fitLengths (p);
+}
+
+void Session::fixAllChordTones()
+{
+    for (int k = 0; k < kNumParts; ++k)
+        fixChordTones (k);
+}
+
+std::array<int, kNumParts> Session::degreesNow() const
+{
+    std::array<int, kNumParts> d {};
+    for (int k = 0; k < kNumParts; ++k)
+        d[(size_t) k] = doc.degreeOf (k);
+    return d;
+}
+
+void Session::laneChanged (const std::array<int, kNumParts>* from)
+{
+    if (from != nullptr)
+        for (int k = 0; k < kNumParts; ++k)
+        {
+            const int to = doc.degreeOf (k);
+            if ((*from)[(size_t) k] != to)
+                retune (doc.riff(), k, (*from)[(size_t) k], to);
+        }
+    fixAllChordTones();
+}
+
 // ---- the dice -------------------------------------------------------------------------------
 
-Pattern Session::chordRhythm (int tpl) const
-{
-    const int n = doc.numSteps();
-    Pattern q;
-    q.numSteps = n;
-    for (const auto& [s, l] : rhythms()[(size_t) std::clamp (tpl, 0, kNumRhythms - 1)])
-    {
-        const int i = (int) std::lround (s * n / 16.0);
-        if (i >= n)
-            continue;
-        auto& st = q.steps[(size_t) i];
-        st = Step {};
-        st.on = true;
-        st.note = 60;
-        st.length = std::max (1, (int) std::lround (l * n / 16.0));
-        st.velocity = 100;
-    }
-    fitLengths (q);
-    return q;
-}
-
-void Session::rollChord (Tab& t, int k)
-{
-    Rng rng (newSeed());
-    int tpl = rng.range (0, kNumRhythms - 1);
-    if (tpl == t.tpl[(size_t) k])
-        tpl = (tpl + 1 + rng.range (0, kNumRhythms - 2)) % kNumRhythms;
-    t.parts[(size_t) k] = chordRhythm (tpl);
-    t.tpl[(size_t) k] = tpl;
-}
-
-// A mono part: the Form's own moves (A' as a variation, B's contrast, C's cadence) when the part
-// sits on its usual degree, else a plain roll on its degree.
 void Session::rollMono (Tab& t, int k, Op op)
 {
     GenSettings g = doc.genFor (t, k);
@@ -595,14 +971,33 @@ void Session::rollMono (Tab& t, int k, Op op)
 void Session::apply (Op op)
 {
     auto& d = doc;
-    auto& t = d.T();
+    if (d.T().poly)
+    {
+        auto* c = d.chordById (d.csel);
+        if (c == nullptr)
+            return;
+        if (c->lock)
+        {
+            say ("This chord is locked: unlock it to change its rhythm", true);
+            return;
+        }
+        d.gen.seed = newSeed();
+        std::vector<Rhythm> others;
+        for (int i = 0; i < kNumRhythms; ++i)
+            if ((Rhythm) i != c->rhythm)
+                others.push_back ((Rhythm) i);
+        c->rhythm = pick (others);
+        commitVersion();
+        return;
+    }
+    auto& t = d.riff();
     if (t.locks[(size_t) d.cur])
         return;
     d.gen.seed = newSeed();
     t.parts[(size_t) d.cur].numSteps = d.numSteps();
-    if (t.poly) rollChord (t, d.cur);
-    else rollMono (t, d.cur, op);
+    rollMono (t, d.cur, op);
     t.src[(size_t) d.cur] = Src::Roll;
+    fixChordTones (d.cur);
     rebase (t, d.cur);
     commitVersion();
 }
@@ -610,30 +1005,36 @@ void Session::apply (Op op)
 void Session::applyAll (Op op, bool keepSeed)
 {
     auto& d = doc;
-    auto& t = d.T();
     if (! keepSeed)
         d.gen.seed = newSeed();
+    if (d.T().poly)
+    {
+        for (auto& c : d.chords)
+        {
+            if (c.lock)
+                continue;
+            std::vector<Rhythm> others;
+            for (int i = 0; i < kNumRhythms; ++i)
+                if ((Rhythm) i != c.rhythm)
+                    others.push_back ((Rhythm) i);
+            c.rhythm = pick (others);
+        }
+        commitVersion();
+        return;
+    }
+    auto& t = d.riff();
     for (auto& p : t.parts)
         p.numSteps = d.numSteps();
     bool usual = true;
     for (int k = 0; k < kNumParts; ++k)
         usual = usual && d.degreeOf (k) == partDegree (k, d.gen.scale);
-    if (t.poly)
-    {
-        for (int k = 0; k < kNumParts; ++k)
-            if (! t.locks[(size_t) k])
-                rollChord (t, k);
-    }
-    else if (op == Op::Roll && usual)
-    {
+    if (op == Op::Roll && usual)
         generateForm (t.parts, lockMask(), d.genFor (t, 0));
-    }
     else
-    {
         for (int k = 0; k < kNumParts; ++k)
             if (! t.locks[(size_t) k])
                 rollMono (t, k, op);
-    }
+    fixAllChordTones();
     for (int k = 0; k < kNumParts; ++k)
         if (! t.locks[(size_t) k])
         {
@@ -650,57 +1051,6 @@ void Session::cycleMutAmt()
     mutAmt = mutAmt < 0.2f ? 0.33f : mutAmt < 0.4f ? 0.5f : 0.15f;
 }
 
-bool Session::canProgression() const { return doc.scaleSize() == 7; }
-
-void Session::rollProgression()
-{
-    if (! canProgression())
-        return;
-    struct Idiom { const char* name; std::vector<std::array<int, 3>> list; };
-    static const std::vector<Idiom> idioms = {
-        { "Major (Ionian)",    { { 0, 3, 4 }, { 0, 5, 4 }, { 0, 1, 4 }, { 0, 4, 3 } } },
-        { "Natural Minor",     { { 0, 5, 6 }, { 0, 3, 4 }, { 0, 5, 4 }, { 0, 2, 6 } } },
-        { "Dorian",            { { 0, 3, 6 }, { 0, 3, 4 }, { 0, 6, 3 } } },
-        { "Phrygian",          { { 0, 3, 1 }, { 0, 6, 1 }, { 0, 2, 1 } } },
-        { "Lydian",            { { 0, 1, 4 }, { 0, 4, 1 }, { 0, 5, 1 } } },
-        { "Mixolydian",        { { 0, 6, 3 }, { 0, 3, 6 }, { 0, 1, 6 } } },
-        { "Locrian",           { { 0, 1, 5 }, { 0, 3, 1 } } },
-        { "Harmonic Minor",    { { 0, 5, 4 }, { 0, 3, 4 }, { 0, 1, 4 } } },
-        { "Melodic Minor",     { { 0, 3, 4 }, { 0, 1, 4 }, { 0, 5, 4 } } },
-        { "Phrygian Dominant", { { 0, 5, 1 }, { 0, 6, 1 }, { 0, 3, 1 } } },
-    };
-    static const std::vector<std::array<int, 3>> generic = { { 0, 3, 4 }, { 0, 5, 4 }, { 0, 1, 4 } };
-    const std::string name = scales()[(size_t) doc.gen.scale].name;
-    const std::vector<std::array<int, 3>>* list = &generic;
-    for (const auto& i : idioms)
-        if (name == i.name)
-            list = &i.list;
-    const std::array<int, 3> cur { doc.degreeOf (0), doc.degreeOf (2), doc.degreeOf (3) };
-    std::vector<std::array<int, 3>> opts;
-    for (const auto& p : *list)
-        if (p != cur)
-            opts.push_back (p);
-    if (opts.empty())
-        opts.push_back (list->front());
-    Rng rng (newSeed());
-    const auto pick = opts[(size_t) rng.range (0, (int) opts.size() - 1)];
-    const std::array<int, kNumParts> want { pick[0], pick[0], pick[1], pick[2] };
-    for (int k = 0; k < kNumParts; ++k)
-    {
-        if (doc.T().locks[(size_t) k])
-            continue; // a locked part keeps its degree
-        for (auto& t : doc.tabs)
-            retune (t, k, doc.degreeOf (k), want[(size_t) k]);
-        doc.chords[(size_t) k].degree = want[(size_t) k];
-    }
-    doc.arr = { 0, 1, 2, 3 };
-    doc.sel = -1;
-    for (auto& t : doc.tabs)
-        for (int k = 1; k < kNumParts; ++k)
-            extendPart (t, k);
-    commitVersion();
-}
-
 int Session::scaleStep (int note, int steps) const
 {
     int alt = 0;
@@ -713,7 +1063,6 @@ int Session::scaleStep (int note, int steps) const
     return n + alt;
 }
 
-// The whole bar shifts an octave before single notes fold into the range.
 void Session::fitBar (Pattern& p, const Tab& t) const
 {
     std::vector<int> on;
@@ -737,7 +1086,6 @@ void Session::fitBar (Pattern& p, const Tab& t) const
     foldPattern (p, t.lowNote, t.highNote);
 }
 
-// A riff moves from one degree to another by scale steps.
 void Session::retune (Tab& t, int k, int from, int to)
 {
     auto& p = t.parts[(size_t) k];
@@ -754,11 +1102,10 @@ void Session::retune (Tab& t, int k, int from, int to)
     rebase (t, k);
 }
 
-// Extension: an empty part that joins the arrangement is a copy of the tab's A moved by scale
-// steps to its degree (A' as it is); C's last note goes to the root or the fifth; locks are not
-// copied; a part with notes is never overwritten.
 bool Session::extendPart (Tab& t, int k)
 {
+    if (t.poly)
+        return false;
     const auto& a = t.parts[0];
     auto& p = t.parts[(size_t) k];
     if (k == 0 || hasNotes (p) || ! hasNotes (a))
@@ -766,7 +1113,7 @@ bool Session::extendPart (Tab& t, int k)
     Pattern q = a;
     for (auto& s : q.steps)
         s.locked = false;
-    if (! t.poly && k != kPartAPrime)
+    if (k != kPartAPrime)
     {
         const int n = doc.scaleSize();
         const int delta = ((doc.degreeOf (k) - doc.degreeOf (0)) % n + n) % n;
@@ -788,7 +1135,6 @@ bool Session::extendPart (Tab& t, int k)
         }
     }
     p = q;
-    t.tpl[(size_t) k] = t.tpl[0];
     rebase (t, k);
     return true;
 }
@@ -798,6 +1144,12 @@ bool Session::extendPart (Tab& t, int k)
 void Session::setScale (int scale)
 {
     doc.gen.scale = std::clamp (scale, 0, (int) scales().size() - 1);
+    const int n = doc.scaleSize();
+    for (auto& c : doc.chords)
+    {
+        c.deg = ((c.deg % n) + n) % n;
+        c.inv = std::min (c.inv, doc.maxInv (c));
+    }
     for (auto& t : doc.tabs)
     {
         if (t.poly)
@@ -806,6 +1158,8 @@ void Session::setScale (int scale)
             remap (t, k);
         foldTab (t);
     }
+    fixAllChordTones();
+    say (std::string ("Degrees kept; chord quality now comes from ") + scales()[(size_t) doc.gen.scale].name);
     push();
 }
 
@@ -846,21 +1200,12 @@ void Session::setRate (int rate)
     push();
 }
 
-// ---- tabs and chords ------------------------------------------------------------------------
+// ---- tabs -----------------------------------------------------------------------------------
 
 void Session::selectTab (int i)
 {
     if (i >= 0 && i < kNumTabs)
         doc.tab = i;
-}
-
-void Session::setTabPoly (int i, bool poly)
-{
-    if (i < 0 || i >= kNumTabs)
-        return;
-    doc.tabs[(size_t) i].poly = poly;
-    doc.tab = i;
-    push();
 }
 
 void Session::setTabChannel (int i, int channel)
@@ -879,16 +1224,437 @@ void Session::setTabOn (int i, bool on)
     push();
 }
 
-void Session::setChord (int k, int degree, ChordType type, int inv)
+// ---- the chord lane -------------------------------------------------------------------------
+
+void Session::selectChord (int id)
 {
-    if (k < 0 || k >= kNumParts)
+    if (doc.chordById (id) != nullptr)
+        doc.csel = id;
+}
+
+void Session::setChordSpan (int id, int start, int len, bool record)
+{
+    auto* c = doc.chordById (id);
+    if (c == nullptr)
         return;
-    auto& c = doc.chords[(size_t) k];
+    const auto from = degreesNow();
+    c->start = std::max (0, start);
+    c->len = std::max (1, len);
+    if (record)
+    {
+        laneChanged (&from);
+        push();
+    }
+}
+
+void Session::setChordDeg (int id, int deg)
+{
+    auto* c = doc.chordById (id);
+    if (c == nullptr)
+        return;
+    const auto from = degreesNow();
     const int n = doc.scaleSize();
-    c.degree = ((degree % n) + n) % n;
-    c.type = type;
-    c.inv = std::clamp (inv, 0, type == ChordType::Seventh ? 3 : 2);
+    c->deg = ((deg % n) + n) % n;
+    if (c->inv > doc.maxInv (*c))
+        c->inv = 0;
+    laneChanged (&from);
     push();
+}
+
+void Session::setChordType (int id, ChordType type)
+{
+    auto* c = doc.chordById (id);
+    if (c == nullptr)
+        return;
+    const auto from = degreesNow();
+    c->type = type;
+    c->inv = std::min (c->inv, doc.maxInv (*c));
+    laneChanged (&from);
+    push();
+}
+
+void Session::setChordInv (int id, int inv)
+{
+    auto* c = doc.chordById (id);
+    if (c == nullptr)
+        return;
+    c->inv = std::clamp (inv, 0, doc.maxInv (*c));
+    push();
+}
+
+void Session::cycleInversion (int id)
+{
+    auto* c = doc.chordById (id);
+    if (c == nullptr)
+        return;
+    c->inv = c->inv >= doc.maxInv (*c) ? 0 : c->inv + 1;
+    push();
+}
+
+void Session::setChordRhythm (int id, Rhythm r)
+{
+    auto* c = doc.chordById (id);
+    if (c == nullptr)
+        return;
+    c->rhythm = r;
+    push();
+}
+
+void Session::rhythmToAll (int id)
+{
+    auto* c = doc.chordById (id);
+    if (c == nullptr)
+        return;
+    for (auto& x : doc.chords)
+        x.rhythm = c->rhythm;
+    say (std::string ("Rhythm \"") + rhythmName (c->rhythm) + "\" on every chord");
+    push();
+}
+
+void Session::toggleChordLock (int id)
+{
+    auto* c = doc.chordById (id);
+    if (c == nullptr)
+        return;
+    c->lock = ! c->lock;
+    push();
+}
+
+void Session::regenChord (int id)
+{
+    auto* c = doc.chordById (id);
+    if (c == nullptr)
+        return;
+    if (c->lock)
+    {
+        say ("This chord is locked: unlock it to change it", true);
+        return;
+    }
+    const auto order = doc.sortedChordIndices();
+    const int me = (int) (c - doc.chords.data());
+    const auto pos = std::find (order.begin(), order.end(), me);
+    std::set<int> avoid { c->deg };
+    if (pos != order.begin()) avoid.insert (doc.chords[(size_t) *(pos - 1)].deg);
+    if (pos + 1 != order.end()) avoid.insert (doc.chords[(size_t) *(pos + 1)].deg);
+    std::vector<int> ok;
+    for (int d = 0; d < doc.scaleSize(); ++d)
+        if (doc.qual (d) != Quality::Dim && ! avoid.count (d))
+            ok.push_back (d);
+    if (ok.empty())
+        return;
+    const auto from = degreesNow();
+    c->deg = pick (ok);
+    if (c->inv > doc.maxInv (*c))
+        c->inv = 0;
+    laneChanged (&from);
+    commitVersion();
+}
+
+bool Session::canAppendChord() const
+{
+    return doc.laneEnd() < doc.totalBeats() || (int) doc.arr.size() < kMaxBars;
+}
+
+void Session::addPartBar (int k)
+{
+    doc.arr.push_back (k);
+    doc.sel = -1;
+    for (auto& t : doc.tabs)
+        extendPart (t, k);
+}
+
+void Session::appendChord()
+{
+    const auto order = doc.sortedChordIndices();
+    const int end = doc.laneEnd();
+    if (end >= doc.totalBeats())
+    {
+        if ((int) doc.arr.size() >= kMaxBars)
+        {
+            say ("The lane is full (4 bars): shorten or remove a chord first", true);
+            return;
+        }
+        int k = (int) doc.arr.size() % kNumParts;
+        for (int x = 0; x < kNumParts; ++x)
+            if (std::find (doc.arr.begin(), doc.arr.end(), x) == doc.arr.end()) { k = x; break; }
+        addPartBar (k);
+    }
+    const Chord* prev = order.empty() ? nullptr : &doc.chords[(size_t) order.back()];
+    const int len = std::min (prev != nullptr ? prev->len : 4, doc.totalBeats() - end);
+    Chord c = mk (end, len, prev != nullptr ? prev->deg : 0, prev != nullptr ? prev->type : ChordType::Seventh,
+                  prev != nullptr ? prev->inv : 0, prev != nullptr ? prev->rhythm : Rhythm::Whole);
+    doc.chords.push_back (c);
+    doc.csel = c.id;
+    laneChanged (nullptr);
+    message.clear();
+    push();
+}
+
+void Session::addChordAt (int beat)
+{
+    std::vector<std::pair<int, int>> gaps;
+    int p = 0;
+    for (int i : doc.sortedChordIndices())
+    {
+        const auto& c = doc.chords[(size_t) i];
+        if (c.start > p)
+            gaps.push_back ({ p, c.start });
+        p = c.start + c.len;
+    }
+    if (p < doc.totalBeats())
+        gaps.push_back ({ p, doc.totalBeats() });
+    const std::pair<int, int>* g = nullptr;
+    for (const auto& x : gaps)
+        if (beat >= x.first && beat < x.second)
+            g = &x;
+    if (g == nullptr)
+    {
+        say ("No free space in the lane: shorten a chord first", true);
+        return;
+    }
+    int start = std::max (g->first, beat / 4 * 4);
+    if (start >= g->second)
+        start = beat;
+    Chord c = mk (start, std::min (4, g->second - start), 0, ChordType::Seventh, 0, Rhythm::Whole);
+    doc.chords.push_back (c);
+    doc.csel = c.id;
+    laneChanged (nullptr);
+    message.clear();
+    push();
+}
+
+void Session::removeChord (int id)
+{
+    const auto from = degreesNow();
+    doc.chords.erase (std::remove_if (doc.chords.begin(), doc.chords.end(), [id] (const Chord& c) { return c.id == id; }), doc.chords.end());
+    if (doc.csel == id)
+    {
+        const auto order = doc.sortedChordIndices();
+        doc.csel = order.empty() ? -1 : doc.chords[(size_t) order.front()].id;
+    }
+    laneChanged (&from);
+    push();
+}
+
+// ---- generators -----------------------------------------------------------------------------
+
+void Session::fourBars()
+{
+    while ((int) doc.arr.size() < kMaxBars)
+    {
+        int k = (int) doc.arr.size() % kNumParts;
+        for (int x = 0; x < kNumParts; ++x)
+            if (std::find (doc.arr.begin(), doc.arr.end(), x) == doc.arr.end()) { k = x; break; }
+        addPartBar (k);
+    }
+    doc.sel = -1;
+}
+
+void Session::fillBars (const std::vector<int>& degs, const std::string& label, const std::vector<ChordType>* types, const Rhythm* rhythm)
+{
+    const auto from = degreesNow();
+    fourBars();
+    const int n = std::min ((int) degs.size(), (int) doc.arr.size());
+    const Chord* first = nullptr;
+    for (int i : doc.sortedChordIndices())
+        if (! doc.chords[(size_t) i].lock) { first = &doc.chords[(size_t) i]; break; }
+    const Rhythm keepRh = rhythm != nullptr ? *rhythm : first != nullptr ? first->rhythm : Rhythm::Whole;
+    const ChordType keepTy = first != nullptr ? first->type : ChordType::Seventh;
+    for (int b = 0; b < n; ++b)
+    {
+        bool lockedHere = false;
+        for (const auto& c : doc.chords)
+            lockedHere = lockedHere || (c.lock && doc.overlapsBar (c, b));
+        if (lockedHere)
+            continue;
+        doc.chords.erase (std::remove_if (doc.chords.begin(), doc.chords.end(), [&] (const Chord& c) { return ! c.lock && doc.overlapsBar (c, b); }), doc.chords.end());
+        doc.chords.push_back (mk (b * 4, 4, degs[(size_t) b], types != nullptr ? (*types)[(size_t) b] : keepTy, 0, keepRh));
+    }
+    if (doc.chordById (doc.csel) == nullptr)
+    {
+        const auto order = doc.sortedChordIndices();
+        doc.csel = order.empty() ? -1 : doc.chords[(size_t) order.front()].id;
+    }
+    laneChanged (&from);
+    say (label);
+    commitVersion();
+}
+
+void Session::progression()
+{
+    const auto& all = progs();
+    const auto it = all.find (scaleKey (doc.gen.scale));
+    const auto& lists = it != all.end() ? it->second : all.at ("*");
+    std::vector<int> cur;
+    for (int i : doc.sortedChordIndices())
+        cur.push_back (doc.chords[(size_t) i].deg);
+    std::vector<std::vector<int>> opts;
+    for (const auto& l : lists)
+        if (l != cur)
+            opts.push_back (l);
+    const auto l = pick (opts.empty() ? lists : opts);
+    std::string label = "Progression: ";
+    for (size_t i = 0; i < l.size(); ++i)
+        label += (i ? " \xE2\x80\x93 " : "") + doc.numeral (l[i]);
+    fillBars (l, label, nullptr, nullptr);
+}
+
+std::vector<int> Session::moodDegrees (int mood) const
+{
+    std::vector<int> out;
+    const auto& m = moods()[(size_t) std::clamp (mood, 0, kNumMoods - 1)];
+    const auto& list = doc.tonicMinor() ? m.min : m.maj;
+    for (int d = 1; d < doc.scaleSize(); ++d)
+    {
+        const int s = doc.at (d);
+        const Quality q = doc.qual (d);
+        for (const auto& mv : list)
+            if (mv.semis == s && ((mv.major && q == Quality::Maj) || (! mv.major && q == Quality::Min)))
+            {
+                out.push_back (d);
+                if (mv.strong)
+                    out.push_back (d);
+            }
+    }
+    return out;
+}
+
+bool Session::moodAvailable (int mood) const { return ! moodDegrees (mood).empty(); }
+
+void Session::mood (int mood)
+{
+    const auto mv = moodDegrees (mood);
+    if (mv.empty())
+        return;
+    const int a = pick (mv);
+    std::vector<int> others;
+    for (int d : mv)
+        if (d != a)
+            others.push_back (d);
+    const int b = others.empty() ? a : pick (others);
+    static const std::pair<int, Quality> home[] = { { 7, Quality::Maj }, { 10, Quality::Maj }, { 5, Quality::Maj }, { 5, Quality::Min }, { 7, Quality::Min } };
+    int c = -1;
+    for (const auto& [s, q] : home)
+    {
+        for (int d = 1; d < doc.scaleSize() && c < 0; ++d)
+            if (doc.at (d) == s && doc.qual (d) == q && d != b)
+                c = d;
+        if (c >= 0)
+            break;
+    }
+    if (c < 0)
+        c = a;
+    const std::vector<int> degs { 0, a, b, c };
+    std::string label = std::string (moodName (mood)) + ": ";
+    for (size_t i = 0; i < degs.size(); ++i)
+        label += (i ? " \xE2\x80\x93 " : "") + doc.numeral (degs[i]);
+    fillBars (degs, label, nullptr, nullptr);
+}
+
+bool Session::styleHasOwnList (int style) const
+{
+    const auto& st = styles()[(size_t) std::clamp (style, 0, kNumStyles - 1)];
+    return st.lists.count (scaleKey (doc.gen.scale)) > 0;
+}
+
+void Session::style (int style)
+{
+    const auto& st = styles()[(size_t) std::clamp (style, 0, kNumStyles - 1)];
+    const auto it = st.lists.find (scaleKey (doc.gen.scale));
+    const auto& lists = it != st.lists.end() ? it->second : st.lists.at (doc.tonicMinor() ? "min" : "maj");
+    std::vector<int> cur;
+    for (int i : doc.sortedChordIndices())
+        cur.push_back (doc.chords[(size_t) i].deg);
+    std::vector<std::vector<std::pair<int, ChordType>>> opts;
+    for (const auto& l : lists)
+    {
+        std::vector<int> degs;
+        for (const auto& x : l)
+            degs.push_back (x.first);
+        if (degs != cur)
+            opts.push_back (l);
+    }
+    const auto l = pick (opts.empty() ? lists : opts);
+    std::vector<int> degs;
+    std::vector<ChordType> types;
+    std::string label = std::string (styleName (style)) + ": ";
+    for (size_t i = 0; i < l.size(); ++i)
+    {
+        degs.push_back (l[i].first);
+        types.push_back (l[i].second);
+        label += (i ? " \xE2\x80\x93 " : "") + doc.numeral (l[i].first, &l[i].second);
+    }
+    label += std::string (" \xC2\xB7 rhythm ") + rhythmName (st.rhythm);
+    const Rhythm r = st.rhythm;
+    fillBars (degs, label, &types, &r);
+}
+
+bool Session::applyTyped (const std::string& text)
+{
+    std::vector<std::pair<int, ChordType>> list;
+    std::string tok;
+    const auto flush = [&] () -> bool {
+        if (tok.empty())
+            return true;
+        std::string t = tok;
+        tok.clear();
+        size_t p = 0;
+        if (t[0] == 'b' || t[0] == '#') ++p;
+        else if (t.size() >= 3 && (t.compare (0, 3, "\xE2\x99\xAD") == 0 || t.compare (0, 3, "\xE2\x99\xAF") == 0)) p += 3;
+        static const char* numerals[] = { "VII", "VI", "IV", "V", "III", "II", "I" };
+        static const int values[] = { 6, 5, 3, 4, 2, 1, 0 };
+        int deg = -1;
+        size_t len = 0;
+        for (int i = 0; i < 7; ++i)
+        {
+            const std::string nm = numerals[i];
+            if (t.size() >= p + nm.size() && lower (t.substr (p, nm.size())) == lower (nm)) { deg = values[i]; len = nm.size(); break; }
+        }
+        if (deg < 0)
+        {
+            say ("Could not read \"" + t + "\". Use numerals like i, IV, bVII, V7, iisus4.", true);
+            return false;
+        }
+        const std::string suf = lower (t.substr (p + len));
+        ChordType type = ChordType::Triad;
+        if (suf.find ("sus2") != std::string::npos) type = ChordType::Sus2;
+        else if (suf.find ("sus") != std::string::npos) type = ChordType::Sus4;
+        else if (suf.find ("add9") != std::string::npos) type = ChordType::Add9;
+        else if (suf.find ('9') != std::string::npos) type = ChordType::Ninth;
+        else if (suf.find ('7') != std::string::npos) type = ChordType::Seventh;
+        list.push_back ({ deg % doc.scaleSize(), type });
+        return true;
+    };
+    for (char ch : text)
+    {
+        if (ch == ' ' || ch == ',' || ch == '-' || ch == '|' || ch == '\t')
+        {
+            if (! flush())
+                return false;
+        }
+        else
+            tok += ch;
+    }
+    if (! flush())
+        return false;
+    if (list.empty())
+    {
+        say ("Type some numerals first, e.g. i IV i VII", true);
+        return false;
+    }
+    const auto from = degreesNow();
+    if ((int) list.size() > (int) doc.arr.size())
+        fourBars();
+    const int n = (int) list.size(), T = doc.totalBeats();
+    const int len = n <= (int) doc.arr.size() ? 4 : std::max (1, T / n);
+    doc.chords.clear();
+    for (int i = 0; i < std::min (n, T / len); ++i)
+        doc.chords.push_back (mk (i * len, len, list[(size_t) i].first, list[(size_t) i].second, 0, Rhythm::Whole));
+    doc.csel = doc.chords.empty() ? -1 : doc.chords.front().id;
+    laneChanged (&from);
+    say ("Applied " + std::to_string (doc.chords.size()) + (doc.chords.size() > 1 ? " chords" : " chord") + " \xC2\xB7 quality from the scale");
+    commitVersion();
+    return true;
 }
 
 // ---- arrangement ----------------------------------------------------------------------------
@@ -908,7 +1674,7 @@ void Session::selectSlot (int i)
 
 void Session::toggleLock (int k)
 {
-    doc.T().locks[(size_t) k] = ! doc.T().locks[(size_t) k];
+    doc.riff().locks[(size_t) k] = ! doc.riff().locks[(size_t) k];
     push();
 }
 
@@ -916,11 +1682,33 @@ void Session::removeBar (int i)
 {
     if (i < 0 || i >= (int) doc.arr.size())
         return;
+    const auto from = degreesNow();
     doc.arr.erase (doc.arr.begin() + i);
+    const int a = i * 4, z = a + 4;
+    doc.chords.erase (std::remove_if (doc.chords.begin(), doc.chords.end(), [&] (const Chord& c) { return c.start >= a && c.start + c.len <= z; }), doc.chords.end());
+    for (auto& c : doc.chords)
+    {
+        if (c.start < a && c.start + c.len > a)
+            c.len = std::min (c.len, a - c.start) + std::max (0, c.start + c.len - z);
+        else if (c.start < z && c.start + c.len > z)
+        {
+            c.len = c.start + c.len - z;
+            c.start = a;
+        }
+        else if (c.start >= z)
+            c.start -= 4;
+    }
+    doc.chords.erase (std::remove_if (doc.chords.begin(), doc.chords.end(), [] (const Chord& c) { return c.len <= 0; }), doc.chords.end());
     if (doc.sel == i)
         doc.sel = -1;
     else if (doc.sel > i)
         --doc.sel;
+    if (doc.chordById (doc.csel) == nullptr)
+    {
+        const auto order = doc.sortedChordIndices();
+        doc.csel = order.empty() ? -1 : doc.chords[(size_t) order.front()].id;
+    }
+    laneChanged (&from);
     push();
 }
 
@@ -929,22 +1717,68 @@ void Session::addBar (int k)
     if ((int) doc.arr.size() >= kMaxBars || k < 0 || k >= kNumParts)
         return;
     doc.cur = k;
-    doc.arr.push_back (k);
+    addPartBar (k);
+    laneChanged (nullptr);
+    push();
+}
+
+void Session::repeatLastBar()
+{
+    if ((int) doc.arr.size() >= kMaxBars || doc.arr.empty())
+        return;
+    doc.arr.push_back (doc.arr.back());
     doc.sel = -1;
-    for (auto& t : doc.tabs)
-        extendPart (t, k);
+    laneChanged (nullptr);
+    push();
+}
+
+int Session::barLocks() const
+{
+    const int b = doc.shownBar();
+    if (doc.T().poly)
+    {
+        int n = 0;
+        if (b >= 0)
+            for (const auto& c : doc.chords)
+                if (c.lock && doc.overlapsBar (c, b))
+                    ++n;
+        return n;
+    }
+    const auto& p = doc.shown();
+    int n = doc.riff().locks[(size_t) doc.cur] ? 1 : 0;
+    for (int i = 0; i < std::min (p.numSteps, kMaxSteps); ++i)
+        if (p.steps[(size_t) i].locked)
+            ++n;
+    return n;
+}
+
+void Session::unlockBar()
+{
+    const int b = doc.shownBar();
+    if (doc.T().poly)
+    {
+        for (auto& c : doc.chords)
+            if (doc.overlapsBar (c, b))
+                c.lock = false;
+    }
+    else
+    {
+        doc.riff().locks[(size_t) doc.cur] = false;
+        for (auto& s : doc.shown().steps)
+            s.locked = false;
+    }
     push();
 }
 
 // ---------------------------------------------------------------------------------------------
-// History. A snapshot is the whole Doc, but switching versions brings back only what the web
-// preview's snapshot holds: tabs, chords, arrangement, selection, key and rate. The knobs keep
-// their current values.
+// History
 
 void Session::restore (const Doc& d)
 {
     doc.tabs = d.tabs;
     doc.chords = d.chords;
+    doc.nextChordId = std::max (doc.nextChordId, d.nextChordId);
+    doc.csel = d.csel;
     doc.arr = d.arr;
     doc.sel = d.sel;
     doc.cur = d.cur;
@@ -966,7 +1800,7 @@ void Session::pushUndo (const Doc& snap)
 
 void Session::commitVersion()
 {
-    foldTab (doc.T());
+    foldTab (doc.riff());
     versions.push_back ({ doc, false });
     while ((int) versions.size() > kMaxHist)
     {
@@ -988,8 +1822,8 @@ void Session::commitVersion()
 void Session::push (int editedPart)
 {
     if (editedPart >= 0 && editedPart < kNumParts)
-        rebase (doc.T(), editedPart);
-    foldTab (doc.T());
+        rebase (doc.riff(), editedPart);
+    foldTab (doc.riff());
     if (vi >= 0 && vi < (int) versions.size())
         versions[(size_t) vi].snap = doc;
     pushUndo (doc);
@@ -1040,7 +1874,6 @@ bool Session::importMidi (const std::vector<RawNote>& raw, double ppq, const std
             q.push_back ({ s, e, x.note, x.vel });
     }
     std::stable_sort (q.begin(), q.end(), [] (const Q& a, const Q& b) { return a.s != b.s ? a.s < b.s : a.note < b.note; });
-
     std::vector<Q> placed;
     for (auto x : q)
     {
@@ -1048,26 +1881,25 @@ bool Session::importMidi (const std::vector<RawNote>& raw, double ppq, const std
         {
             Q& last = placed.back();
             if (x.s == last.s)
-                continue; // same start: the lowest came first
+                continue;
             if (x.s < last.e)
             {
-                if (x.note < last.note) last.e = x.s; // overlap: the lowest note wins
+                if (x.note < last.note) last.e = x.s;
                 else continue;
             }
         }
-        x.e = std::min (x.e, (x.s / N + 1) * N); // cut at the bar line
+        x.e = std::min (x.e, (x.s / N + 1) * N);
         placed.push_back (x);
     }
     if (placed.empty())
     {
-        message = "No notes found in " + name;
+        say ("No notes found in " + name, true);
         return false;
     }
     int maxE = 0;
     for (const auto& x : placed)
         maxE = std::max (maxE, x.e);
     const int nBars = std::min (kMaxBars, (maxE - 1) / N + 1);
-
     std::vector<WeightedNote> w;
     for (size_t j = 0; j < placed.size(); ++j)
     {
@@ -1077,21 +1909,13 @@ bool Session::importMidi (const std::vector<RawNote>& raw, double ppq, const std
     const KeyGuess k = detectKey (w);
 
     auto& d = doc;
-    auto& t = d.T();
-    // the other tabs follow the new root; then every riff follows the new scale
+    d.tab = kRiffTab;
+    auto& t = d.riff();
     const int dr = (((k.root - d.gen.root) % 12) + 12 + 6) % 12 - 6;
-    for (auto& o : d.tabs)
-        if (&o != &t && dr != 0)
-            shiftTab (o, dr);
+    if (dr != 0)
+        shiftTab (d.tabs[kChordTab], dr);
     d.gen.root = k.root;
     d.gen.scale = k.scale;
-    for (auto& o : d.tabs)
-        if (&o != &t && ! o.poly)
-        {
-            for (int part = 0; part < kNumParts; ++part)
-                remap (o, part);
-            foldTab (o);
-        }
     int lo = 127, hi = 0;
     for (const auto& x : placed)
     {
@@ -1124,7 +1948,6 @@ bool Session::importMidi (const std::vector<RawNote>& raw, double ppq, const std
         st.velocity = std::max (1, std::min (127, x.vel));
     }
     t.locks.fill (false);
-    t.poly = false;
     for (int b = 0; b < kNumParts; ++b)
     {
         t.src[(size_t) b] = b < nBars ? Src::Import : Src::Roll;
@@ -1132,8 +1955,13 @@ bool Session::importMidi (const std::vector<RawNote>& raw, double ppq, const std
         rebase (t, b);
     }
     d.arr.clear();
+    d.chords.clear();
     for (int b = 0; b < nBars; ++b)
+    {
         d.arr.push_back (b);
+        d.chords.push_back (mk (b * 4, 4, partDegree (b, d.gen.scale), ChordType::Triad, 0, Rhythm::Whole));
+    }
+    d.csel = d.chords.empty() ? -1 : d.chords.front().id;
     d.sel = -1;
     d.cur = 0;
     d.gen.seed = newSeed();
@@ -1142,12 +1970,11 @@ bool Session::importMidi (const std::vector<RawNote>& raw, double ppq, const std
     std::string m = "Imported " + std::to_string (nBars) + (nBars > 1 ? " bars from " : " bar from ") + name + " \xE2\x86\x92 ";
     for (int b = 0; b < nBars; ++b)
         m += std::string (b ? " " : "") + partName (b);
-    m += " on tab " + std::to_string (d.tab + 1);
     m += " \xC2\xB7 key guess " + std::string (noteNames()[(size_t) k.root]) + " " + scales()[(size_t) k.scale].name
        + " (" + std::to_string ((int) std::lround (k.confidence * 100)) + "% sure; change Key to correct it)";
     if (dropped > 0)
         m += " \xC2\xB7 " + std::to_string (dropped) + (dropped > 1 ? " overlapping or late notes dropped" : " overlapping or late note dropped");
-    message = m;
+    say (m);
     commitVersion();
     return true;
 }
@@ -1156,47 +1983,44 @@ std::vector<uint8_t> Session::midiFile (double bpm)
 {
     std::vector<MidiTrack> tracks;
     const auto seq = doc.playSeq();
+    const int n = doc.numSteps();
     for (int i = 0; i < kNumTabs; ++i)
     {
         const auto& t = doc.tabs[(size_t) i];
         if (! t.on)
             continue;
         MidiTrack tr;
-        tr.name = "Midinja tab " + std::to_string (i + 1) + (t.poly ? " chords" : " riff");
+        tr.name = std::string ("Midinja ") + (t.poly ? "Chords" : "Riff");
         tr.channel = t.channel;
-        double offset = 0.0;
-        for (int k : seq)
+        if (t.poly)
         {
-            const auto& p = t.parts[(size_t) k];
-            const auto chord = t.poly ? doc.chordNotes (k, t) : std::vector<int> {};
-            for (auto e : renderCycle (p, doc.swing))
+            for (int b = 0; b < (int) doc.arr.size(); ++b)
+                for (const auto& h : doc.barHits (b))
+                    for (int note : doc.voice (doc.chords[(size_t) h.chordIndex]))
+                        tr.notes.push_back ({ (double) (b * n + h.step) + swingOffset (h.step, doc.swing), (double) h.len, note, 100 });
+        }
+        else
+        {
+            double offset = 0.0;
+            for (int k : seq)
             {
-                e.start += offset;
-                if (t.poly)
+                const auto& p = t.parts[(size_t) k];
+                for (auto e : renderCycle (p, doc.swing))
                 {
-                    for (int n : chord)
-                    {
-                        auto c = e;
-                        c.note = n;
-                        tr.notes.push_back (c);
-                    }
-                }
-                else
+                    e.start += offset;
                     tr.notes.push_back (e);
+                }
+                offset += p.numSteps;
             }
-            offset += p.numSteps;
         }
         tracks.push_back (std::move (tr));
     }
     if (tracks.empty())
     {
-        message = "No tab is on: turn one on in the tab bar to export";
+        say ("No tab is on: turn one on in the tab bar to export", true);
         return {};
     }
-    double length = 0.0;
-    for (int k : seq)
-        length += doc.T().parts[(size_t) k].numSteps;
-    return writeMidiFileTracks (tracks, (double) doc.rate, bpm, length);
+    return writeMidiFileTracks (tracks, (double) doc.rate, bpm, (double) seq.size() * n);
 }
 
 std::string Session::exportName() const

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PluginProcessor.h"
+#include "ui/ChordLane.h"
 #include "ui/EdgeBar.h"
 #include "ui/GridComponent.h"
 #include "ui/LaneComponent.h"
@@ -10,12 +11,13 @@
 #include "ui/VersionsStrip.h"
 #include "ui/Widgets.h"
 
+#include <array>
 #include <vector>
 
-// The plugin window, laid out like web/index.html: the dice row, the key and knobs row, the tab
-// bar, the Advanced side panel, the bars and the piano roll with its range edges, the footer
-// with Play, the synth, MIDI out, Import / Export and a handle to drag the arrangement as a
-// .mid file into a DAW.
+// The plugin window, laid out like web/index.html: the dice row, the key and knobs row, the two
+// tabs, the Advanced side panel, the arrangement, the chord lane with its generators and the
+// selected chord, the piano roll with its range edges, the footer with Play (standalone only),
+// the synth, MIDI out, Import / Export and a handle to drag the arrangement into a DAW.
 class MidinjaEditor : public juce::AudioProcessorEditor,
                       public juce::DragAndDropContainer,
                       public juce::FileDragAndDropTarget,
@@ -38,12 +40,10 @@ public:
 
 private:
     void timerCallback() override;
-    // A manual edit of the part shown: record it, play it, redraw.
     void edited();
-    // The document changed in a way that is already recorded (a roll, undo, import): play, redraw.
     void changed();
-    void preview(); // during a drag: play and redraw only
-    void render();  // every control follows the session
+    void preview();
+    void render();
     void importFile (const juce::File&);
     void exportMidi();
     juce::File writeTempMidi();
@@ -52,6 +52,7 @@ private:
     juce::String colorWords() const;
     void setupKnob (ui::Knob& k, std::function<double()> get, std::function<void (double)> set,
                     std::function<juce::String (double)> fmt, double def, std::function<void()> onChange);
+    void applyTyped();
 
     MidinjaProcessor& proc;
     midinja::Session& sess;
@@ -63,9 +64,8 @@ private:
 
     // Row A
     ui::DiceButton dice;
-    ui::Seg what;
+    juce::TextButton rhythmB, notesB, mutateB;
     ui::IconButton rollAll { ui::IconButton::Dice, "All", false };
-    ui::IconButton progB { ui::IconButton::Dice, "Progression", false };
     VersionsStrip versions;
     ui::IconButton undoB { ui::IconButton::Undo }, redoB { ui::IconButton::Redo };
 
@@ -77,7 +77,6 @@ private:
     ui::Knob color { "Color", 0, 1, 0.05, true }, surprise { "Surprise", 0, 1, 0.05, true };
     ui::Switch advSw { "Advanced" };
 
-    // Tabs
     TabBar tabBar;
 
     // Side panel (Advanced)
@@ -87,7 +86,15 @@ private:
 
     // Grid area
     PartsBar parts;
-    juce::ComboBox degBox, typeBox, invBox; // the chord of the part shown (chord tabs)
+    juce::TextButton unlockBarB { "Unlock bar" };
+    ChordLane lane;
+    juce::TextButton progB, applyB { "Apply" };
+    std::array<juce::TextButton, midinja::kNumMoods> moodBs;
+    std::array<juce::TextButton, midinja::kNumStyles> styleBs;
+    juce::TextEditor typedEd;
+    juce::ComboBox degBox, typeBox, rhythmBox;
+    std::array<juce::TextButton, 4> invBs;
+    juce::TextButton rhythmAllB { "Rhythm to all" }, lockB { "Lock" };
     EdgeBar edgeTop, edgeBot;
     GridComponent grid;
     LaneComponent velLane { LaneComponent::Kind::Velocity }, lenLane { LaneComponent::Kind::Length },
@@ -108,9 +115,9 @@ private:
 
     // Painted parts of the layout
     struct Text { juce::Rectangle<int> r; juce::String s; };
-    std::vector<Text> labels, sideTitles;
+    std::vector<Text> labels, sideTitles, smallLabels;
     std::vector<juce::Rectangle<int>> vseps;
-    juce::Rectangle<int> rLogo, rPreset, rSide, rMsg, rPlayRow, rSteps, rLegend, rRowA, rRowB, rFoot;
+    juce::Rectangle<int> rLogo, rPreset, rSide, rMsg, rPlayRow, rSteps, rLegend, rRowA, rRowB, rFoot, rGen, rInsp, rInspName, rGhostTop, rGhostBot, rHostNote;
 
     juce::TooltipWindow tips { this, 400 };
 

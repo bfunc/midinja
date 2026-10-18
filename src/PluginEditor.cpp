@@ -7,10 +7,10 @@
 
 namespace
 {
-constexpr int kW = 1216, kH = 760;
+constexpr int kW = 1216, kH = 900;
 constexpr int kRowA = 56, kRowB = 66, kFoot = 50, kSide = 156;
 constexpr int kTabs = TabBar::height;
-constexpr int kChordSelW = 3 * 86 + 2 * 4;
+constexpr int kUnlockW = 78, kGenH = 26, kInspH = 26, kGhostH = 18;
 
 juce::String u8 (const char* s) { return juce::String (juce::CharPointer_UTF8 (s)); }
 juce::String u8 (const std::string& s) { return juce::String (juce::CharPointer_UTF8 (s.c_str())); }
@@ -29,7 +29,8 @@ juce::String lenName (int l)
     }
 }
 
-// Notes from a Standard MIDI File, every track; ppq from the header.
+int textButtonWidth (const juce::String& text) { return (int) theme::textWidth (theme::font (12.0f), text) + 18; }
+
 bool readMidiFile (const juce::File& f, std::vector<midinja::RawNote>& out, double& ppq, juce::String& error)
 {
     juce::FileInputStream in (f);
@@ -76,25 +77,33 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     setLookAndFeel (&look);
     setWantsKeyboardFocus (true);
 
-    // ---- Row A ----
-    dice.onClick = [this] { sess.apply (sess.what); changed(); };
+    // ---- Row A: the dice, Rhythm / Notes toggles, Mutate as a mode, All ----
+    dice.onClick = [this] { midinja::Op op; if (sess.currentOp (op)) { sess.apply (op); changed(); } };
     addAndMakeVisible (dice);
-
-    what.items = { { "Both", {}, "New rhythm and new notes" },
-                   { u8 ("\xE2\x99\xA9 Rhythm"), {}, "New rhythm, keep the pitches" },
-                   { u8 ("\xE2\x99\xAA Notes"), {}, "New pitches, keep the rhythm" },
-                   { "~ Mutate", "15%", "Change some notes, keep the riff. Click the % to change how much" } };
-    what.tooltip = "What the dice change";
-    what.onSelect = [this] (int i) { sess.what = (midinja::Op) i; render(); };
-    what.onSuffixClick = [this] (int) { sess.cycleMutAmt(); };
-    addAndMakeVisible (what);
-
-    rollAll.setTooltip (u8 ("Roll all four parts of this tab the same way: A, then A\xE2\x80\xB2 B C from it (Shift+Space). Locked parts stay"));
-    rollAll.onClick = [this] { sess.applyAll (sess.what); changed(); };
+    rhythmB.setButtonText (u8 ("\xE2\x99\xA9 Rhythm"));
+    rhythmB.setTooltip ("New rhythm (keeps the pitches unless Notes is on too)");
+    rhythmB.onClick = [this] {
+        if (sess.mutateMode) { sess.mutateMode = false; sess.doRhythm = true; sess.doNotes = false; }
+        else sess.doRhythm = ! sess.doRhythm;
+        render();
+    };
+    notesB.setButtonText (u8 ("\xE2\x99\xAA Notes"));
+    notesB.setTooltip ("New pitches (keeps the rhythm unless Rhythm is on too)");
+    notesB.onClick = [this] {
+        if (sess.mutateMode) { sess.mutateMode = false; sess.doRhythm = false; sess.doNotes = true; }
+        else sess.doNotes = ! sess.doNotes;
+        render();
+    };
+    mutateB.setTooltip ("Mutate: change some notes, keep the riff. Click again for 15 / 33 / 50 %");
+    mutateB.onClick = [this] {
+        if (sess.mutateMode) sess.cycleMutAmt();
+        else { sess.mutateMode = true; sess.doRhythm = false; sess.doNotes = false; }
+        render();
+    };
+    for (auto* b : { &rhythmB, &notesB, &mutateB })
+        addAndMakeVisible (*b);
+    rollAll.onClick = [this] { midinja::Op op; if (sess.currentOp (op)) { sess.applyAll (op); changed(); } };
     addAndMakeVisible (rollAll);
-    progB.setTooltip (u8 ("Progression: A A\xE2\x80\xB2 B C with chord degrees that fit the mode (A = A\xE2\x80\xB2, B, C leads home). Locked parts keep their degree. 7-note scales only"));
-    progB.onClick = [this] { sess.rollProgression(); changed(); };
-    addAndMakeVisible (progB);
 
     versions.sess = &sess;
     versions.onGoto = [this] (int i) { sess.gotoVersion (i); changed(); };
@@ -102,7 +111,6 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     versions.onPrev = [this] { sess.histPrev(); versions.repaint(); };
     versions.onNext = [this] { sess.histNext(); versions.repaint(); };
     addAndMakeVisible (versions);
-
     undoB.setTooltip ("Undo (Ctrl+Z)");
     undoB.onClick = [this] { if (sess.canUndo()) { sess.undoTo (sess.ui - 1); changed(); } };
     redoB.setTooltip ("Redo (Ctrl+Shift+Z)");
@@ -111,7 +119,7 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     addAndMakeVisible (redoB);
 
     // ---- Row B ----
-    rootBox.setTooltip (u8 ("The root: pick the note here (every tab moves with it), \xE2\x88\x92 / + move this tab an octave. The range and the parts follow the root"));
+    rootBox.setTooltip (u8 ("The root: pick the note here (both tabs move with it), \xE2\x88\x92 / + move this tab an octave. The range and the parts follow the root"));
     rootBox.onChange = [this] { sess.setRootPc (rootBox.getSelectedId() - 1); changed(); };
     ocD.setTooltip ("This tab an octave down: its root, range and parts");
     ocD.onClick = [this] { sess.setOctave (-1); changed(); };
@@ -119,13 +127,12 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     ocU.onClick = [this] { sess.setOctave (1); changed(); };
     for (size_t i = 0; i < midinja::scales().size(); ++i)
         scaleBox.addItem (midinja::scales()[i].name, (int) i + 1);
-    scaleBox.setTooltip ("The scale: notes keep their degree, colour notes and augmented-second pairs move to the new scale's; locked notes stay");
+    scaleBox.setTooltip ("The scale: notes keep their degree, colour notes and augmented-second pairs move to the new scale's; locked notes stay; chords take their quality from the scale");
     scaleBox.onChange = [this] { sess.setScale (scaleBox.getSelectedId() - 1); changed(); };
     addAndMakeVisible (rootBox);
     addAndMakeVisible (ocD);
     addAndMakeVisible (ocU);
     addAndMakeVisible (scaleBox);
-
     rateBox.addItem (u8 ("1/8 \xC2\xB7 8"), 2);
     rateBox.addItem (u8 ("1/16 \xC2\xB7 16"), 4);
     rateBox.addItem (u8 ("1/16T \xC2\xB7 12"), 6);
@@ -134,8 +141,7 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     addAndMakeVisible (rateBox);
 
     setupKnob (density, [this] { return (double) sess.doc.gen.notes; }, [this] (double v) { sess.doc.gen.notes = (int) v; },
-               [this] (double v) { return juce::String (std::min ((int) v, sess.doc.numSteps())) + " / " + juce::String (sess.doc.numSteps()); },
-               10.0, nullptr);
+               [this] (double v) { return juce::String (std::min ((int) v, sess.doc.numSteps())) + " / " + juce::String (sess.doc.numSteps()); }, 10.0, nullptr);
     density.setTooltip ("How many steps get a note (next roll). Ctrl+click resets");
     setupKnob (swingK, [this] { return (double) sess.doc.swing; }, [this] (double v) { sess.doc.swing = (float) v; },
                [] (double v) { return juce::String ((int) std::lround (v * 100)) + "%"; }, 0.18, [this] { proc.publish(); });
@@ -147,7 +153,6 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     setupKnob (surprise, [this] { return (double) sess.doc.gen.surprise; }, [this] (double v) { sess.doc.gen.surprise = (float) v; },
                [] (double v) { return juce::String ((int) std::lround (v * 100)) + "%"; }, 0.15, nullptr);
     surprise.setTooltip ("How often the riff breaks the rules (next roll)");
-
     advSw.setTooltip ("Velocity, length, ratchets, seed and the undo buttons");
     advSw.onClick = [this] { sess.adv = ! sess.adv; render(); };
     addAndMakeVisible (advSw);
@@ -155,7 +160,6 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     // ---- Tabs ----
     tabBar.sess = &sess;
     tabBar.onSelect = [this] (int i) { sess.selectTab (i); render(); };
-    tabBar.onPoly = [this] (int i, bool poly) { sess.setTabPoly (i, poly); changed(); };
     tabBar.onChannel = [this] (int i, int ch) { sess.setTabChannel (i, ch); changed(); };
     tabBar.onOn = [this] (int i, bool on) { sess.setTabOn (i, on); changed(); };
     addAndMakeVisible (tabBar);
@@ -173,7 +177,7 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     for (auto* r : { &lenR, &velR, &repR })
         addAndMakeVisible (*r);
     repPill.onClick = [this] { sess.doc.gen.repeatsOn = ! sess.doc.gen.repeatsOn; render(); };
-    rootPill.setTooltip ("Every bar begins with the root of its chord on step 1 (the part's degree). Imported bars are left as they are");
+    rootPill.setTooltip ("Every bar begins with the root of the chord it starts in. Imported bars are left as they are");
     rootPill.onClick = [this] { sess.doc.gen.startOnRoot = ! sess.doc.gen.startOnRoot; render(); };
     addAndMakeVisible (repPill);
     addAndMakeVisible (rootPill);
@@ -183,30 +187,75 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     seedBox.onChange = [this] { sess.applyAll (midinja::Op::Roll, true); changed(); };
     addAndMakeVisible (seedBox);
 
-    // ---- Grid area ----
+    // ---- Arrangement, the chord lane, the generators, the selected chord ----
     parts.sess = &sess;
+    parts.reserveW = kUnlockW;
     parts.onSelectSlot = [this] (int i) { sess.selectSlot (i); proc.restartPlayback(); changed(); };
     parts.onToggleLock = [this] (int k) { sess.toggleLock (k); changed(); };
     parts.onRemoveBar = [this] (int i) { sess.removeBar (i); changed(); };
     parts.onAddBar = [this] (int k) { sess.addBar (k); changed(); };
+    parts.onRepeatBar = [this] { sess.repeatLastBar(); changed(); };
     addAndMakeVisible (parts);
+    unlockBarB.onClick = [this] { sess.unlockBar(); changed(); };
+    addAndMakeVisible (unlockBarB);
 
-    degBox.setTooltip ("Degree: the chord of this part, and where its riffs start on every tab");
+    lane.sess = &sess;
+    lane.onChanged = [this] { changed(); };
+    lane.onPreview = [this] { preview(); };
+    lane.onSelect = [this] { render(); };
+    addAndMakeVisible (lane);
+
+    progB.setButtonText (u8 ("\xE2\x9A\x84 Progression"));
+    progB.onClick = [this] { sess.progression(); changed(); };
+    addAndMakeVisible (progB);
+    for (int i = 0; i < midinja::kNumMoods; ++i)
+    {
+        auto& b = moodBs[(size_t) i];
+        b.setButtonText (midinja::moodName (i));
+        b.onClick = [this, i] { sess.mood (i); changed(); };
+        addAndMakeVisible (b);
+    }
+    for (int i = 0; i < midinja::kNumStyles; ++i)
+    {
+        auto& b = styleBs[(size_t) i];
+        b.setButtonText (midinja::styleName (i));
+        b.onClick = [this, i] { sess.style (i); changed(); };
+        addAndMakeVisible (b);
+    }
+    typedEd.setTextToShowWhenEmpty (u8 ("type a progression: i IV i VII \xC2\xB7 one bar per chord; more chords than bars share the bars"), theme::ink3);
+    typedEd.setFont (theme::font (11.0f));
+    typedEd.setTooltip ("Numerals like i, IV, bVII, V7, iisus4; Enter or Apply sets the lane");
+    typedEd.onReturnKey = [this] { applyTyped(); };
+    addAndMakeVisible (typedEd);
+    applyB.setTooltip ("Set the lane to the typed numerals");
+    applyB.onClick = [this] { applyTyped(); };
+    addAndMakeVisible (applyB);
+
+    degBox.setTooltip ("The chord's scale degree; the riff plays its tones where it starts");
+    degBox.onChange = [this] { if (degBox.getSelectedId() > 0) { sess.setChordDeg (sess.doc.csel, degBox.getSelectedId() - 1); changed(); } };
     typeBox.setTooltip ("Chord type; the quality comes from the scale");
-    invBox.setTooltip ("Inversion: which chord note is at the bottom");
-    const auto chordChanged = [this] {
-        const auto& c = sess.doc.chords[(size_t) sess.doc.cur];
-        const int deg = degBox.getSelectedId() > 0 ? degBox.getSelectedId() - 1 : c.degree;
-        const auto type = typeBox.getSelectedId() > 0 ? (midinja::ChordType) (typeBox.getSelectedId() - 1) : c.type;
-        const int inv = invBox.getSelectedId() > 0 ? invBox.getSelectedId() - 1 : c.inv;
-        sess.setChord (sess.doc.cur, deg, type, inv);
-        changed();
-    };
-    degBox.onChange = chordChanged;
-    typeBox.onChange = chordChanged;
-    invBox.onChange = chordChanged;
-    for (auto* b : { &degBox, &typeBox, &invBox })
+    typeBox.onChange = [this] { if (typeBox.getSelectedId() > 0) { sess.setChordType (sess.doc.csel, (midinja::ChordType) (typeBox.getSelectedId() - 1)); changed(); } };
+    for (int i = 0; i < 6; ++i)
+        typeBox.addItem (midinja::chordTypeName ((midinja::ChordType) i), i + 1);
+    rhythmBox.setTooltip ("The chord rhythm (Chords tab)");
+    for (int i = 0; i < midinja::kNumRhythms; ++i)
+        rhythmBox.addItem (midinja::rhythmName ((midinja::Rhythm) i), i + 1);
+    rhythmBox.onChange = [this] { if (rhythmBox.getSelectedId() > 0) { sess.setChordRhythm (sess.doc.csel, (midinja::Rhythm) (rhythmBox.getSelectedId() - 1)); changed(); } };
+    for (auto* b : { &degBox, &typeBox, &rhythmBox })
         addAndMakeVisible (*b);
+    static const char* invNames[] = { "Root", "1st", "2nd", "3rd" };
+    for (int i = 0; i < 4; ++i)
+    {
+        auto& b = invBs[(size_t) i];
+        b.setButtonText (invNames[i]);
+        b.onClick = [this, i] { sess.setChordInv (sess.doc.csel, i); changed(); };
+        addAndMakeVisible (b);
+    }
+    rhythmAllB.setTooltip ("Use this rhythm for every chord");
+    rhythmAllB.onClick = [this] { sess.rhythmToAll (sess.doc.csel); changed(); };
+    lockB.onClick = [this] { sess.toggleChordLock (sess.doc.csel); changed(); };
+    addAndMakeVisible (rhythmAllB);
+    addAndMakeVisible (lockB);
 
     edgeTop.plus.onClick = [this] { sess.growRange (true); changed(); };
     edgeTop.minus.onClick = [this] { sess.shrinkRange (true); changed(); };
@@ -218,6 +267,7 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     grid.sess = &sess;
     grid.onEdit = [this] { edited(); };
     grid.onPreview = [this] { preview(); };
+    grid.onSelectChord = [this] { render(); };
     addAndMakeVisible (grid);
     for (auto* l : { &velLane, &lenLane, &repLane })
     {
@@ -237,49 +287,43 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
         render();
     };
     addAndMakeVisible (play);
-
+    play.setVisible (! proc.isHosted()); // in a host the host's transport plays and stops
     bpmBox.get = [this] { return (double) proc.bpm.load(); };
     bpmBox.set = [this] (double v) { proc.bpm = (float) v; };
     addAndMakeVisible (bpmBox);
-
-    synthSw.setTooltip ("Built-in synth through the audio output: a mono saw / square for riff tabs, a strings pad for chord tabs");
+    synthSw.setTooltip ("Built-in preview synths through the audio output (off by default): a mono saw / square for the riff, a strings pad for the chords");
     synthSw.onClick = [this] { proc.synthOn = ! proc.synthOn.load(); render(); };
     addAndMakeVisible (synthSw);
     waveBtn.setTooltip ("Waveform of the riff synth");
     waveBtn.onClick = [this] { proc.synthWave = proc.synthWave.load() == 0 ? 1 : 0; render(); };
     addAndMakeVisible (waveBtn);
-    const auto mini = [this] (ui::Knob& k, std::function<double()> get, std::function<void (double)> set,
-                              std::function<juce::String (double)> fmt, double def) {
+    const auto mini = [this] (ui::Knob& k, std::function<double()> get, std::function<void (double)> set, std::function<juce::String (double)> fmt, double def) {
         setupKnob (k, std::move (get), std::move (set), std::move (fmt), def, nullptr);
         k.showText = false;
     };
-    mini (cutoffK, [this] { return (double) proc.cutoff.load(); }, [this] (double v) { proc.cutoff = (float) v; },
-          [] (double v) { return juce::String ((int) v) + " Hz"; }, 1800.0);
-    mini (resoK, [this] { return (double) proc.resonance.load() * 100.0; }, [this] (double v) { proc.resonance = (float) v / 100.0f; },
-          [] (double v) { return juce::String ((int) v) + "%"; }, 30.0);
-    mini (decayK, [this] { return (double) proc.decay.load(); }, [this] (double v) { proc.decay = (float) v; },
-          [] (double v) { return juce::String ((int) v) + " ms"; }, 250.0);
-    mini (volK, [this] { return (double) proc.volume.load() * 100.0; }, [this] (double v) { proc.volume = (float) v / 100.0f; },
-          [] (double v) { return juce::String ((int) v) + "%"; }, 60.0);
+    mini (cutoffK, [this] { return (double) proc.cutoff.load(); }, [this] (double v) { proc.cutoff = (float) v; }, [] (double v) { return juce::String ((int) v) + " Hz"; }, 1800.0);
+    mini (resoK, [this] { return (double) proc.resonance.load() * 100.0; }, [this] (double v) { proc.resonance = (float) v / 100.0f; }, [] (double v) { return juce::String ((int) v) + "%"; }, 30.0);
+    mini (decayK, [this] { return (double) proc.decay.load(); }, [this] (double v) { proc.decay = (float) v; }, [] (double v) { return juce::String ((int) v) + " ms"; }, 250.0);
+    mini (volK, [this] { return (double) proc.volume.load() * 100.0; }, [this] (double v) { proc.volume = (float) v / 100.0f; }, [] (double v) { return juce::String ((int) v) + "%"; }, 60.0);
     for (auto* k : { &cutoffK, &resoK, &decayK, &volK })
         k->onChange = [this, k] { k->setTooltip (k->getName() + ": " + k->format (k->get()) + ". Drag or scroll; Ctrl+click resets"); };
 
     midiOutBox.setTooltip ("A system MIDI port: a hardware synth, loopMIDI, IAC. Every tab that is on goes out on its channel");
     midiOutBox.onChange = [this] {
-        const int idx = midiOutBox.getSelectedId() - 2; // id 1 = None
+        const int idx = midiOutBox.getSelectedId() - 2;
         const auto id = idx >= 0 && idx < midiPortIds.size() ? midiPortIds[idx] : juce::String();
         if (! proc.openMidiOut (id))
         {
-            sess.message = "Can't open " + midiOutBox.getText().toStdString() + " (in use by another app?)";
+            sess.say ("Can't open " + midiOutBox.getText().toStdString() + " (in use by another app?)", true);
             refreshMidiPorts();
             render();
         }
     };
-    midiOutBox.addMouseListener (this, false); // rescan the ports when the list is opened
+    midiOutBox.addMouseListener (this, false);
     addAndMakeVisible (midiOutBox);
-    midiOutBox.setVisible (! proc.isHosted()); // in a host the MIDI goes through the host's routing only
+    midiOutBox.setVisible (! proc.isHosted());
 
-    importB.setTooltip (u8 ("Import a .mid file (or drop one on the window) into the tab shown: up to 4 bars become A A\xE2\x80\xB2 B C"));
+    importB.setTooltip (u8 ("Import a .mid file (or drop one on the window) into the Riff tab: up to 4 bars become A A\xE2\x80\xB2 B C"));
     importB.onClick = [this] {
         chooser = std::make_unique<juce::FileChooser> ("Import MIDI", juce::File::getSpecialLocation (juce::File::userDocumentsDirectory), "*.mid;*.midi");
         chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
@@ -288,7 +332,7 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     exportB.setTooltip ("Save the arrangement as one .mid file: a track per tab that is on, each on its channel");
     exportB.onClick = [this] { exportMidi(); };
     dragB.setTooltip ("Drag this onto your DAW (FL Studio: the playlist or a channel) to drop the arrangement there as a .mid file");
-    dragB.onClick = [this] { sess.message = "Drag the handle onto the DAW: the arrangement lands there as a .mid file"; render(); };
+    dragB.onClick = [this] { sess.say ("Drag the handle onto the DAW: the arrangement lands there as a .mid file"); render(); };
     dragB.onDragStart = [this] {
         const auto f = writeTempMidi();
         if (f == juce::File())
@@ -300,7 +344,6 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     addAndMakeVisible (exportB);
     addAndMakeVisible (dragB);
 
-    // Keys go to the editor, not to the buttons.
     for (auto* c : getChildren())
     {
         c->setWantsKeyboardFocus (false);
@@ -308,8 +351,9 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     }
     seedBox.setWantsKeyboardFocus (true);
     bpmBox.setWantsKeyboardFocus (true);
+    typedEd.setWantsKeyboardFocus (true);
+    typedEd.setMouseClickGrabsKeyboardFocus (true);
 
-    // Old drag files (the DAW keeps reading the one it got, so they are not removed right away).
     const auto tmp = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("Midinja");
     for (const auto& f : tmp.findChildFiles (juce::File::findFiles, false, "*.mid"))
         if (f.getLastModificationTime() < juce::Time::getCurrentTime() - juce::RelativeTime::days (1))
@@ -342,7 +386,7 @@ void MidinjaEditor::setupKnob (ui::Knob& k, std::function<double()> get, std::fu
 
 void MidinjaEditor::edited()
 {
-    sess.push (sess.doc.cur);
+    sess.push (sess.doc.T().poly ? -1 : sess.doc.cur);
     changed();
 }
 
@@ -356,12 +400,19 @@ void MidinjaEditor::preview()
 {
     proc.publish();
     grid.refresh();
+    lane.repaint();
     resized();
     velLane.repaint();
     lenLane.repaint();
     repLane.repaint();
     parts.repaint();
     versions.repaint();
+}
+
+void MidinjaEditor::applyTyped()
+{
+    sess.applyTyped (typedEd.getText().toStdString());
+    changed();
 }
 
 juce::String MidinjaEditor::colorLabel() const
@@ -407,8 +458,7 @@ juce::String MidinjaEditor::colorWords() const
         juce::StringArray ms;
         for (const auto& mv : mi.moves)
             ms.add (u8 (midinja::degreeName (mv.first)) + kArrow + u8 (midinja::degreeName (mv.second)));
-        t += juce::String (". Signature move") + (mi.moves.size() > 1 ? "s" : "") + ": " + ms.joinIntoString (", ")
-           + ", played as two notes in a row into a strong step";
+        t += juce::String (". Signature move") + (mi.moves.size() > 1 ? "s" : "") + ": " + ms.joinIntoString (", ") + ", played as two notes in a row into a strong step";
     }
     return t + ". The knob is the total amount of colour on the next roll. Ctrl+click resets";
 }
@@ -418,26 +468,33 @@ void MidinjaEditor::render()
     shownVersion = proc.publishedVersion();
     const auto& d = sess.doc;
     const auto& t = d.T();
-    const bool adv = sess.adv;
+    const bool adv = sess.adv, poly = t.poly;
     const bool hosted = proc.isHosted() && proc.hostBpm.load() > 0.0f;
 
-    dice.setEnabled (! t.locks[(size_t) d.cur]);
-    static const char* whatTips[] = { "Roll the part shown: new rhythm and notes", "Roll a new rhythm for the part shown, keep its pitches",
+    // the dice block
+    midinja::Op op;
+    const bool hasOp = sess.currentOp (op);
+    rhythmB.setToggleState (! sess.mutateMode && sess.doRhythm, juce::dontSendNotification);
+    notesB.setToggleState (! sess.mutateMode && sess.doNotes, juce::dontSendNotification);
+    mutateB.setToggleState (sess.mutateMode, juce::dontSendNotification);
+    mutateB.setButtonText ("~ Mutate " + juce::String ((int) std::lround (sess.mutAmt * 100)) + "%");
+    const bool lockedPart = ! poly && d.riff().locks[(size_t) d.cur];
+    const auto* csel = d.chordById (d.csel);
+    dice.setEnabled (hasOp && ! lockedPart && ! (poly && csel == nullptr));
+    static const char* whatTips[] = { "Roll the part shown: new rhythm and new notes", "Roll a new rhythm for the part shown, keep its pitches",
                                       "Roll new pitches for the part shown, keep its rhythm", "Mutate the part shown: change some notes, keep the riff" };
-    dice.setTooltip (t.locks[(size_t) d.cur] ? u8 (midinja::partName (d.cur)) + " is locked: unlock it on its bar to roll"
-                                             : t.poly ? juce::String ("New rhythm for the chord shown (a chord tab only varies the rhythm) (Space)")
-                                                      : juce::String (whatTips[(int) sess.what]) + " (Space). Locked notes stay");
-    what.on = (int) sess.what;
-    what.items[3].suffix = juce::String ((int) std::lround (sess.mutAmt * 100)) + "%";
-    what.repaint();
-    progB.setEnabled (sess.canProgression());
+    dice.setTooltip (! hasOp ? juce::String ("Choose what the dice change: Rhythm, Notes or Mutate")
+                   : lockedPart ? u8 (midinja::partName (d.cur)) + " is locked: unlock it on its bar to roll"
+                   : poly ? juce::String (csel != nullptr ? "A new rhythm for the selected chord (Space)" : "Select a chord in the lane first")
+                          : juce::String (whatTips[(int) op]) + " (Space). Locked notes stay; the riff plays a chord tone where a chord starts");
+    rollAll.setEnabled (hasOp);
+    rollAll.setTooltip (poly ? "New rhythms for every unlocked chord (Shift+Space)" : u8 ("The same for all four parts: A, then A\xE2\x80\xB2 B C from it (Shift+Space). Locked parts stay"));
     undoB.setEnabled (sess.canUndo());
     redoB.setEnabled (sess.canRedo());
     undoB.setVisible (adv);
     redoB.setVisible (adv);
     versions.repaint();
 
-    // the root chip shows the tab's octave
     const int oct = t.rootNote / 12 - 1;
     if (oct != rootOctShown)
     {
@@ -458,8 +515,10 @@ void MidinjaEditor::render()
     advSw.repaint();
     tabBar.refresh();
 
-    for (auto* c : std::initializer_list<juce::Component*> { &lenR, &velR, &repR, &repPill, &rootPill, &seedBox, &velLane, &lenLane, &repLane })
+    for (auto* c : std::initializer_list<juce::Component*> { &lenR, &velR, &repR, &repPill, &rootPill, &seedBox })
         c->setVisible (adv);
+    for (auto* c : std::initializer_list<juce::Component*> { &velLane, &lenLane, &repLane })
+        c->setVisible (adv && ! poly);
     repR.dimmed = ! d.gen.repeatsOn;
     repPill.on = d.gen.repeatsOn;
     rootPill.on = d.gen.startOnRoot;
@@ -467,53 +526,81 @@ void MidinjaEditor::render()
         c->repaint();
     seedBox.refresh();
 
-    // the chord of the part shown (chord tabs)
-    parts.chordSelW = t.poly ? kChordSelW : 0;
-    for (auto* b : { &degBox, &typeBox, &invBox })
-        b->setVisible (t.poly);
-    if (t.poly)
+    // Unlock bar
+    const int nl = sess.barLocks();
+    unlockBarB.setEnabled (nl > 0);
+    unlockBarB.setTooltip (nl == 0 ? juce::String ("Nothing is locked in this bar")
+                         : poly ? "Unlock the " + juce::String (nl) + (nl > 1 ? " locked chords of bar " : " locked chord of bar ") + juce::String (d.shownBar() + 1)
+                                : "Remove every lock of " + u8 (midinja::partName (d.cur)) + ": the part's lock and its locked notes, chromatic ones included");
+
+    // the generators
+    progB.setTooltip (juce::String ("Pick a progression typical for ") + midinja::scales()[(size_t) d.gen.scale].name + ". Locked chords stay");
+    for (int i = 0; i < midinja::kNumMoods; ++i)
     {
-        const auto& c = d.chords[(size_t) d.cur];
+        const auto degs = sess.moodDegrees (i);
+        std::set<int> uniq (degs.begin(), degs.end());
+        juce::StringArray names;
+        for (int dg : uniq)
+            names.add (u8 (d.numeral (dg)));
+        moodBs[(size_t) i].setEnabled (! degs.empty());
+        moodBs[(size_t) i].setTooltip (degs.empty() ? juce::String ("No ") + juce::String (midinja::moodName (i)).toLowerCase() + " move exists in " + midinja::scales()[(size_t) d.gen.scale].name + ". Try another scale"
+                                                    : juce::String (midinja::moodTip (i)) + kDot + names.joinIntoString (", "));
+    }
+    for (int i = 0; i < midinja::kNumStyles; ++i)
+        styleBs[(size_t) i].setTooltip (juce::String (midinja::styleName (i)) + ": " + midinja::styleTip (i)
+                                        + (sess.styleHasOwnList (i) ? juce::String() : kDot + midinja::scales()[(size_t) d.gen.scale].name + " uses the " + (d.tonicMinor() ? "minor" : "major") + " list"));
+
+    // the selected chord
+    for (auto* c : std::initializer_list<juce::Component*> { &degBox, &typeBox, &rhythmBox, &rhythmAllB, &lockB })
+        c->setVisible (csel != nullptr);
+    for (auto& b : invBs)
+        b.setVisible (csel != nullptr);
+    if (csel != nullptr)
+    {
         degBox.clear (juce::dontSendNotification);
-        for (int deg = 0; deg < d.scaleSize(); ++deg)
-            degBox.addItem (u8 (midinja::numeral (deg, d.gen.scale)), deg + 1);
-        degBox.setSelectedId (d.degreeOf (d.cur) + 1, juce::dontSendNotification);
-        typeBox.clear (juce::dontSendNotification);
+        for (int dg = 0; dg < d.scaleSize(); ++dg)
+            degBox.addItem (u8 (d.numeral (dg)) + kDot + midinja::noteNames()[(size_t) (((d.gen.root + d.at (dg)) % 12 + 12) % 12)], dg + 1);
+        degBox.setSelectedId (((csel->deg % d.scaleSize()) + d.scaleSize()) % d.scaleSize() + 1, juce::dontSendNotification);
+        typeBox.setSelectedId ((int) csel->type + 1, juce::dontSendNotification);
+        rhythmBox.setSelectedId ((int) csel->rhythm + 1, juce::dontSendNotification);
         for (int i = 0; i < 4; ++i)
-            typeBox.addItem (midinja::chordTypeName ((midinja::ChordType) i), i + 1);
-        typeBox.setSelectedId ((int) c.type + 1, juce::dontSendNotification);
-        invBox.clear (juce::dontSendNotification);
-        invBox.addItem ("Root", 1);
-        invBox.addItem ("1st inv", 2);
-        invBox.addItem ("2nd inv", 3);
-        if (c.type == midinja::ChordType::Seventh)
-            invBox.addItem ("3rd inv", 4);
-        invBox.setSelectedId (std::min (c.inv, c.type == midinja::ChordType::Seventh ? 3 : 2) + 1, juce::dontSendNotification);
+        {
+            invBs[(size_t) i].setToggleState (i == csel->inv, juce::dontSendNotification);
+            invBs[(size_t) i].setEnabled (i <= d.maxInv (*csel));
+            invBs[(size_t) i].setTooltip (i > d.maxInv (*csel) ? "Only chords with four notes have a 3rd inversion" : "Which chord note is at the bottom");
+        }
+        lockB.setButtonText (csel->lock ? "Locked" : "Lock");
+        lockB.setToggleState (csel->lock, juce::dontSendNotification);
+        lockB.setTooltip (csel->lock ? "Unlock: rolls may change this chord again" : "Lock: rolls keep this chord");
     }
 
     // the range edges
     std::string why;
     edgeTop.label = theme::noteName (t.highNote);
     edgeBot.label = theme::noteName (t.lowNote);
-    edgeTop.right = "tab " + juce::String (d.tab + 1) + " range " + theme::noteName (t.lowNote) + u8 ("\xE2\x80\x93") + theme::noteName (t.highNote);
+    edgeTop.right = juce::String (poly ? "Chords" : "Riff") + " range " + theme::noteName (t.lowNote) + u8 ("\xE2\x80\x93") + theme::noteName (t.highNote);
     edgeTop.plus.setEnabled (sess.canGrow (true));
     edgeTop.plus.setTooltip (sess.canGrow (true) ? "Add a row above: " + theme::noteName (t.highNote + 1) : juce::String ("The range is three octaves already"));
     edgeTop.minus.setEnabled (sess.canShrink (true, &why));
-    edgeTop.minus.setTooltip (edgeTop.minus.isEnabled() ? "Remove the top row " + theme::noteName (t.highNote) + ": notes on it fold into the range by octave" : u8 (why));
+    edgeTop.minus.setTooltip (edgeTop.minus.isEnabled() ? (poly ? "Remove the top row " + theme::noteName (t.highNote) + ": chord notes beyond it show as ghosts" : "Remove the top row " + theme::noteName (t.highNote) + ": notes on it fold into the range by octave") : u8 (why));
     edgeBot.plus.setEnabled (sess.canGrow (false));
     edgeBot.plus.setTooltip (sess.canGrow (false) ? "Add a row below: " + theme::noteName (t.lowNote - 1) : juce::String ("The range is three octaves already"));
     edgeBot.minus.setEnabled (sess.canShrink (false, &why));
-    edgeBot.minus.setTooltip (edgeBot.minus.isEnabled() ? "Remove the bottom row " + theme::noteName (t.lowNote) + ": notes on it fold into the range by octave" : u8 (why));
+    edgeBot.minus.setTooltip (edgeBot.minus.isEnabled() ? (poly ? "Remove the bottom row " + theme::noteName (t.lowNote) + ": chord notes beyond it show as ghosts" : "Remove the bottom row " + theme::noteName (t.lowNote) + ": notes on it fold into the range by octave") : u8 (why));
     edgeTop.repaint();
     edgeBot.repaint();
 
     const bool playingNow = proc.isPlayingNow();
     const auto seq = d.playSeq();
     const int bar = juce::jlimit (0, (int) seq.size() - 1, proc.currentBar());
-    parts.playingSlot = ! playingNow || d.arr.empty() ? -1 : d.sel >= 0 ? d.sel : bar;
+    const int slot = ! playingNow || d.arr.empty() ? -1 : d.sel >= 0 ? d.sel : bar;
+    parts.playingSlot = slot;
     parts.repaint();
-    grid.playStep = playingNow && seq[(size_t) bar] == d.cur ? proc.currentStep() : -1;
+    const bool onShown = playingNow && (poly ? slot == d.shownBar() : seq[(size_t) bar] == d.cur);
+    grid.playStep = onShown ? proc.currentStep() : -1;
+    lane.playBeat = playingNow && slot >= 0 ? slot * 4 + (double) proc.currentStep() / d.stepsPerBeat() : -1.0;
     grid.refresh();
+    lane.repaint();
     for (auto* l : { &velLane, &lenLane, &repLane })
         l->repaint();
 
@@ -541,22 +628,22 @@ void MidinjaEditor::timerCallback()
 {
     if (proc.publishedVersion() != shownVersion)
     {
-        render(); // a state restore from the host
+        render();
         return;
     }
     const auto& d = sess.doc;
     const bool playingNow = proc.isPlayingNow();
     const auto seq = d.playSeq();
     const int bar = juce::jlimit (0, (int) seq.size() - 1, proc.currentBar());
-    // The view follows the playing bar while no bar is selected.
     if (playingNow && d.sel < 0 && ! d.arr.empty() && seq[(size_t) bar] != d.cur)
     {
         sess.selectPart (seq[(size_t) bar]);
         render();
         return;
     }
-    const int step = playingNow && seq[(size_t) bar] == d.cur ? proc.currentStep() : -1;
     const int slot = ! playingNow || d.arr.empty() ? -1 : d.sel >= 0 ? d.sel : bar;
+    const bool onShown = playingNow && (d.T().poly ? slot == d.shownBar() : seq[(size_t) bar] == d.cur);
+    const int step = onShown ? proc.currentStep() : -1;
     bool dirty = false;
     if (step != grid.playStep)
     {
@@ -564,6 +651,12 @@ void MidinjaEditor::timerCallback()
         grid.repaint();
         repaint (rPlayRow);
         dirty = true;
+    }
+    const double beat = playingNow && slot >= 0 ? slot * 4 + (double) proc.currentStep() / d.stepsPerBeat() : -1.0;
+    if (std::abs (beat - lane.playBeat) > 1.0e-6)
+    {
+        lane.playBeat = beat;
+        lane.repaint();
     }
     if (slot != parts.playingSlot)
     {
@@ -577,7 +670,7 @@ void MidinjaEditor::timerCallback()
     else if (proc.isHosted() && proc.hostBpm.load() > 0.0f && ! dirty)
         bpmBox.setText (juce::String ((int) std::lround (proc.hostBpm.load())), juce::dontSendNotification);
 
-    if (! proc.isHosted() && ++portTick >= 90) // every 3 s: the MIDI port list follows plugging and unplugging
+    if (! proc.isHosted() && ++portTick >= 90)
     {
         portTick = 0;
         juce::StringArray ids;
@@ -587,7 +680,6 @@ void MidinjaEditor::timerCallback()
             refreshMidiPorts();
     }
 
-    // Space, Ctrl+Z and the number keys work without clicking the window first.
     if (auto* peer = getPeer())
         if (peer->isFocused() && ! hasKeyboardFocus (true) && ! dragging && juce::Component::getCurrentlyModalComponent() == nullptr)
             grabKeyboardFocus();
@@ -598,12 +690,15 @@ bool MidinjaEditor::keyPressed (const juce::KeyPress& k)
     const auto mods = k.getModifiers();
     if (k.getKeyCode() == juce::KeyPress::spaceKey)
     {
-        if (mods.isShiftDown()) sess.applyAll (sess.what);
-        else sess.apply (sess.what);
-        changed();
+        midinja::Op op;
+        if (sess.currentOp (op))
+        {
+            if (mods.isShiftDown()) sess.applyAll (op);
+            else sess.apply (op);
+            changed();
+        }
         return true;
     }
-    // Ctrl+Z arrives as the key code Z, or as the control character 26 when the scan code is missing
     const bool isZ = juce::CharacterFunctions::toLowerCase ((juce::juce_wchar) k.getKeyCode()) == 'z' || k.getKeyCode() == 26 || k.getTextCharacter() == 26;
     if (mods.isCommandDown() && isZ)
     {
@@ -615,6 +710,12 @@ bool MidinjaEditor::keyPressed (const juce::KeyPress& k)
     {
         sess.selectPart ((int) (k.getTextCharacter() - '1'));
         render();
+        return true;
+    }
+    if ((k.getKeyCode() == juce::KeyPress::deleteKey || k.getKeyCode() == juce::KeyPress::backspaceKey) && sess.doc.T().poly && sess.doc.chordById (sess.doc.csel) != nullptr)
+    {
+        sess.removeChord (sess.doc.csel);
+        changed();
         return true;
     }
     if (k.getKeyCode() == juce::KeyPress::escapeKey && sess.doc.sel >= 0)
@@ -662,7 +763,7 @@ void MidinjaEditor::importFile (const juce::File& f)
     juce::String err;
     if (! readMidiFile (f, raw, ppq, err))
     {
-        sess.message = ("Could not read " + f.getFileName() + ": " + err).toStdString();
+        sess.say (("Could not read " + f.getFileName() + ": " + err).toStdString(), true);
         render();
         return;
     }
@@ -675,8 +776,7 @@ void MidinjaEditor::exportMidi()
     auto dir = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory).getChildFile ("Midinja");
     dir.createDirectory();
     chooser = std::make_unique<juce::FileChooser> ("Export MIDI", dir.getChildFile (juce::String (sess.exportName()) + ".mid"), "*.mid");
-    chooser->launchAsync (juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles
-                              | juce::FileBrowserComponent::warnAboutOverwriting,
+    chooser->launchAsync (juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles | juce::FileBrowserComponent::warnAboutOverwriting,
                           [this] (const juce::FileChooser& fc) {
                               auto file = fc.getResult();
                               if (file == juce::File())
@@ -685,11 +785,11 @@ void MidinjaEditor::exportMidi()
                               const auto data = proc.exportMidi();
                               if (data.getSize() == 0)
                               {
-                                  render(); // the session says why
+                                  render();
                                   return;
                               }
-                              sess.message = (file.replaceWithData (data.getData(), data.getSize()) ? "Saved " : "Could not save ")
-                                           + file.getFullPathName().toStdString();
+                              // the status shows the file name only
+                              sess.say ((file.replaceWithData (data.getData(), data.getSize()) ? "Saved " : "Could not save ") + file.getFileName().toStdString());
                               render();
                           });
 }
@@ -707,7 +807,7 @@ juce::File MidinjaEditor::writeTempMidi()
     }
     if (! file.replaceWithData (data.getData(), data.getSize()))
     {
-        sess.message = "Could not write the .mid file to drag";
+        sess.say ("Could not write the .mid file to drag", true);
         render();
         return {};
     }
@@ -738,13 +838,14 @@ void MidinjaEditor::refreshMidiPorts()
 void MidinjaEditor::resized()
 {
     const int W = getWidth(), H = getHeight();
-    const bool adv = sess.adv;
-    const bool poly = sess.doc.T().poly;
+    const auto& d = sess.doc;
+    const bool adv = sess.adv, poly = d.T().poly;
     labels.clear();
+    smallLabels.clear();
     vseps.clear();
     sideTitles.clear();
 
-    // ---- Row A: logo, preset, dice, selector, All, Progression, versions, undo / redo ----
+    // ---- Row A ----
     rRowA = { 0, 0, W, kRowA };
     int x = 14;
     const auto logoFont = theme::font (18.0f, true);
@@ -757,11 +858,15 @@ void MidinjaEditor::resized()
     x += 1 + 8;
     dice.setBounds (x, (kRowA - 38) / 2, 38, 38);
     x = dice.getRight() + 6;
-    what.setBounds (x, (kRowA - 26) / 2, what.preferredWidth(), 26);
-    x = what.getRight() + 6;
+    rhythmB.setBounds (x, (kRowA - 26) / 2, textButtonWidth (rhythmB.getButtonText()), 26);
+    x = rhythmB.getRight() + 4;
+    notesB.setBounds (x, (kRowA - 26) / 2, textButtonWidth (notesB.getButtonText()), 26);
+    x = notesB.getRight() + 8;
+    vseps.push_back ({ x, 16, 1, kRowA - 32 });
+    x += 1 + 8;
+    mutateB.setBounds (x, (kRowA - 26) / 2, textButtonWidth ("~ Mutate 33%"), 26);
+    x = mutateB.getRight() + 8;
     rollAll.setBounds (x, (kRowA - 26) / 2, rollAll.preferredWidth(), 26);
-    x = rollAll.getRight() + 6;
-    progB.setBounds (x, (kRowA - 26) / 2, progB.preferredWidth(), 26);
     int rx = W - 14;
     if (adv)
     {
@@ -772,15 +877,13 @@ void MidinjaEditor::resized()
     versions.setBounds (rx - VersionsStrip::width, 21, VersionsStrip::width, 30);
     labels.push_back ({ { versions.getX() + 4, 8, VersionsStrip::width, 12 }, "Versions" });
 
-    // ---- Row B: key (root chip, scale), rate, knobs, colour, advanced ----
+    // ---- Row B ----
     rRowB = { 0, kRowA, W, kRowB };
     const int lblY = kRowA + 7, ctlY = lblY + 15, ctlH = 28;
     const int knobY = kRowA + 7, knobH = 43;
     rx = W - 14;
     advSw.setBounds (rx - advSw.preferredWidth(), kRowA + (kRowB - 20) / 2, advSw.preferredWidth(), 20);
     const int rowBEnd = advSw.getX() - 10;
-    // Two passes: the natural spacing first; if the knobs run into Advanced, tighter gaps and a
-    // shorter Color label.
     for (int pass = 0; pass < 2; ++pass)
     {
         const int gap = pass == 0 ? 10 : 6, scaleW = pass == 0 ? 124 : 112, colorMax = pass == 0 ? 150 : 104;
@@ -813,15 +916,23 @@ void MidinjaEditor::resized()
         vseps.resize (nSeps);
     }
 
-    // ---- Tab bar ----
     tabBar.setBounds (0, kRowA + kRowB, W, kTabs);
 
     // ---- Footer ----
     rFoot = { 0, H - kFoot, W, kFoot };
     const int fy = H - kFoot;
     x = 14;
-    play.setBounds (x, fy + 8, 34, 34);
-    x = play.getRight() + 12;
+    if (proc.isHosted())
+    {
+        rHostNote = { x, fy + 8, 120, 34 };
+        x = rHostNote.getRight() + 8;
+    }
+    else
+    {
+        rHostNote = {};
+        play.setBounds (x, fy + 8, 34, 34);
+        x = play.getRight() + 12;
+    }
     labels.push_back ({ { x, fy + 17, 28, 16 }, "BPM" });
     bpmBox.setBounds (x + 30, fy + 12, 54, 26);
     x = bpmBox.getRight() + 12;
@@ -845,14 +956,14 @@ void MidinjaEditor::resized()
     rx = importB.getX() - 12;
     vseps.push_back ({ rx, fy + 8, 1, kFoot - 16 });
     rx -= 12;
-    if (! proc.isHosted()) // the VST3 has no port of its own
+    if (! proc.isHosted())
     {
         const int midiW = std::max (90, std::min (170, rx - x - 60));
         midiOutBox.setBounds (rx - midiW, fy + 12, midiW, 26);
         labels.push_back ({ { midiOutBox.getX() - 58, fy + 17, 54, 16 }, "MIDI Out" });
     }
 
-    // ---- Main: side panel and the grid area ----
+    // ---- Main ----
     const int mainY = kRowA + kRowB + kTabs, mainH = fy - mainY;
     rSide = adv ? juce::Rectangle<int> (0, mainY, kSide, mainH) : juce::Rectangle<int>();
     if (adv)
@@ -878,32 +989,97 @@ void MidinjaEditor::resized()
     const int gx = (adv ? kSide : 0) + 12, gw = W - gx - 12;
     int y = mainY + 8;
     parts.setBounds (gx, y, gw, PartsBar::height);
-    if (poly)
     {
-        const auto ca = parts.chordArea().translated (gx, y);
-        const int bw = (ca.getWidth() - 2 * 4) / 3;
-        degBox.setBounds (ca.getX(), y + 3, bw, 24);
-        typeBox.setBounds (degBox.getRight() + 4, y + 3, bw, 24);
-        invBox.setBounds (typeBox.getRight() + 4, y + 3, bw, 24);
+        const auto ra = parts.reservedArea().translated (gx, y);
+        unlockBarB.setBounds (ra.getX(), y + 3, ra.getWidth(), 24);
     }
     y = parts.getBottom() + 6;
+    lane.setBounds (gx, y, gw, ChordLane::height);
+    y = lane.getBottom() + 6;
+
+    // the generators row
+    rGen = { gx, y, gw, kGenH };
+    x = gx;
+    progB.setBounds (x, y, textButtonWidth (progB.getButtonText()), kGenH);
+    x = progB.getRight() + 10;
+    smallLabels.push_back ({ { x, y, 34, kGenH }, "MOOD" });
+    x += 36;
+    for (auto& b : moodBs)
+    {
+        b.setBounds (x, y, textButtonWidth (b.getButtonText()), kGenH);
+        x = b.getRight() + 4;
+    }
+    x += 6;
+    smallLabels.push_back ({ { x, y, 36, kGenH }, "STYLE" });
+    x += 38;
+    for (auto& b : styleBs)
+    {
+        b.setBounds (x, y, textButtonWidth (b.getButtonText()), kGenH);
+        x = b.getRight() + 4;
+    }
+    x += 6;
+    applyB.setBounds (gx + gw - 56, y, 56, kGenH);
+    typedEd.setBounds (x, y, std::max (80, applyB.getX() - 6 - x), kGenH);
+    y = rGen.getBottom() + 6;
+
+    // the selected chord row
+    rInsp = { gx, y, gw, kInspH };
+    rInspName = { gx, y, 170, kInspH };
+    x = rInspName.getRight() + 6;
+    smallLabels.push_back ({ { x, y, 46, kInspH }, "DEGREE" });
+    x += 48;
+    degBox.setBounds (x, y, 110, kInspH);
+    x = degBox.getRight() + 8;
+    smallLabels.push_back ({ { x, y, 30, kInspH }, "TYPE" });
+    x += 32;
+    typeBox.setBounds (x, y, 74, kInspH);
+    x = typeBox.getRight() + 8;
+    smallLabels.push_back ({ { x, y, 62, kInspH }, "INVERSION" });
+    x += 64;
+    for (auto& b : invBs)
+    {
+        b.setBounds (x, y, 40, kInspH);
+        x = b.getRight() + 2;
+    }
+    x += 6;
+    smallLabels.push_back ({ { x, y, 50, kInspH }, "RHYTHM" });
+    x += 52;
+    rhythmBox.setBounds (x, y, 98, kInspH);
+    x = rhythmBox.getRight() + 6;
+    rhythmAllB.setBounds (x, y, textButtonWidth (rhythmAllB.getButtonText()), kInspH);
+    x = rhythmAllB.getRight() + 6;
+    lockB.setBounds (x, y, textButtonWidth ("Locked"), kInspH);
+    y = rInsp.getBottom() + 6;
+
     const bool hasMsg = ! sess.message.empty();
     rMsg = hasMsg ? juce::Rectangle<int> (gx, y - 2, gw, 15) : juce::Rectangle<int>();
     if (hasMsg)
         y += 17;
     edgeTop.setBounds (gx, y, gw, EdgeBar::height);
     y = edgeTop.getBottom() + 2;
-    const int lanesH = adv ? velLane.preferredHeight() + 5 + lenLane.preferredHeight() + 5 + repLane.preferredHeight() + 6 : 0;
-    const int legendH = 46, stepsH = 14, playH = 4 + 10, edgeBotH = EdgeBar::height + 2;
+    bool anyUp = false, anyDown = false;
+    for (const auto& c : grid.cuts)
+    {
+        anyUp = anyUp || c.above;
+        anyDown = anyDown || ! c.above;
+    }
+    rGhostTop = anyUp ? juce::Rectangle<int> (gx, y, gw, kGhostH) : juce::Rectangle<int>();
+    if (anyUp)
+        y += kGhostH + 2;
+    const int lanesH = adv && ! poly ? velLane.preferredHeight() + 5 + lenLane.preferredHeight() + 5 + repLane.preferredHeight() + 6 : 0;
+    const int legendH = 46, stepsH = 14, playH = 4 + 10, edgeBotH = EdgeBar::height + 2 + (anyDown ? kGhostH + 2 : 0);
     const int budget = fy - 10 - legendH - stepsH - lanesH - playH - edgeBotH - y;
     const int gh = grid.layoutHeight (budget);
     grid.setBounds (gx, y, gw, gh);
     y = grid.getBottom() + 2;
+    rGhostBot = anyDown ? juce::Rectangle<int> (gx, y, gw, kGhostH) : juce::Rectangle<int>();
+    if (anyDown)
+        y += kGhostH + 2;
     edgeBot.setBounds (gx, y, gw, EdgeBar::height);
     y = edgeBot.getBottom() + 2;
     rPlayRow = { gx, y, gw, 4 };
     y += 4 + 6;
-    if (adv)
+    if (adv && ! poly)
     {
         velLane.setBounds (gx, y, gw, velLane.preferredHeight());
         y = velLane.getBottom() + 5;
@@ -918,14 +1094,12 @@ void MidinjaEditor::resized()
 }
 
 // ---------------------------------------------------------------------------------------------
-// Painting the parts of the layout that are not components
 
 void MidinjaEditor::paint (juce::Graphics& g)
 {
     const auto& d = sess.doc;
     g.fillAll (theme::bg);
 
-    // Row A
     g.setGradientFill (juce::ColourGradient (juce::Colour (0xff22262f), 0.0f, 0.0f, juce::Colour (0xff1b1e25), 0.0f, (float) kRowA, false));
     g.fillRect (rRowA);
     g.setColour (juce::Colours::black);
@@ -937,7 +1111,6 @@ void MidinjaEditor::paint (juce::Graphics& g)
     g.setColour (theme::accent);
     g.drawText ("nja", rLogo.withTrimmedLeft ((int) midiW), juce::Justification::centredLeft);
     {
-        // Presets come later: drawn inert, as in the preview.
         juce::Graphics::ScopedSaveState ss (g);
         g.setOpacity (0.45f);
         const int py = rPreset.getY() + 15;
@@ -957,13 +1130,11 @@ void MidinjaEditor::paint (juce::Graphics& g)
         g.drawText ("Init", box, juce::Justification::centred);
     }
 
-    // Row B
     g.setColour (theme::panel);
     g.fillRect (rRowB);
     g.setColour (theme::line);
     g.fillRect (0, rRowB.getBottom() - 1, getWidth(), 1);
 
-    // Side panel
     if (! rSide.isEmpty())
     {
         g.setColour (theme::panel);
@@ -974,28 +1145,84 @@ void MidinjaEditor::paint (juce::Graphics& g)
             theme::drawLabel (g, t.s, t.r);
     }
 
-    // Footer
     g.setColour (theme::foot);
     g.fillRect (rFoot);
     g.setColour (juce::Colours::black);
     g.fillRect (0, rFoot.getY(), getWidth(), 1);
+    if (! rHostNote.isEmpty())
+    {
+        g.setColour (theme::ink3);
+        g.setFont (theme::font (10.5f));
+        g.drawFittedText ("Play and Stop follow the host", rHostNote, juce::Justification::centredLeft, 2, 1.0f);
+    }
 
     for (const auto& t : labels)
         theme::drawLabel (g, t.s, t.r);
+    g.setColour (theme::ink3);
+    g.setFont (theme::font (9.5f));
+    for (const auto& t : smallLabels)
+        g.drawText (t.s, t.r, juce::Justification::centredLeft);
     g.setColour (theme::line);
     for (const auto& v : vseps)
         g.fillRect (v);
 
-    // the message line
+    // the generators and the selected chord rows
+    g.setColour (theme::line);
+    g.drawRoundedRectangle (rGen.toFloat().expanded (4.0f, 3.0f).reduced (0.5f), 7.0f, 1.0f);
+    g.drawRoundedRectangle (rInsp.toFloat().expanded (4.0f, 3.0f).reduced (0.5f), 7.0f, 1.0f);
+    if (const auto* c = d.chordById (d.csel))
+    {
+        g.setColour (theme::ink);
+        g.setFont (theme::font (14.0f, true));
+        g.drawText (u8 (d.chordName (*c)), rInspName.withHeight (14), juce::Justification::centredLeft, true);
+        g.setColour (theme::ink3);
+        g.setFont (theme::font (9.5f));
+        const auto type = c->type;
+        g.drawText (u8 (d.numeral (c->deg, &type)) + kDot + "beats " + juce::String (c->start + 1) + u8 ("\xE2\x80\x93") + juce::String (c->start + c->len)
+                    + " (" + juce::String (c->len) + (c->len > 1 ? " beats)" : " beat)"), rInspName.withTop (rInspName.getY() + 14), juce::Justification::centredLeft, true);
+    }
+    else
+    {
+        g.setColour (theme::ink3);
+        g.setFont (theme::font (11.0f));
+        g.drawText ("Select a chord in the lane to edit it", rInsp, juce::Justification::centredLeft);
+    }
+
     if (! rMsg.isEmpty())
     {
-        g.setColour (theme::teal);
+        g.setColour (sess.messageIsError ? juce::Colour (0xffe76f51) : theme::teal);
         g.setFont (theme::font (11.0f));
         g.drawText (u8 (sess.message), rMsg, juce::Justification::centredLeft, true);
     }
 
-    // playhead row and step numbers
-    const int n = std::max (1, d.shown().numSteps);
+    // chord notes the range cuts off: named ghosts above and below the roll
+    const auto drawCuts = [&] (juce::Rectangle<int> strip, bool above) {
+        if (strip.isEmpty())
+            return;
+        for (const auto& c : grid.cuts)
+        {
+            if (c.above != above)
+                continue;
+            const float x = (float) grid.getX() + grid.columnX (c.step), w = (float) c.len * grid.colWidth() - 3.0f;
+            const auto r = juce::Rectangle<float> (x, (float) strip.getY() + 1.0f, std::max (12.0f, w), (float) strip.getHeight() - 2.0f);
+            g.setColour (theme::accent.withAlpha (0.07f));
+            g.fillRoundedRectangle (r, 3.0f);
+            g.setColour (c.selected ? theme::accent : juce::Colour (0xff8a5a2c));
+            const float dashes[] = { 3.0f, 2.0f };
+            juce::Path p;
+            p.addRoundedRectangle (r.reduced (0.5f), 3.0f);
+            juce::Path dashed;
+            juce::PathStrokeType (1.0f).createDashedStroke (dashed, p, dashes, 2);
+            g.fillPath (dashed);
+            g.setColour (c.selected ? theme::ink : theme::ink2);
+            g.setFont (theme::font (10.0f));
+            g.drawText (c.text, r.reduced (4.0f, 0.0f), juce::Justification::centredLeft, true);
+        }
+    };
+    drawCuts (rGhostTop, true);
+    drawCuts (rGhostBot, false);
+
+    const int n = std::max (1, d.numSteps());
     const float cw = (float) (rSteps.getWidth() - theme::keyWidth) / (float) n;
     if (grid.playStep >= 0 && grid.playStep < n)
     {
@@ -1012,7 +1239,6 @@ void MidinjaEditor::paint (juce::Graphics& g)
                     juce::Rectangle<float> ((float) (rSteps.getX() + theme::keyWidth) + (float) s * cw, (float) rSteps.getY(), cw, (float) rSteps.getHeight()),
                     juce::Justification::centred);
 
-    // legend
     {
         int lx = rLegend.getX();
         const int ly = rLegend.getY();
@@ -1046,11 +1272,12 @@ void MidinjaEditor::paint (juce::Graphics& g)
         item (theme::accent, 0, "note");
         item (theme::teal, 0, "colour note of the scale");
         item ({}, 1, "locked note");
+        item (theme::ink2.withAlpha (0.3f), 0, "the other tab (ghost)");
         item ({}, 2, "augmented-second pair");
         g.setColour (theme::ink3);
         g.drawFittedText (u8 ("click = add / remove \xC2\xB7 drag = pitch (Alt = chromatic, locks the note) \xC2\xB7 Shift+click = lock \xC2\xB7 right-click = longer \xC2\xB7 "
-                              "bars (left): click = select and edit, Esc = deselect, lock or Shift+click = lock the part, \xC3\x97 = remove \xC2\xB7 "
-                              "parts (right): click = add a bar \xC2\xB7 keys 1\xE2\x80\x93" "4 = part \xC2\xB7 Space = dice, Shift+Space = All \xC2\xB7 chord tab: click = hit on / off"),
+                              "chord lane: drag a chord to move it, drag its edge for the length, one-beat snap, double-click empty lane to add, Del removes, the lock keeps it when you roll \xC2\xB7 "
+                              "keys 1\xE2\x80\x93" "4 = part \xC2\xB7 Space = dice, Shift+Space = All"),
                           rLegend.getX(), ly + 16, rLegend.getWidth(), 28, juce::Justification::topLeft, 2, 1.0f);
     }
 }
@@ -1074,5 +1301,5 @@ void MidinjaEditor::paintOverChildren (juce::Graphics& g)
     g.drawText ("Drop the .mid file here", r.withTrimmedBottom (30.0f), juce::Justification::centred);
     g.setColour (theme::ink2);
     g.setFont (theme::font (13.0f));
-    g.drawText (u8 ("up to 4 bars \xE2\x86\x92 A A\xE2\x80\xB2 B C \xC2\xB7 monophonic \xC2\xB7 quantised to 1/16 \xC2\xB7 into the tab shown"), r.withTrimmedTop (30.0f), juce::Justification::centred);
+    g.drawText (u8 ("up to 4 bars \xE2\x86\x92 A A\xE2\x80\xB2 B C \xC2\xB7 monophonic \xC2\xB7 quantised to 1/16 \xC2\xB7 into the Riff tab"), r.withTrimmedTop (30.0f), juce::Justification::centred);
 }

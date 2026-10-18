@@ -26,6 +26,12 @@ void MidinjaProcessor::publish()
     const auto& d = sess.doc;
     const auto seq = d.playSeq();
     PlayModel m;
+    m.seqLen = juce::jlimit (1, midinja::kMaxBars, (int) seq.size());
+    for (int i = 0; i < m.seqLen; ++i)
+        m.seq[(size_t) i] = juce::jlimit (0, kNumParts - 1, seq[(size_t) i]);
+    m.numSteps = d.numSteps();
+    m.rate = d.rate;
+    m.swing = d.swing;
     for (int i = 0; i < kNumTabs; ++i)
     {
         const auto& t = d.tabs[(size_t) i];
@@ -34,22 +40,41 @@ void MidinjaProcessor::publish()
         pt.poly = t.poly;
         pt.channel = t.channel;
         pt.parts = t.parts;
-        if (t.poly)
-            for (int k = 0; k < kNumParts; ++k)
+        if (! t.poly)
+            continue;
+        // the Chords tab plays the lane: one pattern per bar of what Play goes through
+        for (int b = 0; b < m.seqLen; ++b)
+        {
+            // which bar of the arrangement is this slot of the play sequence?
+            int bar = b;
+            if (d.sel >= 0 && d.sel < (int) d.arr.size()) bar = d.sel;
+            else if (d.arr.empty()) bar = -1;
+            auto& p = pt.barPats[(size_t) b];
+            p = midinja::Pattern {};
+            p.numSteps = m.numSteps;
+            if (bar < 0)
+                continue;
+            int h = 0;
+            for (const auto& hit : d.barHits (bar))
             {
-                for (auto& st : pt.parts[(size_t) k].steps)
-                    st.note = k; // the part index stands in for the chord
-                const auto notes = d.chordNotes (k, t);
-                pt.chordN[(size_t) k] = std::min ((int) notes.size(), midinja::kMaxChordNotes);
-                for (int j = 0; j < pt.chordN[(size_t) k]; ++j)
-                    pt.chord[(size_t) k][(size_t) j] = juce::jlimit (0, 127, notes[(size_t) j]);
+                if (h >= kHitsPerBar || hit.step < 0 || hit.step >= midinja::kMaxSteps)
+                    break;
+                auto& st = p.steps[(size_t) hit.step];
+                if (st.on)
+                    continue; // two chords never start on the same step
+                st.on = true;
+                st.note = b * kHitsPerBar + h;
+                st.length = juce::jlimit (1, midinja::kMaxLength, hit.len);
+                st.velocity = 100;
+                const auto notes = d.voice (d.chords[(size_t) hit.chordIndex]);
+                pt.noteCount[(size_t) b][(size_t) h] = std::min ((int) notes.size(), midinja::kMaxChordNotes);
+                for (int j = 0; j < pt.noteCount[(size_t) b][(size_t) h]; ++j)
+                    pt.notes[(size_t) b][(size_t) h][(size_t) j] = juce::jlimit (0, 127, notes[(size_t) j]);
+                ++h;
             }
+            midinja::fitLengths (p);
+        }
     }
-    m.seqLen = juce::jlimit (1, midinja::kMaxBars, (int) seq.size());
-    for (int i = 0; i < m.seqLen; ++i)
-        m.seq[(size_t) i] = juce::jlimit (0, kNumParts - 1, seq[(size_t) i]);
-    m.rate = d.rate;
-    m.swing = d.swing;
     {
         const juce::SpinLock::ScopedLockType lock (stateLock);
         shared = m;
@@ -61,7 +86,7 @@ bool MidinjaProcessor::openMidiOut (const juce::String& identifier)
 {
     std::unique_ptr<juce::MidiOutput> next;
     if (isHosted() && identifier.isNotEmpty())
-        return false; // in a host the MIDI goes to the host only, and the host routes it (FL: wrapper MIDI output port)
+        return false; // in a host the MIDI goes to the host only, and the host routes it
     if (identifier.isNotEmpty())
     {
         next = juce::MidiOutput::openDevice (identifier);
@@ -69,14 +94,13 @@ bool MidinjaProcessor::openMidiOut (const juce::String& identifier)
             return false;
         next->startBackgroundThread();
     }
-
     sendAllNotesOffNow();
     {
         const juce::SpinLock::ScopedLockType lock (midiOutLock);
         std::swap (midiOut, next);
         midiOutIdentifier = identifier;
     }
-    next.reset(); // the old port closes outside the lock
+    next.reset();
     return true;
 }
 
@@ -99,6 +123,12 @@ midinja::Rate MidinjaProcessor::rateOf (int stepsPerBeat)
     return stepsPerBeat == 2 ? midinja::Rate::Eighth
          : stepsPerBeat == 6 ? midinja::Rate::SixteenthTriplet
                              : midinja::Rate::Sixteenth;
+}
+
+const midinja::Pattern& MidinjaProcessor::patternFor (const PlayTab& t, int bar) const
+{
+    const int b = juce::jlimit (0, audio.seqLen - 1, bar);
+    return t.poly ? t.barPats[(size_t) b] : t.parts[(size_t) audio.seq[(size_t) b]];
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -139,7 +169,6 @@ void MidinjaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     buffer.clear();
     midi.clear();
 
-    // Pick up the bars the UI published.
     {
         const juce::SpinLock::ScopedTryLockType lock (stateLock);
         if (lock.isLocked() && seenVersion != version.load())
@@ -148,13 +177,14 @@ void MidinjaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
             seenVersion = version.load();
             barIdx = juce::jlimit (0, audio.seqLen - 1, barIdx);
             for (int i = 0; i < kNumTabs; ++i)
-                playPat[(size_t) i] = audio.tabs[(size_t) i].parts[(size_t) audio.seq[(size_t) barIdx]];
+                playPat[(size_t) i] = patternFor (audio.tabs[(size_t) i], barIdx);
         }
     }
 
-    // The host's tempo and transport (VST3). The plugin follows the host while it plays and
-    // starts again from the first bar when the transport starts.
+    // The host's tempo and transport (VST3): the plugin plays when the host plays, from the host's
+    // position, and stops with it. Its own Play button is for the standalone app.
     bool hostStart = false;
+    double hostSteps = -1.0;
     if (isHosted())
     {
         if (auto* ph = getPlayHead())
@@ -168,11 +198,14 @@ void MidinjaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
                     hostStart = true;
                 lastHostPlaying = hp;
                 hostPlaying = hp;
+                if (hp)
+                    if (const auto ppq = pos->getPpqPosition())
+                        hostSteps = std::max (0.0, *ppq) * midinja::stepsPerBeat (rateOf (audio.rate));
             }
         }
     }
 
-    const bool wantPlay = playing.load() || (isHosted() && hostPlaying.load());
+    const bool wantPlay = isHosted() ? hostPlaying.load() : playing.load();
     const double useBpm = isHosted() && hostBpm.load() > 0.0f ? (double) hostBpm.load() : (double) bpm.load();
     const bool useSynth = synthOn.load();
     for (int i = 0; i < kNumTabs; ++i)
@@ -199,14 +232,27 @@ void MidinjaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     if (right == nullptr)
     {
         if ((int) monoScratch.size() < numSamples)
-            monoScratch.resize ((size_t) numSamples); // only if the host lied about the block size
+            monoScratch.resize ((size_t) numSamples);
         std::fill (monoScratch.begin(), monoScratch.begin() + numSamples, 0.0f);
         right = monoScratch.data();
     }
 
-    const bool doRestart = restart.exchange (false) || hostStart;
+    // Following the host position: the sequencers jump to the host's place in the loop when the
+    // transport starts and whenever they have drifted more than half a step from it.
+    const int cycleSteps = std::max (1, audio.seqLen * audio.numSteps);
+    bool doSeek = false;
+    double seekTo = 0.0;
+    if (hostSteps >= 0.0 && wantPlay)
+    {
+        seekTo = std::fmod (hostSteps, (double) cycleSteps);
+        const auto& sq0 = sequencers[0];
+        const double here = sq0.isPlaying() ? std::fmod (sq0.position(), (double) cycleSteps) : -1.0;
+        double diff = std::abs (here - seekTo);
+        diff = std::min (diff, (double) cycleSteps - diff);
+        doSeek = hostStart || ! sq0.isPlaying() || diff > 0.5;
+    }
+    const bool doRestart = restart.exchange (false) || (hostStart && ! doSeek);
     outBuffer.clear();
-    // Every tab's sequencer runs in step with the others; the first one advances the bar.
     for (int i = 0; i < kNumTabs; ++i)
     {
         auto& sq = sequencers[(size_t) i];
@@ -219,24 +265,33 @@ void MidinjaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
                 sq.stop (events);
             if (i == 0)
                 barIdx = 0;
-            pp = pt.parts[(size_t) audio.seq[0]];
+            pp = patternFor (pt, 0);
         }
         if (wantPlay && ! sq.isPlaying())
         {
             if (i == 0)
                 barIdx = 0;
-            pp = pt.parts[(size_t) audio.seq[0]];
+            pp = patternFor (pt, 0);
             sq.start();
         }
         else if (! wantPlay && sq.isPlaying())
         {
             sq.stop (events);
         }
+        if (doSeek && sq.isPlaying())
+        {
+            sq.stop (events); // note-offs for what sounds, then the new place
+            sq.start();
+            sq.seek (seekTo);
+            if (i == 0)
+                barIdx = juce::jlimit (0, audio.seqLen - 1, (int) (seekTo / audio.numSteps));
+            pp = patternFor (pt, barIdx);
+        }
         sq.process (numSamples, useBpm, rateOf (audio.rate), audio.swing, pp, events,
                     [this, i] (midinja::Pattern& p) {
                         if (i == 0)
                             barIdx = (barIdx + 1) % audio.seqLen;
-                        p = audio.tabs[(size_t) i].parts[(size_t) audio.seq[(size_t) barIdx]];
+                        p = patternFor (audio.tabs[(size_t) i], barIdx);
                     });
         if (i == 0)
         {
@@ -258,27 +313,26 @@ void MidinjaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
                 else ms.render (left, right, pos, at - pos);
             }
             pos = juce::jmax (pos, at);
-
             switch (e.status)
             {
                 case 0x90:
                 {
                     if (! pt.on)
-                        break; // an off tab is silent
+                        break;
                     if (pt.poly)
                     {
-                        const int k = juce::jlimit (0, kNumParts - 1, (int) e.data1);
-                        auto& held = sounding[(size_t) i][(size_t) k];
-                        auto& heldN = soundingN[(size_t) i][(size_t) k];
-                        for (int j = 0; j < heldN; ++j) // a hit still sounding: release it first
+                        const int key = e.data1, b = key / kHitsPerBar, h = key % kHitsPerBar;
+                        auto& held = sounding[(size_t) key];
+                        auto& heldN = soundingN[(size_t) key];
+                        for (int j = 0; j < heldN; ++j)
                         {
                             if (tabSynth) ps.noteOff (held[(size_t) j]);
                             outBuffer.addEvent (juce::MidiMessage::noteOff (ch, held[(size_t) j]), at);
                         }
-                        heldN = pt.chordN[(size_t) k];
+                        heldN = b < midinja::kMaxBars ? pt.noteCount[(size_t) b][(size_t) h] : 0;
                         for (int j = 0; j < heldN; ++j)
                         {
-                            held[(size_t) j] = pt.chord[(size_t) k][(size_t) j];
+                            held[(size_t) j] = pt.notes[(size_t) b][(size_t) h][(size_t) j];
                             if (tabSynth) ps.noteOn (held[(size_t) j], e.data2);
                             outBuffer.addEvent (juce::MidiMessage::noteOn (ch, held[(size_t) j], (juce::uint8) e.data2), at);
                         }
@@ -294,9 +348,8 @@ void MidinjaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
                 {
                     if (pt.poly)
                     {
-                        const int k = juce::jlimit (0, kNumParts - 1, (int) e.data1);
-                        auto& held = sounding[(size_t) i][(size_t) k];
-                        auto& heldN = soundingN[(size_t) i][(size_t) k];
+                        auto& held = sounding[(size_t) e.data1];
+                        auto& heldN = soundingN[(size_t) e.data1];
                         for (int j = 0; j < heldN; ++j)
                         {
                             ps.noteOff (held[(size_t) j]);
@@ -314,8 +367,9 @@ void MidinjaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
                 default:
                     ms.allOff();
                     ps.allOff();
-                    for (auto& n : soundingN[(size_t) i])
-                        n = 0;
+                    if (pt.poly)
+                        for (auto& n : soundingN)
+                            n = 0;
                     outBuffer.addEvent (juce::MidiMessage::controllerEvent (ch, e.data1, e.data2), at);
                     break;
             }
@@ -329,11 +383,10 @@ void MidinjaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
 
     if (! outBuffer.isEmpty())
     {
-        midi.addEvents (outBuffer, 0, numSamples, 0); // to the host (VST3); midiOut is only ever open in the Standalone
+        midi.addEvents (outBuffer, 0, numSamples, 0);
         const juce::SpinLock::ScopedTryLockType lock (midiOutLock);
         if (lock.isLocked() && midiOut != nullptr)
-            midiOut->sendBlockOfMessages (outBuffer, juce::Time::getMillisecondCounterHiRes() + 1.0,
-                                          currentSampleRate);
+            midiOut->sendBlockOfMessages (outBuffer, juce::Time::getMillisecondCounterHiRes() + 1.0, currentSampleRate);
     }
 }
 
@@ -343,13 +396,13 @@ juce::AudioProcessorEditor* MidinjaProcessor::createEditor()
 }
 
 // ---------------------------------------------------------------------------------------------
-// Saved state: the standalone app keeps it between runs, the host keeps it per plugin instance.
+// Saved state
 
 void MidinjaProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     const auto& d = sess.doc;
     juce::XmlElement xml ("Midinja");
-    xml.setAttribute ("format", 3);
+    xml.setAttribute ("format", 4);
     xml.setAttribute ("bpm", (double) bpm.load());
     xml.setAttribute ("synthOn", synthOn.load());
     xml.setAttribute ("wave", synthWave.load());
@@ -358,9 +411,10 @@ void MidinjaProcessor::getStateInformation (juce::MemoryBlock& destData)
     xml.setAttribute ("decay", (double) decay.load());
     xml.setAttribute ("volume", (double) volume.load());
     xml.setAttribute ("midiOut", midiOutIdentifier);
-
     xml.setAttribute ("adv", sess.adv);
-    xml.setAttribute ("what", (int) sess.what);
+    xml.setAttribute ("doRhythm", sess.doRhythm);
+    xml.setAttribute ("doNotes", sess.doNotes);
+    xml.setAttribute ("mutateMode", sess.mutateMode);
     xml.setAttribute ("mutAmt", (double) sess.mutAmt);
 
     const auto& g = d.gen;
@@ -385,34 +439,41 @@ void MidinjaProcessor::getStateInformation (juce::MemoryBlock& destData)
     xml.setAttribute ("cur", d.cur);
     xml.setAttribute ("sel", d.sel);
     xml.setAttribute ("tab", d.tab);
+    xml.setAttribute ("csel", d.csel);
+    xml.setAttribute ("nextChordId", d.nextChordId);
     juce::StringArray arr;
     for (int k : d.arr)
         arr.add (juce::String (k));
     xml.setAttribute ("arr", arr.joinIntoString (","));
 
-    for (int k = 0; k < kNumParts; ++k)
+    for (const auto& c : d.chords)
     {
-        auto* c = xml.createNewChildElement ("chord");
-        c->setAttribute ("degree", d.chords[(size_t) k].degree);
-        c->setAttribute ("type", (int) d.chords[(size_t) k].type);
-        c->setAttribute ("inv", d.chords[(size_t) k].inv);
+        auto* cx = xml.createNewChildElement ("chord");
+        cx->setAttribute ("id", c.id);
+        cx->setAttribute ("start", c.start);
+        cx->setAttribute ("len", c.len);
+        cx->setAttribute ("deg", c.deg);
+        cx->setAttribute ("type", (int) c.type);
+        cx->setAttribute ("inv", c.inv);
+        cx->setAttribute ("lock", c.lock);
+        cx->setAttribute ("rhythm", (int) c.rhythm);
     }
     for (int i = 0; i < kNumTabs; ++i)
     {
         const auto& t = d.tabs[(size_t) i];
         auto* tx = xml.createNewChildElement ("tab");
         tx->setAttribute ("channel", t.channel);
-        tx->setAttribute ("poly", t.poly);
         tx->setAttribute ("on", t.on);
         tx->setAttribute ("rootNote", t.rootNote);
         tx->setAttribute ("low", t.lowNote);
         tx->setAttribute ("high", t.highNote);
+        if (t.poly)
+            continue;
         for (int k = 0; k < kNumParts; ++k)
         {
             auto* part = tx->createNewChildElement ("part");
             part->setAttribute ("lock", t.locks[(size_t) k]);
             part->setAttribute ("src", (int) t.src[(size_t) k]);
-            part->setAttribute ("tpl", t.tpl[(size_t) k]);
             const auto& p = t.parts[(size_t) k];
             part->setAttribute ("numSteps", p.numSteps);
             const auto& b = t.base[(size_t) k];
@@ -443,19 +504,20 @@ void MidinjaProcessor::getStateInformation (juce::MemoryBlock& destData)
 void MidinjaProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     const auto xml = getXmlFromBinary (data, sizeInBytes);
-    if (xml == nullptr || ! xml->hasTagName ("Midinja") || xml->getIntAttribute ("format", 1) < 3)
-        return; // an older state (no tabs): start fresh
+    if (xml == nullptr || ! xml->hasTagName ("Midinja") || xml->getIntAttribute ("format", 1) < 4)
+        return; // an older state: start fresh
 
     bpm = (float) juce::jlimit (40.0, 240.0, xml->getDoubleAttribute ("bpm", 122.0));
-    synthOn = xml->getBoolAttribute ("synthOn", true);
+    synthOn = xml->getBoolAttribute ("synthOn", false);
     synthWave = juce::jlimit (0, 1, xml->getIntAttribute ("wave", 0));
     cutoff = (float) xml->getDoubleAttribute ("cutoff", 1800.0);
     resonance = (float) xml->getDoubleAttribute ("resonance", 0.3);
     decay = (float) xml->getDoubleAttribute ("decay", 250.0);
     volume = (float) xml->getDoubleAttribute ("volume", 0.6);
-
     sess.adv = xml->getBoolAttribute ("adv", false);
-    sess.what = (midinja::Op) juce::jlimit (0, 3, xml->getIntAttribute ("what", 0));
+    sess.doRhythm = xml->getBoolAttribute ("doRhythm", true);
+    sess.doNotes = xml->getBoolAttribute ("doNotes", true);
+    sess.mutateMode = xml->getBoolAttribute ("mutateMode", false);
     sess.mutAmt = (float) xml->getDoubleAttribute ("mutAmt", 0.15);
 
     midinja::Doc d = sess.doc;
@@ -482,6 +544,8 @@ void MidinjaProcessor::setStateInformation (const void* data, int sizeInBytes)
     d.swing = (float) juce::jlimit (0.0, 1.0, xml->getDoubleAttribute ("swing", 0.18));
     d.cur = juce::jlimit (0, kNumParts - 1, xml->getIntAttribute ("cur", 0));
     d.tab = juce::jlimit (0, kNumTabs - 1, xml->getIntAttribute ("tab", 0));
+    d.csel = xml->getIntAttribute ("csel", -1);
+    d.nextChordId = std::max (1, xml->getIntAttribute ("nextChordId", 1));
     d.arr.clear();
     for (const auto& s : juce::StringArray::fromTokens (xml->getStringAttribute ("arr"), ",", ""))
         if (s.trim().isNotEmpty() && (int) d.arr.size() < midinja::kMaxBars)
@@ -489,16 +553,20 @@ void MidinjaProcessor::setStateInformation (const void* data, int sizeInBytes)
     d.sel = xml->getIntAttribute ("sel", -1);
     if (d.sel >= (int) d.arr.size())
         d.sel = -1;
-
-    int k = 0;
-    for (auto* c : xml->getChildWithTagNameIterator ("chord"))
+    d.chords.clear();
+    for (auto* cx : xml->getChildWithTagNameIterator ("chord"))
     {
-        if (k >= kNumParts)
-            break;
-        d.chords[(size_t) k].degree = juce::jlimit (0, 11, c->getIntAttribute ("degree", 0));
-        d.chords[(size_t) k].type = (midinja::ChordType) juce::jlimit (0, 3, c->getIntAttribute ("type", 0));
-        d.chords[(size_t) k].inv = juce::jlimit (0, 3, c->getIntAttribute ("inv", 0));
-        ++k;
+        midinja::Chord c;
+        c.id = cx->getIntAttribute ("id", d.nextChordId++);
+        c.start = juce::jlimit (0, 15, cx->getIntAttribute ("start", 0));
+        c.len = juce::jlimit (1, 16, cx->getIntAttribute ("len", 4));
+        c.deg = juce::jlimit (0, 11, cx->getIntAttribute ("deg", 0));
+        c.type = (midinja::ChordType) juce::jlimit (0, 5, cx->getIntAttribute ("type", 1));
+        c.inv = juce::jlimit (0, 3, cx->getIntAttribute ("inv", 0));
+        c.lock = cx->getBoolAttribute ("lock", false);
+        c.rhythm = (midinja::Rhythm) juce::jlimit (0, midinja::kNumRhythms - 1, cx->getIntAttribute ("rhythm", 0));
+        d.chords.push_back (c);
+        d.nextChordId = std::max (d.nextChordId, c.id + 1);
     }
     int i = 0;
     for (auto* tx : xml->getChildWithTagNameIterator ("tab"))
@@ -507,11 +575,10 @@ void MidinjaProcessor::setStateInformation (const void* data, int sizeInBytes)
             break;
         auto& t = d.tabs[(size_t) i];
         t.channel = juce::jlimit (1, 16, tx->getIntAttribute ("channel", i + 1));
-        t.poly = tx->getBoolAttribute ("poly", false);
         t.on = tx->getBoolAttribute ("on", i == 0);
-        t.rootNote = juce::jlimit (0, 127, tx->getIntAttribute ("rootNote", 40));
-        t.lowNote = juce::jlimit (0, 127, tx->getIntAttribute ("low", 40));
-        t.highNote = juce::jlimit (t.lowNote, 127, tx->getIntAttribute ("high", 64));
+        t.rootNote = juce::jlimit (0, 127, tx->getIntAttribute ("rootNote", t.rootNote));
+        t.lowNote = juce::jlimit (0, 127, tx->getIntAttribute ("low", t.lowNote));
+        t.highNote = juce::jlimit (t.lowNote, 127, tx->getIntAttribute ("high", t.highNote));
         int part = 0;
         for (auto* px : tx->getChildWithTagNameIterator ("part"))
         {
@@ -519,7 +586,6 @@ void MidinjaProcessor::setStateInformation (const void* data, int sizeInBytes)
                 break;
             t.locks[(size_t) part] = px->getBoolAttribute ("lock");
             t.src[(size_t) part] = (midinja::Src) juce::jlimit (0, 2, px->getIntAttribute ("src", 0));
-            t.tpl[(size_t) part] = px->getIntAttribute ("tpl", -1);
             auto& p = t.parts[(size_t) part];
             p = midinja::Pattern {};
             p.numSteps = d.numSteps();
@@ -564,7 +630,7 @@ void MidinjaProcessor::setStateInformation (const void* data, int sizeInBytes)
 
     const auto port = xml->getStringAttribute ("midiOut");
     if (port.isNotEmpty())
-        openMidiOut (port); // stays closed if the device is gone
+        openMidiOut (port);
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

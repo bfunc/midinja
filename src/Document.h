@@ -1,9 +1,9 @@
 #pragma once
 
-// The document the UI edits, after web/index.html (the approved reference): three tabs like
-// Riffer (riff / chords, each with its own parts, locks, octave, range and channel) over a shared
-// key, rate, arrangement and chord per part type; two records of changes: versions (one per roll
-// or import, edits change the current one in place) and the undo stack (every action).
+// The document the UI edits, after web/index.html (the approved reference): two tabs, Riff and
+// Chords, over a shared key, rate, arrangement (A A' B C, the melody form) and chord lane
+// (blocks with a start and a length in beats); two records of changes: versions (one per roll or
+// import, edits change the current one in place) and the undo stack (every action).
 // Plain C++, no JUCE; message thread only.
 
 #include "core/Engine.h"
@@ -18,25 +18,32 @@ namespace midinja
 {
 
 constexpr int kMaxBars = 4;
-constexpr int kNumTabs = 3;
+constexpr int kNumTabs = 2;
+constexpr int kRiffTab = 0, kChordTab = 1;
 constexpr int kMaxSpan = 36;       // the range is at most three octaves: more rows get too thin
-constexpr int kMaxChordNotes = 4;
-constexpr int kNumRhythms = 6;     // the chord rhythms the dice pick from
+constexpr int kMaxChordNotes = 6;
+constexpr int kNumRhythms = 8;
+constexpr int kNumMoods = 5, kNumStyles = 5;
 
 enum class Src { Roll, Import, Derived };
 enum class Op { Roll, Rhythm, Notes, Mutate };
-enum class ChordType { Triad, Seventh, Sus2, Sus4 };
+enum class ChordType { Triad, Seventh, Ninth, Sus2, Sus4, Add9 };
+enum class Rhythm { Whole, Halves, Quarters, Stabs, Push, Offbeat, Charleston, Funk };
+enum class Quality { Maj, Min, Dim, Aug };
 
 const char* partName (int part);          // "A", "A'", "B", "C"
 const char* partHint (int part);          // "the motif", ...
 const char* degreeName (int pc);          // "1", "b2", ... for a pitch class from the root
-const char* chordTypeName (ChordType t);  // "Triad", "7th", "sus2", "sus4"
-// The chord on a scale degree as a roman numeral with its quality from the scale: "i", "IV",
-// "bVII", "vii°". UTF-8.
-std::string numeral (int degree, int scale);
+const char* chordTypeName (ChordType t);  // "Triad", "7th", "9th", "sus2", "sus4", "add9"
+const char* rhythmName (Rhythm r);        // "Whole", ...
+const char* moodName (int i);             // "Bright", "Colour", "Fable", "Drama", "Dark"
+const char* moodTip (int i);
+const char* styleName (int i);            // "Jazz", "R&B", "Funk", "House", "Drum & Bass"
+const char* styleTip (int i);
+// The chord rhythm in sixteenths from the chord start for a chord len beats long: (start, length).
+std::vector<std::pair<int, int>> rhythmHits (Rhythm r, int len);
 
 // What a riff remembers for the scale switch: its notes in the scale it was made or edited in.
-// A switch is always computed from here, so any sequence of switches is reversible.
 struct Base
 {
     bool valid = false;
@@ -47,29 +54,41 @@ struct Base
 struct Tab
 {
     int channel = 1;
-    bool poly = false; // chords: one held chord per bar, the dice vary only its rhythm
+    bool poly = false; // the Chords tab: plays the lane
     bool on = true;    // off: no play, no export
     int rootNote = 40, lowNote = 40, highNote = 64; // the root's octave and the range, in semitones
-    std::array<Pattern, kNumParts> parts;
+    std::array<Pattern, kNumParts> parts;           // the Riff tab's parts
     std::array<bool, kNumParts> locks {};
     std::array<Src, kNumParts> src { Src::Roll, Src::Roll, Src::Roll, Src::Roll };
     std::array<Base, kNumParts> base;
-    std::array<int, kNumParts> tpl { -1, -1, -1, -1 }; // the chord rhythm a part was given
 };
 
-// The chord of a part type: a scale degree (index into the scale), a type and an inversion.
-struct ChordSpec
+// A block of the chord lane. start and len are beats of the arrangement (4 per bar).
+struct Chord
 {
-    int degree = 0;
-    ChordType type = ChordType::Triad;
+    int id = 0;
+    int start = 0, len = 4;
+    int deg = 0;
+    ChordType type = ChordType::Seventh;
     int inv = 0;
+    bool lock = false;
+    Rhythm rhythm = Rhythm::Whole;
+};
+
+// A chord hit inside one bar: local step, length in steps, and which chord.
+struct Hit
+{
+    int step, len;
+    int chordIndex; // index into Doc::chords
 };
 
 struct Doc
 {
     std::array<Tab, kNumTabs> tabs;
     int tab = 0;                          // the tab shown
-    std::array<ChordSpec, kNumParts> chords;
+    std::vector<Chord> chords;            // the chord lane, any order
+    int nextChordId = 1;
+    int csel = -1;                        // the selected chord's id, or -1
     std::vector<int> arr { 0 };           // the arrangement: part index per bar
     int sel = -1;                         // selected bar (index into arr), or -1
     int cur = 0;                          // the part shown
@@ -79,25 +98,50 @@ struct Doc
 
     Tab& T() { return tabs[(size_t) tab]; }
     const Tab& T() const { return tabs[(size_t) tab]; }
-    Pattern& shown() { return T().parts[(size_t) cur]; }
-    const Pattern& shown() const { return T().parts[(size_t) cur]; }
+    Tab& riff() { return tabs[kRiffTab]; }
+    const Tab& riff() const { return tabs[kRiffTab]; }
+    const Tab& chordTab() const { return tabs[kChordTab]; }
+    Pattern& shown() { return riff().parts[(size_t) cur]; }
+    const Pattern& shown() const { return riff().parts[(size_t) cur]; }
     int numSteps() const { return rate == 2 ? 8 : rate == 6 ? 12 : 16; }
+    int stepsPerBeat() const { return numSteps() / 4; }
+    int totalBeats() const { return (int) arr.size() * 4; }
     // What Play goes through: the selected bar, else the arrangement, else the part shown.
     std::vector<int> playSeq() const;
     bool anyLocked() const;
+    // The bar shown: the selected bar, else the first bar of the part shown, else -1.
+    int shownBar() const;
 
+    // Scale maths. at(k) is the semitone of scale step k from the tonic (any octave).
     int scaleSize() const;
-    int degreeOf (int k) const;   // the chord degree of part k, within the scale
-    int degreePc (int k) const;   // its pitch class from the root
+    int at (int k) const;
+    int rel (int d, int k) const { return at (k) - at (d); }
+    Quality qual (int d) const;
     int pcOf (int note) const;
     bool inScale (int note) const;
-    // The chord of part k voiced inside a tab's range, bottom up.
-    std::vector<int> chordNotes (int k, const Tab& t) const;
-    // The augmented-second pairs of a riff: two neighbouring notes that form a signature move of
-    // the scale, as (step, step); one locked note splits the pair.
-    std::vector<std::pair<int, int>> pairsOf (const Pattern& p) const;
-    // The generator settings for a part of a tab: the knobs, the tab's range, the part's degree.
+    bool tonicMinor() const;
+    std::vector<int> degsOf (const Chord& c) const;  // scale steps of the chord's notes
+    int maxInv (const Chord& c) const;
+    std::string chordName (const Chord& c) const;    // "Em7"
+    std::string numeral (int deg, const ChordType* type = nullptr) const; // "i", "IV", "bVII7"
+    // The chord's notes, placed by octaves around a fixed point of the key (the Chords tab's root
+    // plus a sixth), not the range: the range edges only crop.
+    std::vector<int> voice (const Chord& c) const;
+    std::vector<int> chordPcs (const Chord& c) const;
+
+    // The lane.
+    std::vector<int> sortedChordIndices() const;
+    const Chord* chordById (int id) const;
+    Chord* chordById (int id);
+    int chordAtBeat (int beat) const;      // index, or -1
+    int firstChordInBar (int bar) const;   // index, or -1
+    int barDegree (int bar) const;         // the degree a bar starts in (its usual degree when none)
+    int degreeOf (int part) const;         // the degree of the part's first bar
+    std::vector<Hit> barHits (int bar) const;
+    Pattern chordPat (int bar) const;      // the hits as a pattern (note 60)
+    int laneEnd() const;                   // the last chord's end, in beats
     GenSettings genFor (const Tab& t, int k) const;
+    bool overlapsBar (const Chord& c, int bar) const { return c.start < bar * 4 + 4 && c.start + c.len > bar * 4; }
 };
 
 struct Version { Doc snap; bool star = false; };
@@ -113,34 +157,34 @@ public:
     Doc doc;
     // UI preferences, saved with the document.
     bool adv = false;
-    Op what = Op::Roll;
+    bool doRhythm = true, doNotes = true, mutateMode = false;
     float mutAmt = 0.15f;
+    // What the dice do, from the toggles: Roll (both), Rhythm, Notes, Mutate; false when nothing is on.
+    bool currentOp (Op& out) const;
 
     std::vector<Version> versions;
-    int vi = -1;      // current version
-    int histEnd = 0;  // the strip shows versions[histEnd - kPerPage .. histEnd)
+    int vi = -1;
+    int histEnd = 0;
     std::vector<UndoEntry> undo;
     int ui = -1;
     static constexpr int kPerPage = 3, kMaxHist = 60, kMaxUndo = 200;
     std::string message; // the line above the grid (import result, lock notice)
+    bool messageIsError = false;
 
-    // The dice on the part shown, and on every unlocked part of the tab shown.
+    // The dice on the part shown (Riff) or a new rhythm for the selected chord (Chords); and on
+    // every unlocked part / chord.
     void apply (Op op);
     void applyAll (Op op, bool keepSeed = false);
     void cycleMutAmt();
-    // Progression: A A' B C with chord degrees from the mode's idiom (A = A', C leads home); the
-    // riffs of every tab move to the new degrees, locked parts keep theirs. 7-note scales only.
-    bool canProgression() const;
-    void rollProgression();
 
-    // The key. A new scale maps every riff from its remembered notes; a new root moves every tab;
+    // The key. A new scale maps every riff from its remembered notes; a new root moves both tabs;
     // an octave moves the tab shown.
     void setScale (int scale);
     void setRootPc (int pc);
     void setOctave (int dir);
     void setRate (int rate);
 
-    // The range of the tab shown: the rows of the roll, one semitone per step at each edge.
+    // The range of the tab shown.
     bool canGrow (bool top) const;
     bool canShrink (bool top, std::string* why = nullptr) const;
     void growRange (bool top);
@@ -148,24 +192,47 @@ public:
 
     // Tabs.
     void selectTab (int i);
-    void setTabPoly (int i, bool poly);
     void setTabChannel (int i, int channel);
     void setTabOn (int i, bool on);
 
-    // The chord of a part type (the degree is also where its riffs start).
-    void setChord (int k, int degree, ChordType type, int inv);
+    // The chord lane.
+    void selectChord (int id);
+    void setChordSpan (int id, int start, int len, bool record); // a drag: record on release
+    void setChordDeg (int id, int deg);
+    void setChordType (int id, ChordType type);
+    void setChordInv (int id, int inv);
+    void cycleInversion (int id);
+    void setChordRhythm (int id, Rhythm r);
+    void rhythmToAll (int id);
+    void toggleChordLock (int id);
+    void regenChord (int id);              // another chord here (not the neighbours', no diminished)
+    void appendChord();                    // the square +: repeats the last chord (adds a bar below 4)
+    void addChordAt (int beat);            // double-click on the empty lane
+    void removeChord (int id);
+    bool canAppendChord() const;
+    // Generators. Locked chords are kept.
+    void progression();
+    bool moodAvailable (int mood) const;
+    std::vector<int> moodDegrees (int mood) const; // the diatonic moves, for a tooltip
+    void mood (int mood);
+    bool styleHasOwnList (int style) const;
+    void style (int style);
+    bool applyTyped (const std::string& text); // false: the message says what was wrong
 
     // Arrangement.
     void selectPart (int k);
-    void selectSlot (int i); // click again deselects
+    void selectSlot (int i);
     void toggleLock (int k);
-    void removeBar (int i);
-    void addBar (int k);     // an empty part joins as a copy of A moved to its degree
+    void removeBar (int i);                // its chords go, later ones move left
+    void addBar (int k);                   // an empty part joins as a copy of A moved to its degree
+    void repeatLastBar();                  // the square +: A -> A A
+    // Unlock bar: every lock of the bar shown (the part and its notes on Riff, the chords on Chords).
+    int barLocks() const;
+    void unlockBar();
 
     // History.
-    void commitVersion();             // a roll or an import: a new version in the strip
-    void push (int editedPart = -1);  // a manual edit: the current version changes in place; the
-                                      // edited part remembers its notes for the scale switch
+    void commitVersion();
+    void push (int editedPart = -1);
     void gotoVersion (int i);
     void undoTo (int j);
     bool canUndo() const { return ui > 0; }
@@ -174,21 +241,15 @@ public:
     void histNext() { histEnd += kPerPage; clampHist(); }
     void clampHist();
 
-    // Import into the tab shown: up to 4 bars from the file start into A A' B C (1/16 grid, lowest
-    // note where notes overlap, a note cut at the bar line, velocities kept); the key is guessed
-    // and set for every tab. Returns false (and sets message) when nothing could be used.
     bool importMidi (const std::vector<RawNote>& notes, double ppq, const std::string& name);
-
-    // Export: the arrangement (or the part shown) as one Standard MIDI File, a track per tab that
-    // is on, each on its channel. Empty (and a message) when no tab is on.
     std::vector<uint8_t> midiFile (double bpm);
-    std::string exportName() const; // "midinja-E-Dorian"
+    std::string exportName() const;
 
     static uint32_t newSeed();
-    // A note moved by scale steps; an altered (off-scale) note moves with the scale note below it.
     int scaleStep (int note, int steps) const;
-    bool lockedOn (int note) const; // a locked note of the tab shown sits on this row
-    int scaleRows() const;          // scale notes inside the range of the tab shown
+    bool lockedOn (int note) const;
+    int scaleRows() const;
+    void say (const std::string& text, bool error = false) { message = text; messageIsError = error; }
 
 private:
     unsigned lockMask() const;
@@ -202,9 +263,16 @@ private:
     void fitBar (Pattern& p, const Tab& t) const;
     bool extendPart (Tab& t, int k);
     void retune (Tab& t, int k, int from, int to);
-    Pattern chordRhythm (int tpl) const;
-    void rollChord (Tab& t, int k);
     void rollMono (Tab& t, int k, Op op);
+    // The riff follows the lane: on each chord start in a bar the riff plays a chord tone.
+    void fixChordTones (int k);
+    void fixAllChordTones();
+    std::array<int, kNumParts> degreesNow() const;
+    void laneChanged (const std::array<int, kNumParts>* from);
+    void fourBars();
+    void fillBars (const std::vector<int>& degs, const std::string& label, const std::vector<ChordType>* types, const Rhythm* rhythm);
+    Chord mk (int start, int len, int deg, ChordType type, int inv, Rhythm rhythm);
+    void addPartBar (int k);
 };
 
 } // namespace midinja

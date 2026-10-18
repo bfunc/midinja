@@ -54,7 +54,7 @@ void VersionsStrip::paint (juce::Graphics& g)
         g.drawRoundedRectangle (r, 5.0f, 1.0f);
         std::vector<const midinja::Pattern*> ps;
         const auto& h = v.snap;
-        const auto& parts = h.tabs[(size_t) juce::jlimit (0, midinja::kNumTabs - 1, h.tab)].parts; // the tab the version was made on
+        const auto& parts = h.tabs[midinja::kRiffTab].parts; // the riff of the version
         if (h.arr.empty())
             ps.push_back (&parts[(size_t) h.cur]);
         else

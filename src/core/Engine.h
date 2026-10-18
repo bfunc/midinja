@@ -185,6 +185,10 @@ class Sequencer
 public:
     void prepare (double sampleRate);
     void start();
+    // Jump to a position in steps (a host transport position): the next step boundary is the one
+    // after it; pending notes are dropped, sounding ones are left to the caller.
+    void seek (double steps);
+    double position() const { return phase; }
     // Note-offs for everything sounding + All Notes Off, at sample 0 of the next block.
     void stop (std::vector<MidiEvent>& out);
     bool isPlaying() const { return playing; }

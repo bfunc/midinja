@@ -183,6 +183,14 @@ void Sequencer::start()
     numPending = 0;
 }
 
+void Sequencer::seek (double steps)
+{
+    phase = steps < 0.0 ? 0.0 : steps;
+    nextStep = (long long) std::ceil (phase - 1.0e-9);
+    currentStepIdx = (int) std::floor (phase);
+    numPending = 0;
+}
+
 void Sequencer::stop (std::vector<MidiEvent>& out)
 {
     for (int n = 0; n < 128; ++n)
