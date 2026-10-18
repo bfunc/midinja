@@ -126,6 +126,13 @@ input.num{width:64px}
 .note .rat i{flex:1;background:#00000033;border-radius:2px}
 .lockic{position:absolute;right:3px;top:50%;transform:translateY(-50%);font-size:8px}
 .rootmk{position:absolute;left:2px;top:50%;transform:translateY(-50%);font-size:9px;line-height:1;font-weight:800;color:#15171c;background:#fff;border-radius:3px;padding:1px 3px;z-index:3;pointer-events:none}
+.edge{display:flex;align-items:center;gap:3px;height:18px;margin:2px 0}
+.edge .en{width:44px;text-align:right;padding-right:5px;font-size:9.5px;color:var(--ink3);flex:none}
+.edge .en.r{width:auto;flex:1;text-align:right;padding-right:4px}
+.eb{width:20px;height:16px;line-height:1;padding:0;font-size:11px;border-radius:4px;background:var(--panel2);border:1px solid var(--line);color:var(--ink2);cursor:pointer}
+.eb:hover:not(:disabled){border-color:var(--lineHi)}
+.eb:disabled{opacity:.3;cursor:default}
+.dimrow{opacity:.5}
 .empty-hint{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink3);pointer-events:none}
 .play{height:4px;margin:4px 0 6px}
 .play i.on{background:var(--acc2);border-radius:2px;box-shadow:0 0 8px var(--acc2)}
@@ -173,14 +180,13 @@ body.dragging .drop{display:grid}
     <div class="undoredo"><button class="btn ghost" id="undo" title="Undo (Ctrl+Z)">↶</button><button class="btn ghost" id="redo" title="Redo (Ctrl+Shift+Z)">↷</button></div>
   </div>
   <div class="row rowB">
-    <div class="ctl"><small>Key</small><div style="display:flex;gap:4px"><select class="sel" id="root"></select><select class="sel" id="scale"></select></div></div>
+    <div class="ctl"><small>Key</small><div style="display:flex;gap:4px"><select class="sel" id="root" title="The root: pick the note here, − / + move it an octave. The range and all four parts follow the root"></select><button class="btn sm" id="ocD" title="Root an octave down: the range and all four parts follow">−</button><button class="btn sm" id="ocU" title="Root an octave up: the range and all four parts follow">+</button><select class="sel" id="scale"></select></div></div>
     <div class="ctl"><small>Rate · steps/bar</small><select class="sel" id="rate" title="One part is one bar of 4/4; the rate sets how many steps it has"><option value="2">1/8 · 8</option><option value="4" selected>1/16 · 16</option><option value="6">1/16T · 12</option></select></div>
     <div class="vsep"></div>
     <div class="kv" title="How many steps get a note (next roll). Ctrl+click resets"><div class="knob" id="kDensity"><i></i></div><div><span>Density</span><br><b id="vDensity"></b></div></div>
     <div class="kv"><div class="knob" id="kSwing"><i></i></div><div><span>Swing</span><br><b id="vSwing"></b></div></div>
     <div class="kv" title="How close A′ stays to A (next roll of A′): high changes only the last beat, low keeps just the shape. Ctrl+click resets"><div class="knob" id="kSimilarity"><i></i></div><div><span>Similarity</span><br><b id="vSimilarity"></b></div></div>
     <div class="ctl"><small>Transpose</small><div style="display:flex;gap:3px;align-items:center"><button class="btn sm" id="trD" title="All four parts down a scale step">−</button><span class="num" id="vTr">0</span><button class="btn sm" id="trU" title="All four parts up a scale step">+</button></div></div>
-    <div class="ctl"><small id="lOct">Octave</small><div style="display:flex;gap:3px;align-items:center"><button class="btn sm" id="ocD" title="An octave down: the note range and all four parts">−</button><span class="num" id="vOct" title="The root of the key at the bottom of the note range (Advanced → Note range). FL Studio names notes one octave higher: E2 here is E3 there">E2</span><button class="btn sm" id="ocU" title="An octave up: the note range and all four parts">+</button></div></div>
     <div class="mus" id="mus">
       <div class="kv" id="colorWrap"><div class="knob t" id="kColor"><i></i></div><div><span>Color</span><br><b id="vColor"></b></div></div>
       <div class="kv" title="How often the riff breaks the rules (next roll)"><div class="knob t" id="kSurprise"><i></i></div><div><span>Surprise</span><br><b id="vSurprise"></b></div></div>
@@ -192,7 +198,6 @@ body.dragging .drop{display:grid}
 
   <div class="main">
     <div class="side">
-      <div><h4>Note range</h4><div class="range" id="rgPitch"></div><div class="rl"><span id="lPitchLo"></span><span id="lPitchHi"></span></div></div>
       <div><h4>Length</h4><div class="range" id="rgLen"></div><div class="rl"><span id="lLenLo"></span><span id="lLenHi"></span></div></div>
       <div><h4>Velocity</h4><div class="range" id="rgVel"></div><div class="rl"><span id="lVelLo"></span><span id="lVelHi"></span></div></div>
       <div id="rptbox"><h4>Ratchets <span class="pill" id="rptpill">OFF</span></h4><div class="range" id="rgRep"></div><div class="rl"><span id="lRepLo"></span><span id="lRepHi"></span></div></div>
@@ -202,7 +207,9 @@ body.dragging .drop{display:grid}
     <div class="gridw">
       <div class="tabs" id="tabs"><div class="arr" id="arr"></div><span class="tabinfo" id="tabinfo"></span><div class="pal" id="pal"></div></div>
       <div class="msg" id="msg"></div>
+      <div class="edge" id="edgeTop"></div>
       <div class="roll cols" id="grid"></div>
+      <div class="edge" id="edgeBot"></div>
       <div class="cols play" id="play"></div>
       <div class="lanes" id="lanes"></div>
       <div class="cols steps" id="stepn"></div>
@@ -240,7 +247,7 @@ const plug = $('plug');
 // ---- state -------------------------------------------------------------------------------
 const S = {
   mode: 1, root: 4, scale: 2, numSteps: 16, rate: 4, notes: 10, swing: 0.18,
-  lowNote: 40, highNote: 64, lenMin: 1, lenMax: 2, velMin: 70, velMax: 120,
+  rootNote: 40, lowNote: 40, highNote: 64, lenMin: 1, lenMax: 2, velMin: 70, velMax: 120,
   repeatsOn: false, repMin: 2, repMax: 3, repChance: 0.25, color: 0.4, surprise: 0.15, similarity: 0.65,
   seed: 4821, transpose: 0, view: 'scale', adv: false, what: 'roll', mutAmt: 0.15, startOnRoot: true,
   cur: 0, sel: -1,
@@ -290,10 +297,10 @@ function applyAll(op, keepSeed) {
   }
   commitVersion();
 }
-function snapshot() { return { parts: clone(parts), locks: [...locks], src: [...src], arr: [...arr], sel: S.sel, cur: S.cur, root: S.root, scale: S.scale, rate: S.rate, lowNote: S.lowNote, highNote: S.highNote, star: false }; }
+function snapshot() { return { parts: clone(parts), locks: [...locks], src: [...src], arr: [...arr], sel: S.sel, cur: S.cur, root: S.root, scale: S.scale, rate: S.rate, rootNote: S.rootNote, lowNote: S.lowNote, highNote: S.highNote, star: false }; }
 function restore(h) {
   parts = clone(h.parts); locks = [...h.locks]; src = [...h.src]; arr = [...h.arr]; S.sel = h.sel;
-  S.cur = h.cur; S.root = h.root; S.scale = h.scale; S.rate = h.rate; if (h.lowNote) { S.lowNote = h.lowNote; S.highNote = h.highNote; } S.numSteps = parts[0].numSteps;
+  S.cur = h.cur; S.root = h.root; S.scale = h.scale; S.rate = h.rate; if (h.lowNote) { S.lowNote = h.lowNote; S.highNote = h.highNote; S.rootNote = h.rootNote || S.rootNote; } S.numSteps = parts[0].numSteps;
   $('root').value = S.root; $('scale').value = S.scale; $('rate').value = S.rate;
   pat = parts[S.cur];
 }
@@ -320,6 +327,7 @@ function commitVersion() {
 }
 // a manual edit: the current version changes in place
 function push() {
+  foldAll();
   const snap = snapshot();
   if (vi >= 0 && versions[vi]) versions[vi].snap = snap;
   pushUndo(snap);
@@ -394,7 +402,6 @@ const drawers = [
   knob('kSimilarity', () => S.similarity, v => S.similarity = v, 0, 1, 0.05, v => Math.round(v * 100) + '%'),
   knob('kColor', () => S.color, v => S.color = v, 0, 1, 0.05, v => colorLabel() + ' · ' + Math.round(v * 100) + '%'),
   knob('kSurprise', () => S.surprise, v => S.surprise = v, 0, 1, 0.05, v => Math.round(v * 100) + '%'),
-  range('rgPitch', 24, 96, () => [S.lowNote, S.highNote], ([a, b]) => { S.lowNote = a; S.highNote = Math.max(b, a + 5); }, nn),
   range('rgLen', 1, 8, () => [S.lenMin, S.lenMax], ([a, b]) => { S.lenMin = a; S.lenMax = b; }, lenName),
   range('rgVel', 1, 127, () => [S.velMin, S.velMax], ([a, b]) => { S.velMin = a; S.velMax = b; }, v => v),
   range('rgRep', 1, 4, () => [S.repMin, S.repMax], ([a, b]) => { S.repMin = a; S.repMax = b; }, v => '×' + v),
@@ -423,12 +430,59 @@ function colorWords() {
 // ---- grid ----------------------------------------------------------------------------------
 const pcOf = n => ((n - S.root) % 12 + 12) % 12;
 const inScale = n => SCALES[S.scale].intervals.includes(pcOf(n));
+// the rows of the roll are the note range; its two edge rows are always shown
 function rows() {
-  const lo = Math.min(S.lowNote, ...used()), hi = Math.max(S.highNote, ...used());
+  const lo = S.lowNote, hi = S.highNote;
   let r = [];
-  if (S.view === 'riff') r = [...new Set(used())];
-  else for (let n = lo; n <= hi; n++) if (S.view === 'all' || inScale(n)) r.push(n);
+  if (S.view === 'riff') r = [...new Set([lo, hi, ...used().filter(n => n >= lo && n <= hi)])];
+  else for (let n = lo; n <= hi; n++) if (S.view === 'all' || inScale(n) || n === lo || n === hi) r.push(n);
   return r.sort((a, b) => b - a);
+}
+// the next row of the current view beyond n: a semitone in All view, a scale note otherwise
+function nextRow(n, dir) {
+  let m = n + dir;
+  if (S.view !== 'all') while (m > 0 && m < 127 && !inScale(m)) m += dir;
+  return Math.max(0, Math.min(127, m));
+}
+const lockedOn = note => parts.some(p => p.steps.slice(0, p.numSteps).some(s => s.on && s.locked && s.note === note));
+// a note outside the range folds in by octave (pitch class kept); if no octave fits, the nearest edge
+function foldNote(n) {
+  if (n >= S.lowNote && n <= S.highNote) return n;
+  let m = n;
+  while (m < S.lowNote) m += 12;
+  while (m > S.highNote) m -= 12;
+  return m >= S.lowNote ? m : n < S.lowNote ? S.lowNote : S.highNote;
+}
+function foldAll() { parts.forEach(p => p.steps.forEach(s => { if (s.on && !s.locked) s.note = foldNote(s.note); })); }
+const MAX_SPAN = 36; // three octaves: more rows get too thin to click
+// the +/− at an edge of the roll: the range grows or shrinks by one row of the current view
+function edge(top, grow) {
+  const R = rows();
+  if (!R.length) return;
+  const cur = top ? R[0] : R[R.length - 1];
+  if (grow) {
+    if (S.highNote - S.lowNote >= MAX_SPAN) return;
+    const n = nextRow(cur, top ? 1 : -1);
+    if (n === cur) return;
+    if (top) S.highNote = n; else S.lowNote = n;
+  } else {
+    if (R.length <= 1 || lockedOn(cur)) return;
+    const n = nextRow(cur, top ? -1 : 1);
+    if (top) S.highNote = Math.max(n, S.lowNote); else S.lowNote = Math.min(n, S.highNote);
+    foldAll();
+  }
+  push();
+}
+function edgeBar(el, top, R) {
+  el.innerHTML = '';
+  if (!R.length) return;
+  const cur = top ? R[0] : R[R.length - 1], lk = lockedOn(cur), one = R.length <= 1;
+  const canGrow = S.highNote - S.lowNote < MAX_SPAN && nextRow(cur, top ? 1 : -1) !== cur;
+  const lab = document.createElement('span'); lab.className = 'en'; lab.textContent = nn(cur); el.appendChild(lab);
+  const mk = (txt, title, dis, fn) => { const b = document.createElement('button'); b.className = 'eb'; b.textContent = txt; b.title = title; b.disabled = dis; b.onclick = fn; el.appendChild(b); };
+  mk('+', canGrow ? `Add a row ${top ? 'above' : 'below'}: ${nn(nextRow(cur, top ? 1 : -1))} (one ${S.view === 'all' ? 'semitone' : 'scale note'})` : 'The range is three octaves already', !canGrow, () => edge(top, true));
+  mk('−', lk ? nn(cur) + ' holds a locked note: unlock it first' : one ? 'The range is one note' : `Remove the ${top ? 'top' : 'bottom'} row ${nn(cur)}: notes on it fold into the range by octave`, one || lk, () => edge(top, false));
+  if (top) { const t = document.createElement('span'); t.className = 'en r'; t.textContent = `range ${nn(S.lowNote)}–${nn(S.highNote)}`; el.appendChild(t); }
 }
 function used() { const u = []; for (let i = 0; i < pat.numSteps; i++) if (pat.steps[i].on) u.push(pat.steps[i].note); return u; }
 function degreeBadge(n) {
@@ -475,7 +529,9 @@ function render() {
   $('adv').classList.toggle('on', S.adv);
   $('mutAmt').textContent = Math.round(S.mutAmt * 100) + '%';
   $('vTr').textContent = (S.transpose > 0 ? '+' : '') + S.transpose;
-  $('vOct').textContent = nn(rootLow()); $('lOct').textContent = 'Octave · ' + nn(S.lowNote) + '–' + nn(S.highNote);
+  const oct = Math.floor(S.rootNote / 12) - 1;
+  if ($('root').options.length !== 12 || $('root').options[0].text !== 'C' + oct) $('root').innerHTML = NAMES.map((n, i) => `<option value="${i}">${n}${oct}</option>`).join('');
+  $('root').value = S.root;
   $('seed').value = S.seed;
   $('colorWrap').title = colorWords();
   $('roll').disabled = locks[S.cur];
@@ -524,20 +580,22 @@ function render() {
   const rowH = R.length ? Math.max(11, Math.min(30, Math.floor(300 / R.length))) : 30;
   const ph = shownPlayStep();
   const g = $('grid'); g.innerHTML = '';
+  edgeBar($('edgeTop'), true, R); edgeBar($('edgeBot'), false, R);
+  const u = new Set(used());
   // the chord root this part's step 1 is held on (the marker shows where the rule holds)
   const chordDeg = core.partDegree(S.cur, S.scale), chordPc = SCALES[S.scale].intervals[chordDeg];
   const chordName = ['I', '♭II', 'II', '♭III', 'III', 'IV', '♭V', 'V', '♭VI', 'VI', '♭VII', 'VII'][chordPc];
   R.forEach((note, r) => {
-    const pc = pcOf(note), inS = inScale(note);
+    const pc = pcOf(note), inS = inScale(note), dim = S.view === 'riff' && !u.has(note);
     const k = document.createElement('div');
-    k.className = 'key' + (pc === 0 ? ' root' : '') + (inS ? '' : ' out');
+    k.className = 'key' + (pc === 0 ? ' root' : '') + (inS ? '' : ' out') + (dim ? ' dimrow' : '');
     k.style.height = rowH + 'px';
     const bd = inS ? degreeBadge(note) : null;
     k.innerHTML = (bd ? `<em class="${bd[1]}">${bd[0]}</em>` : '') + nn(note);
     g.appendChild(k);
     for (let s = 0; s < n; s++) {
       const c = document.createElement('div');
-      c.className = 'cell' + (s % 4 === 0 ? ' beat' : '') + (!inS ? ' outrow' : pc === 0 ? ' rootrow' : r % 2 ? ' alt' : '') + (s === ph ? ' ph' : '');
+      c.className = 'cell' + (s % 4 === 0 ? ' beat' : '') + (!inS ? ' outrow' : pc === 0 ? ' rootrow' : r % 2 ? ' alt' : '') + (s === ph ? ' ph' : '') + (dim ? ' dimrow' : '');
       c.style.height = rowH + 'px';
       const st = pat.steps[s];
       if (st.on && st.note === note) {
@@ -632,7 +690,7 @@ function noteDown(e, s, rowH) {
     let note = n0;
     if (S.view === 'all') note = n0 + d;
     else { const dir = Math.sign(d); for (let i = 0; i < Math.abs(d); i++) { do note += dir; while (!inScale(note) && note > 0 && note < 127); } }
-    note = Math.max(0, Math.min(127, note));
+    note = Math.max(S.lowNote, Math.min(S.highNote, note));
     if (note !== st.note) { st.note = note; render(); }
   };
   const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); if (moved) push(); else { pat.steps[s] = { ...st, on: false, locked: false }; push(); } };
@@ -660,8 +718,20 @@ function laneDrag(l, set, max) {
 $('root').innerHTML = NAMES.map((n, i) => `<option value="${i}">${n}</option>`).join('');
 $('scale').innerHTML = SCALES.map((s, i) => `<option value="${i}">${s.name}</option>`).join('');
 $('root').value = S.root; $('scale').value = S.scale;
+// the root chip: a new note or octave moves the range and all four parts by the same semitones
+function setRootNote(n) {
+  n = Math.max(24, Math.min(96, n));
+  const d = n - S.rootNote;
+  if (!d || S.lowNote + d < 0 || S.highNote + d > 127) { render(); return; }
+  S.rootNote = n; S.root = n % 12; S.lowNote += d; S.highNote += d;
+  parts.forEach(p => p.steps.forEach(s => { if (s.on) s.note += d; }));
+  push();
+}
+$('root').onchange = () => { const pc = +$('root').value; setRootNote(S.rootNote + ((pc - S.root + 18) % 12) - 6); };
+$('ocU').onclick = () => setRootNote(S.rootNote + 12);
+$('ocD').onclick = () => setRootNote(S.rootNote - 12);
 const rekey = () => {
-  const oldRoot = S.root; S.root = +$('root').value; S.scale = +$('scale').value;
+  const oldRoot = S.root; S.scale = +$('scale').value;
   // imported bars stay as they are; bars generated from an import are made again in the new key
   const anyImport = src.includes('import');
   const g = settings();
@@ -672,7 +742,7 @@ const rekey = () => {
   });
   push();
 };
-$('root').onchange = rekey; $('scale').onchange = rekey;
+$('scale').onchange = rekey;
 $('rate').onchange = () => { S.rate = +$('rate').value; S.numSteps = { 2: 8, 4: 16, 6: 12 }[S.rate]; parts.forEach(p => { p.numSteps = S.numSteps; fitP(p); }); push(); };
 document.querySelectorAll('#view button').forEach(b => b.onclick = () => { S.view = b.dataset.v; render(); });
 $('roll').onclick = () => apply(S.what);
@@ -683,17 +753,6 @@ document.querySelectorAll('#what button').forEach(b => b.onclick = e => {
 });
 $('trU').onclick = () => { parts.forEach((p, k) => setPart(k, core.transpose(p, 1, S.root, S.scale))); S.transpose++; push(); };
 $('trD').onclick = () => { parts.forEach((p, k) => setPart(k, core.transpose(p, -1, S.root, S.scale))); S.transpose--; push(); };
-// the octave buttons move the note range and every part by 12 semitones; the root at the bottom of the range is shown
-const rootLow = () => { let n = S.lowNote; while (n % 12 !== S.root) n++; return n; };
-function shiftOctave(d) {
-  const lo = S.lowNote + 12 * d, hi = S.highNote + 12 * d;
-  if (lo < 24 || hi > 96) return;
-  S.lowNote = lo; S.highNote = hi;
-  parts.forEach((p, k) => setPart(k, { ...p, steps: p.steps.map(s => ({ ...s, note: s.note + 12 * d })) }));
-  push();
-}
-$('ocU').onclick = () => shiftOctave(1);
-$('ocD').onclick = () => shiftOctave(-1);
 $('adv').onclick = () => { S.adv = !S.adv; render(); };
 $('rptpill').onclick = () => { S.repeatsOn = !S.repeatsOn; render(); };
 $('rootpill').onclick = () => { S.startOnRoot = !S.startOnRoot; render(); };
@@ -792,7 +851,10 @@ function importMidi(u8, name) {
 
   const w = placed.map((x, j) => ({ note: x.note, weight: (x.e - x.s) * (x.s % 4 === 0 ? 2 : 1) + (j === 0 ? 1 : 0) + (j === placed.length - 1 ? 2 : 0) }));
   const k = core.detectKey(w);
-  S.root = k.root; S.scale = k.scale; $('root').value = S.root; $('scale').value = S.scale;
+  S.root = k.root; S.scale = k.scale; $('scale').value = S.scale;
+  const lo = Math.min(...placed.map(x => x.note)), hi = Math.max(...placed.map(x => x.note));
+  S.lowNote = lo; S.highNote = Math.min(hi, lo + MAX_SPAN);
+  S.rootNote = lo + ((S.root - lo) % 12 + 12) % 12;
   S.rate = 4; S.numSteps = N; $('rate').value = 4; S.transpose = 0;
 
   const fresh = [0, 1, 2, 3].map(newPat);
@@ -829,7 +891,7 @@ $('exp').onclick = () => {
 };
 
 // phone: scale the whole plugin to the screen width
-function plugScale() { const w = document.documentElement.clientWidth; return Math.min(1, (w - 24) / 1124); }
+function plugScale() { const w = document.documentElement.clientWidth; return Math.min(1, (w - 24) / 1220); }
 function fitW() {
   const k = plugScale(), w = document.documentElement.clientWidth;
   plug.style.transformOrigin = '0 0'; plug.style.transform = k < 1 ? `scale(${k})` : '';
