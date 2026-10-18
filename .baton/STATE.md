@@ -45,7 +45,7 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 - C in scales without a fifth falls back to ii (Locrian ♭II); keep it? · since 2026-10-17
 
 ## In progress
-- (none)
+- fable-5.1@home#24cf · the chord part after the prototype: mockup done (75125a6), JUCE port + synths off + host transport + Unlock bar + riff "+" in progress · since 2026-10-18 18:11
 
 ## Next
 1. Raptor deploys the preview (29cf768); the user says ok or not; then Decisions + the JUCE port
