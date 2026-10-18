@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-18 14:11 · fable-5.1@home#24cf · 2bdf497
+Updated: 2026-10-18 14:12 · fable-5.1@home#24cf · 2d12bd4
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -23,6 +23,7 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 - 2026-10-17 · Release: rolling "latest" pre-release from CI; a tagged release only after the user confirms it works in FL · user said "Defaults ok"
 - 2026-10-18 · New UI features go to the web mockup first (served on Home at localhost), into the JUCE app only after the user approves the mockup · user: "continue to ui tasks, for this only web maket"
 - 2026-10-18 · Root+range: one root chip (note + octave) that the range and all four parts follow; range = the visible rows of the roll with +/− at each edge, one step = one row of the view, min 1 note, max ~3 octaves; shrinking folds notes in by octave, locked notes never change; the bottom may go below the root · agreed with the user via raptor; replaces the Octave control and the Advanced Note range of 4ed5944
+- 2026-10-18 · Transpose: removed from the mockup, the root chip moves everything · user decision ("No need in transpose")
 
 ## Open issues
 - !  VST3 MIDI bypassed FL (user, 2026-10-18): hardware on the interface played on every FL port because the plugin also opened a system MIDI port directly; VST instruments followed FL's port. Fixed in 82eb984 (host only), awaiting the user's confirmation in FL
@@ -30,7 +31,6 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 -    Not clicked through by hand: Start-on-root toggle, root marker at narrow widths (preview)
 
 ## Waiting for you
-- Transpose next to the root chip: keep it (scale steps) or drop it, now that the chip moves everything by semitones? · since 2026-10-18
 - Start-on-root: per-bar override (click the marker)? · since 2026-10-17
 - Start-on-root: a middle setting "root on a strong beat"? · since 2026-10-17
 - C in scales without a fifth falls back to ii (Locrian ♭II); keep it? · since 2026-10-17
@@ -40,6 +40,6 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 
 ## Next
 1. User: new Midinja-windows.zip from the latest pre-release; in FL the hardware should now play only through FL's port; report via raptor
-2. User: review the mockup at http://localhost:8765/ (root chip, range = rows with +/− at the edges); say whether Transpose stays; then the port to the JUCE app
+2. User: review the mockup at http://localhost:8765/ (root chip, range = rows with +/− at the edges, no Transpose); then the port to the JUCE app
 3. Tag v0.2.0 when the user confirms the FL fix
 4. Chords (mockup first), then AU
