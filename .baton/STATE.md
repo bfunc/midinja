@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-18 16:10 · fable-5.1@home#24cf · 4bd966b
+Updated: 2026-10-18 17:07 · fable-5.1@home#24cf · 29cf768
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -39,7 +39,7 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 -    Not clicked through by hand: Start-on-root toggle, root marker at narrow widths (preview)
 
 ## Waiting for you
-- Dice selector rework (Rhythm and Notes as two toggles, both on = new riff; Mutate aside as its own button with a 15/33/50 chip): the user is still planning, on hold until the go · since 2026-10-18
+- Preview for review on bfunc.cc (29cf768): two tabs Riff/Chords with a settings block, Rhythm/Notes toggles + Mutate mode, equal rows, ghost notes, chord lane per bar with rhythms, Progression + mood fills. OK or not? Then Decisions and the JUCE port · since 2026-10-18
 - Start-on-root: per-bar override (click the marker)? · since 2026-10-17
 - Start-on-root: a middle setting "root on a strong beat"? · since 2026-10-17
 - C in scales without a fifth falls back to ii (Locrian ♭II); keep it? · since 2026-10-17
@@ -48,7 +48,7 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 - (none)
 
 ## Next
-1. Raptor deploys the mockup (2f33f16) to bfunc.cc; the user reviews it
+1. Raptor deploys the preview (29cf768); the user says ok or not; then Decisions + the JUCE port
 2. User: the new Midinja-windows.zip from the latest pre-release (the app follows the mockup: tabs, chords, range edges, scale switch); report via raptor
 3. User: FL check; then tag v0.2.0
 4. Generation: augmented-second pairs resolve into tonic/fifth (♭6–7–1, 3–♭2–1, ♭3–♯4–5); colour notes on strong beats
