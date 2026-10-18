@@ -186,7 +186,6 @@ body.dragging .drop{display:grid}
     <div class="kv" title="How many steps get a note (next roll). Ctrl+click resets"><div class="knob" id="kDensity"><i></i></div><div><span>Density</span><br><b id="vDensity"></b></div></div>
     <div class="kv"><div class="knob" id="kSwing"><i></i></div><div><span>Swing</span><br><b id="vSwing"></b></div></div>
     <div class="kv" title="How close A′ stays to A (next roll of A′): high changes only the last beat, low keeps just the shape. Ctrl+click resets"><div class="knob" id="kSimilarity"><i></i></div><div><span>Similarity</span><br><b id="vSimilarity"></b></div></div>
-    <div class="ctl"><small>Transpose</small><div style="display:flex;gap:3px;align-items:center"><button class="btn sm" id="trD" title="All four parts down a scale step">−</button><span class="num" id="vTr">0</span><button class="btn sm" id="trU" title="All four parts up a scale step">+</button></div></div>
     <div class="mus" id="mus">
       <div class="kv" id="colorWrap"><div class="knob t" id="kColor"><i></i></div><div><span>Color</span><br><b id="vColor"></b></div></div>
       <div class="kv" title="How often the riff breaks the rules (next roll)"><div class="knob t" id="kSurprise"><i></i></div><div><span>Surprise</span><br><b id="vSurprise"></b></div></div>
@@ -249,7 +248,7 @@ const S = {
   mode: 1, root: 4, scale: 2, numSteps: 16, rate: 4, notes: 10, swing: 0.18,
   rootNote: 40, lowNote: 40, highNote: 64, lenMin: 1, lenMax: 2, velMin: 70, velMax: 120,
   repeatsOn: false, repMin: 2, repMax: 3, repChance: 0.25, color: 0.4, surprise: 0.15, similarity: 0.65,
-  seed: 4821, transpose: 0, view: 'scale', adv: false, what: 'roll', mutAmt: 0.15, startOnRoot: true,
+  seed: 4821, view: 'scale', adv: false, what: 'roll', mutAmt: 0.15, startOnRoot: true,
   cur: 0, sel: -1,
 };
 const MAX_BARS = 4;
@@ -528,7 +527,6 @@ function render() {
   document.querySelectorAll('#view button').forEach(b => b.classList.toggle('on', b.dataset.v === S.view));
   $('adv').classList.toggle('on', S.adv);
   $('mutAmt').textContent = Math.round(S.mutAmt * 100) + '%';
-  $('vTr').textContent = (S.transpose > 0 ? '+' : '') + S.transpose;
   const oct = Math.floor(S.rootNote / 12) - 1;
   if ($('root').options.length !== 12 || $('root').options[0].text !== 'C' + oct) $('root').innerHTML = NAMES.map((n, i) => `<option value="${i}">${n}${oct}</option>`).join('');
   $('root').value = S.root;
@@ -751,8 +749,6 @@ document.querySelectorAll('#what button').forEach(b => b.onclick = e => {
   if (e.target.id === 'mutAmt') { const a = [0.15, 0.33, 0.5]; S.mutAmt = a[(a.indexOf(S.mutAmt) + 1) % a.length]; }
   S.what = b.dataset.w; render();
 });
-$('trU').onclick = () => { parts.forEach((p, k) => setPart(k, core.transpose(p, 1, S.root, S.scale))); S.transpose++; push(); };
-$('trD').onclick = () => { parts.forEach((p, k) => setPart(k, core.transpose(p, -1, S.root, S.scale))); S.transpose--; push(); };
 $('adv').onclick = () => { S.adv = !S.adv; render(); };
 $('rptpill').onclick = () => { S.repeatsOn = !S.repeatsOn; render(); };
 $('rootpill').onclick = () => { S.startOnRoot = !S.startOnRoot; render(); };
@@ -855,7 +851,7 @@ function importMidi(u8, name) {
   const lo = Math.min(...placed.map(x => x.note)), hi = Math.max(...placed.map(x => x.note));
   S.lowNote = lo; S.highNote = Math.min(hi, lo + MAX_SPAN);
   S.rootNote = lo + ((S.root - lo) % 12 + 12) % 12;
-  S.rate = 4; S.numSteps = N; $('rate').value = 4; S.transpose = 0;
+  S.rate = 4; S.numSteps = N; $('rate').value = 4;
 
   const fresh = [0, 1, 2, 3].map(newPat);
   placed.forEach(x => { const b = Math.floor(x.s / N); fresh[b].steps[x.s - b * N] = { on: true, note: x.note, length: Math.min(8, x.e - x.s), velocity: Math.max(1, Math.min(127, x.vel)), repeats: 1, locked: false }; });
