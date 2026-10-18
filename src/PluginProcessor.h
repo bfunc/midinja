@@ -29,7 +29,9 @@ public:
     bool isHosted() const { return wrapperType != wrapperType_Standalone; }
 
     juce::Array<juce::MidiDeviceInfo> midiOutputs() const { return juce::MidiOutput::getAvailableDevices(); }
-    bool openMidiOut (const juce::String& identifier); // "" closes
+    // Where the MIDI goes: "" = the host (standalone: nowhere), else one system device only, never
+    // both (a device opened next to the host played the hardware on every FL port, 82eb984).
+    bool openMidiOut (const juce::String& identifier);
     juce::String midiOutId() const { return midiOutIdentifier; }
 
     juce::MemoryBlock exportMidi();

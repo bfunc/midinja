@@ -314,7 +314,8 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     for (auto* k : { &cutoffK, &resoK, &decayK, &volK })
         k->onChange = [this, k] { k->setTooltip (k->getName() + ": " + k->format (k->get()) + ". Drag or scroll; Ctrl+click resets"); };
 
-    midiOutBox.setTooltip ("A system MIDI port: a hardware synth, loopMIDI, IAC. Every tab that is on goes out on its channel");
+    midiOutBox.setTooltip (proc.isHosted() ? "Where the MIDI goes: the host (its routing, e.g. FL's Output port) or one system device directly (a hardware synth, loopMIDI, IAC), never both. Every tab that is on goes out on its channel"
+                                           : "A system MIDI port: a hardware synth, loopMIDI, IAC. Every tab that is on goes out on its channel");
     midiOutBox.onChange = [this] {
         const int idx = midiOutBox.getSelectedId() - 2;
         const auto id = idx >= 0 && idx < midiPortIds.size() ? midiPortIds[idx] : juce::String();
@@ -327,7 +328,6 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     };
     midiOutBox.addMouseListener (this, false);
     addAndMakeVisible (midiOutBox);
-    midiOutBox.setVisible (! proc.isHosted());
 
     importB.setTooltip (u8 ("Import a .mid file (or drop one on the window) into the Riff tab: up to 4 bars become A A\xE2\x80\xB2 B C"));
     importB.onClick = [this] {
@@ -702,7 +702,7 @@ void MidinjaEditor::timerCallback()
     else if (proc.isHosted() && proc.hostBpm.load() > 0.0f && ! dirty)
         bpmBox.setText (juce::String ((int) std::lround (proc.hostBpm.load())), juce::dontSendNotification);
 
-    if (! proc.isHosted() && ++portTick >= 90)
+    if (++portTick >= 90)
     {
         portTick = 0;
         juce::StringArray ids;
@@ -851,7 +851,14 @@ void MidinjaEditor::refreshMidiPorts()
     const auto current = proc.midiOutId();
     midiOutBox.clear (juce::dontSendNotification);
     midiPortIds.clear();
-    midiOutBox.addItem ("None", 1);
+    juce::String hostItem = "None";
+    if (proc.isHosted())
+    {
+        const juce::PluginHostType ht;
+        const juce::String hn = ht.isFruityLoops() ? juce::String ("FL Studio") : juce::String (ht.getHostDescription());
+        hostItem = "Host" + (hn.isNotEmpty() && hn != "Unknown" ? " (" + hn + ")" : juce::String());
+    }
+    midiOutBox.addItem (hostItem, 1);
     int selected = 1;
     const auto ports = proc.midiOutputs();
     for (int i = 0; i < ports.size(); ++i)
@@ -988,7 +995,6 @@ void MidinjaEditor::resized()
     rx = importB.getX() - 12;
     vseps.push_back ({ rx, fy + 8, 1, kFoot - 16 });
     rx -= 12;
-    if (! proc.isHosted())
     {
         const int midiW = std::max (90, std::min (170, rx - x - 60));
         midiOutBox.setBounds (rx - midiW, fy + 12, midiW, 26);

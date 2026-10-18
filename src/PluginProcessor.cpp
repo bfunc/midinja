@@ -117,8 +117,6 @@ void MidinjaProcessor::publish()
 bool MidinjaProcessor::openMidiOut (const juce::String& identifier)
 {
     std::unique_ptr<juce::MidiOutput> next;
-    if (isHosted() && identifier.isNotEmpty())
-        return false; // in a host the MIDI goes to the host only, and the host routes it
     if (identifier.isNotEmpty())
     {
         next = juce::MidiOutput::openDevice (identifier);
@@ -417,10 +415,12 @@ void MidinjaProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
 
     if (! outBuffer.isEmpty())
     {
-        midi.addEvents (outBuffer, 0, numSamples, 0);
-        const juce::SpinLock::ScopedTryLockType lock (midiOutLock);
-        if (lock.isLocked() && midiOut != nullptr)
+        // a chosen device gets everything (note-offs and CC 123 on stop included) and the host nothing
+        const juce::SpinLock::ScopedLockType lock (midiOutLock); // held only for the swap in openMidiOut
+        if (midiOut != nullptr)
             midiOut->sendBlockOfMessages (outBuffer, juce::Time::getMillisecondCounterHiRes() + 1.0, currentSampleRate);
+        else
+            midi.addEvents (outBuffer, 0, numSamples, 0);
     }
 }
 
@@ -715,8 +715,8 @@ void MidinjaProcessor::setStateInformation (const void* data, int sizeInBytes)
     publish();
 
     const auto port = xml->getStringAttribute ("midiOut");
-    if (port.isNotEmpty())
-        openMidiOut (port);
+    if (port.isNotEmpty() && ! openMidiOut (port))
+        sess.say (isHosted() ? "The saved MIDI Out device is missing: MIDI goes to the host" : "The saved MIDI Out device is missing: no MIDI out", true);
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

@@ -81,10 +81,12 @@ The harmony lives in the **chord lane**: every bar starts on the root of the cho
 - **Synth**: the built-in preview synths are **off by default** (a mono saw / square for the riff, a
   strings pad for the chords); switch them on to hear the app without another instrument. In the
   standalone app pick the audio device with **Options → Audio/MIDI Settings**.
-- **MIDI Out**: every tab that is on goes out as MIDI on its channel. The VST3 sends them only to the
-  host, which routes them (in FL Studio: wrapper settings → MIDI → **Output port**, and the same
-  **Input port** on the instrument that should play). The Standalone app has a **MIDI Out** port
-  picker instead (hardware, loopMIDI, IAC).
+- **MIDI Out**: every tab that is on goes out as MIDI on its channel. The picker in the footer says
+  where: in the VST3 **Host** (default; the host routes it, in FL Studio: wrapper settings → MIDI →
+  **Output port**, and the same **Input port** on the instrument that should play) or one system
+  device (a hardware synth, loopMIDI, IAC), which then gets everything and the host nothing. The
+  choice is saved with the project; a missing device falls back to Host. The Standalone app picks a
+  device or None.
 - **Import MIDI** (or drop a `.mid` on the window): up to 4 bars become A A′ B C of the Riff tab,
   monophonic, on a 1/16 grid, key guessed; the lane gets one chord per bar. **Export MIDI** saves the
   arrangement as one `.mid` with a track per tab that is on. **Drag to DAW** drags the same file.
