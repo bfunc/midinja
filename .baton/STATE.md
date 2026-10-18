@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-18 15:20 · opus-5.5@raptor#af93 · 47a2c2e
+Updated: 2026-10-18 15:40 · fable-5.1@home#24cf · 2f33f16
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -44,10 +44,10 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 - C in scales without a fifth falls back to ii (Locrian ♭II); keep it? · since 2026-10-17
 
 ## In progress
-- (none)
+- fable-5.1@home#24cf · JUCE port of the mockup (tabs, chords, scale switch, Progression, extension, root chip, range rows, one chromatic roll, no Transpose, letters palette; strings pad; Windows CI only) · since 2026-10-18 15:40
 
 ## Next
-1. Mockup, one task (agreed 2026-10-18): lossless scale switch; palette letters only, one bar A by default; 3 tabs; chord mode; Progression dice; extension copies A. Then raptor deploys
+1. Raptor deploys the mockup (2f33f16) to bfunc.cc; the user reviews it
 2. Port the mockup to the JUCE app, Windows build only (skip mac)
 3. User: FL check; then tag v0.2.0
 4. Generation: augmented-second pairs resolve into tonic/fifth (♭6–7–1, 3–♭2–1, ♭3–♯4–5); colour notes on strong beats
