@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-18 14:44 · fable-5.1@home#24cf · 47a2c2e
+Updated: 2026-10-18 15:04 · opus-5.5@raptor#af93 · 47a2c2e
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -25,6 +25,9 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 - 2026-10-18 · Root+range: one root chip (note + octave) that the range and all four parts follow; range = the visible rows of the roll with +/− at each edge, one step = one row of the view, min 1 note, max ~3 octaves; shrinking folds notes in by octave, locked notes never change; the bottom may go below the root · agreed with the user via raptor; replaces the Octave control and the Advanced Note range of 4ed5944
 - 2026-10-18 · Transpose: removed from the mockup, the root chip moves everything · user decision ("No need in transpose")
 - 2026-10-18 · View: one chromatic roll, scale rows highlighted, out-of-scale rows dimmed (height under review: half by default, ?rows=full for full); edges step by semitone; the range keeps at least one scale note; drag snaps to scale rows, Alt-drag chromatic · user via raptor; replaces the Riff/Scale/All switch
+- 2026-10-18 · Scale switch: unlocked notes keep their scale degree; colour notes move to the new scale's colour note nearest in pitch; an augmented-second pair moves as a unit to the new scale's pair (same one if it exists, else nearest), else to plain degrees; always computed from the original position, so any sequence of switches is reversible; scales of different sizes use a snapshot from before the first switch · agreed with the user
+- 2026-10-18 · Locks: locked notes and hand-placed off-scale notes (locked automatically) never move on a scale switch; root and octave changes move everything, locks kept; the range cannot shrink past a locked note; imported off-scale notes are degree + alteration, not locked; an unlocked chromatic note is replaced by the next roll · agreed with the user
+- 2026-10-18 · Pairs: shown as a thin teal arc between the two notes; one locked note splits the pair; a pair folds into the range as a whole · agreed with the user
 
 ## Open issues
 - !  VST3 MIDI bypassed FL (user, 2026-10-18): hardware on the interface played on every FL port because the plugin also opened a system MIDI port directly; VST instruments followed FL's port. Fixed in 82eb984 (host only), awaiting the user's confirmation in FL
@@ -40,7 +43,8 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 - (none)
 
 ## Next
-1. User: new Midinja-windows.zip from the latest pre-release; in FL the hardware should now play only through FL's port; report via raptor
-2. User: review the mockup (root chip, one chromatic roll with half-height out-of-scale rows vs ?rows=full, edges by semitone); then the port to the JUCE app
-3. Tag v0.2.0 when the user confirms the FL fix
-4. Chords (mockup first), then AU
+1. Scale switch without loss (agreed 2026-10-18, see Decisions): engine + mockup + app
+2. Generation: augmented-second pairs resolve into the tonic or fifth (♭6–7–1, 3–♭2–1, ♭3–♯4–5), more often at the end of a part or before a strong beat; colour notes more often on strong beats next to the root
+3. Port the approved mockup to the JUCE app (root chip, range as rows with +/−, one chromatic roll, no Transpose); Windows build only
+4. User: FL check of the new build; then tag v0.2.0
+5. Chords (mockup first), then AU
