@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-18 13:05 · opus-5.5@raptor#af93 · cb0bb73
+Updated: 2026-10-18 13:05 · fable-5.1@home#24cf · 26fb263
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -21,9 +21,10 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 - 2026-10-17 · Plugin sound: built-in preview synth with an on/off toggle, and the VST3 also sends MIDI to the host · user decision
 - 2026-10-17 · MIDI channel: selectable 1-16 in Standalone and VST3, saved with settings / plugin state, used for live MIDI out and the exported or dragged .mid · user request
 - 2026-10-17 · Release: rolling "latest" pre-release from CI; a tagged release only after the user confirms it works in FL · user said "Defaults ok"
+- 2026-10-18 · New UI features go to the web mockup first (served on Home at localhost), into the JUCE app only after the user approves the mockup · user: "continue to ui tasks, for this only web maket"
 
 ## Open issues
-- !  VST3 MIDI bypasses FL: the external synth on the audio interface plays whatever FL port is set, because the plugin also opens the system MIDI port directly. VST instruments follow FL's port correctly. Found by the user in FL, 2026-10-18
+- !  VST3 MIDI bypassed FL (user, 2026-10-18): hardware on the interface played on every FL port because the plugin also opened a system MIDI port directly; VST instruments followed FL's port. Fixed in 26fb263 (host only), awaiting the user's confirmation in FL
 -    Not tried yet: host tempo/transport sync. The mac zip (app + vst3) is built by CI but never opened.
 -    Not clicked through by hand: Start-on-root toggle, root marker at narrow widths (preview)
 
@@ -33,11 +34,10 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 - C in scales without a fifth falls back to ii (Locrian ♭II); keep it? · since 2026-10-17
 
 ## In progress
-- (none)
+- fable-5.1@home#24cf · web mockup: root octave next to Transpose + note range low/high · since 2026-10-18 13:05
 
 ## Next
-1. VST3 MIDI out only to the host (no direct system port, or an option off by default); Standalone keeps the direct port
-2. Root note octave selector next to Transpose: bass riffs come out in octave 4–5, too high
-3. Note range (low / high) setting for the generator
-4. Then a tagged release (v0.2.0) when the user confirms in FL
-5. Chords (mockup first), then AU
+1. User: new Midinja-windows.zip from the latest pre-release; in FL the hardware should now play only through FL's port; report via raptor
+2. Web mockup (localhost, not JUCE yet): root octave selector next to Transpose (bass riffs come out in octave 4-5, too high) and a note range (low / high) for the generator; the user approves, then the port to the app
+3. Tag v0.2.0 when the user confirms the FL fix
+4. Chords (mockup first), then AU
