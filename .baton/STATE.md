@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-19 19:40 · fable-5.1#24cf · a3b4e0c
+Updated: 2026-10-19 19:58 · fable-5.1#24cf · b915b23
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -42,6 +42,10 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 
 - 2026-10-18 · MIDI Out in the VST: an exclusive picker, Host (default: the host routes, e.g. FL's Output port) or one system device (then the device gets everything and the host nothing); saved in the state, a missing device falls back to Host with a message; Standalone unchanged · user: FL's Output port did not reach their Minitaur, they want the port in the plugin as before
 
+- 2026-10-19 · Chords per bar (option 2): the chord lane stays one continuous lane over the form; the Chords tab shows bar numbers and their chords only, no part controls; the part selector A/A′/B/C lives on Riff and Beats · the user chose it over per-part chords (option 1) the same day
+- 2026-10-19 · Level 2 fixed height: the bar row and the chord lane keep the same size on every tab; the active level is shown by colour and outline only · the editor jumped ~30 px between Riff and Chords
+- 2026-10-19 · One "+" on level 2: the bar-row + adds a bar (on Chords with a copy of the previous bar's chords); the chord lane has no + of its own, a chord inside a bar comes from a double-click · two + on Chords were redundant
+
 ## Open issues
 - !  VST3 MIDI bypassed FL (user, 2026-10-18): hardware on the interface played on every FL port because the plugin also opened a system MIDI port directly; VST instruments followed FL's port. Fixed in 82eb984 (host only); 2026-10-18 the picker returns, exclusive host-or-device (see Decisions), awaiting the user's FL check with the Minitaur
 -    Not tried yet: host tempo/transport sync. The mac zip (app + vst3) is built by CI but never opened.
@@ -57,7 +61,7 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 - (none)
 
 ## Next
-1. User reviews the mockup at https://bfunc.cc/static/midinja/ (deployed 2026-10-19 on the user's word, bfunc.cc b77e077; same as Home's localhost:8765): the restructured layout (04220cc) and the Beats tab (e33f657); the layout port to JUCE only after the user says so
+1. User reviews on Home at http://localhost:8765/ (bfunc.cc stays at b77e077 until the user says deploy): part selector back on Riff and Beats, Chords with bars only, copy buttons, level 2 without the jump (b915b23); the layout port to JUCE only after the user says so
 2. User tests the Windows zip from the latest pre-release in FL: Beats on channel 10, fills and the crash, the MIDI Out picker reaching the Minitaur directly (no double notes); report via raptor
 3. Tag v0.2.0 after the user's FL confirmation
 4. Generation: augmented-second pairs resolve into tonic/fifth (♭6–7–1, 3–♭2–1, ♭3–♯4–5); colour notes on strong beats
