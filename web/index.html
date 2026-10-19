@@ -68,6 +68,15 @@ input.num{width:64px}
 .tb .dot{width:11px;height:11px;border-radius:50%;border:2px solid var(--ink3);background:transparent;flex:none}
 .tb .dot.on{background:var(--acc2);border-color:var(--acc2);box-shadow:0 0 6px var(--acc2)}
 .tb.off .dot{border-color:var(--ink3)}
+.pal{display:flex;align-items:center;gap:4px;margin-left:4px;padding-left:10px;border-left:1px solid var(--line)}
+.pal .pt{padding:4px 9px;border-radius:7px;border:1px solid var(--line);background:var(--panel2);color:var(--ink2);font-weight:700;font-size:12px;line-height:1.2}
+.pal .pt:hover{border-color:#4a5163;color:var(--ink)}
+.pal .pt.on{background:var(--pick);border-color:var(--acc2);color:var(--acc2)}
+.pal .pt.locked{border-color:var(--state);box-shadow:inset 0 0 0 1px var(--state)}
+.pal .pt.locked.on{border-color:var(--acc2)}
+.pal .pt i{font-style:normal;font-size:9px;color:var(--ink3);margin-left:3px}
+.pal .pt.on i{color:var(--acc2)}
+.poly .pal{display:none}
 .tabset{margin-left:auto;display:flex;align-items:center;gap:6px;color:var(--ink2);font-size:11px}
 .tabset .lbl{margin:0 2px 0 8px}
 .tabset .lbl:first-child{margin-left:0}
@@ -91,7 +100,7 @@ input.num{width:64px}
 .form{padding:8px 14px 6px;background:var(--panel);border-bottom:1px solid var(--line)}
 .ruler{display:flex;gap:6px;align-items:stretch;margin-bottom:6px}
 .ruler .addcol{width:30px;flex:none}
-.hstrip{display:grid;gap:6px;margin-right:36px}
+.hstrip{display:grid;gap:6px;margin-right:36px;height:72px} /* the lane's height: level 2 never changes size between tabs */
 .hbar{min-height:24px;border:1px solid var(--line);border-radius:6px;background:var(--panel2);display:flex;gap:3px;padding:2px;cursor:pointer}
 .hbar:hover{border-color:#4a5163}
 .hbar .hc{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;border-radius:4px;background:#2b303a;font-size:11px;color:var(--ink2);white-space:nowrap;overflow:hidden;padding:0 4px}
@@ -106,7 +115,8 @@ input.num{width:64px}
 .pop .legend{margin:0;max-width:400px;gap:8px 12px}
 .pop h4{margin:0 0 6px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px}
 .pop .grp{padding:4px 0}
-.beats #what,.beats #mutseg,.beats .knobs .kv,.beats .edge,.beats .gstrip{display:none}
+.beats #what,.beats #mutseg,.beats .knobs .kv{display:none}
+.beats .edge,.beats .gstrip{visibility:hidden} /* keep their space: the roll starts at the same height on every tab */
 .beats .advR>div{display:none}.beats .advR>.advVel{display:block}
 .key.drum{font-size:10px;color:var(--ink2)}
 .key.drum.root{color:var(--ink)}
@@ -134,6 +144,12 @@ input.num{width:64px}
 .slot .tn:hover i{color:var(--ink)}
 .slot .tt{flex:1;width:auto}
 .slot .x{margin-left:auto}
+.slot .x.cp{font-size:12px}
+.slot .cp + .x{margin-left:0}
+.slot .cn{flex:1;min-width:0;font-size:11px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .cn b{color:var(--ink);font-weight:800}
+.pi.off{opacity:.4;cursor:default}
+.pal .pt.cpy{font-weight:400;color:var(--ink2)}
 .slot.prim .bn{color:var(--prim)}
 .slot:hover{border-color:#4a5163}
 .slot.ctx{border-color:var(--ctx);color:var(--ink)}
@@ -286,7 +302,7 @@ body.dragging .drop{display:grid}
   <div class="form">
     <div class="ruler"><div class="arr" id="arr"></div><div class="addcol" id="radd"></div></div>
     <div class="hstrip" id="hstrip"></div>
-    <div class="clane"><div class="lanebox" id="lane"></div><div class="addcol"><button id="cadd" title="Repeat the last chord after it">+</button></div></div>
+    <div class="clane"><div class="lanebox" id="lane"></div><div class="addcol"></div></div><!-- the column stays empty: one + on the bar row adds bars (with a chord on Chords); level 2 keeps its width -->
   </div>
 
   <!-- level 3: the track tabs -->
@@ -482,7 +498,59 @@ function setPart(k, p) { parts[k] = p; refreshPat(); }
 const shownBar = () => S.sel >= 0 && S.sel < arr.length ? S.sel : T && T.poly && selChord() ? Math.min(arr.length - 1, chordBar(selChord())) : arr.indexOf(S.cur); // Chords: the bar of the selected chord
 function refreshPat() { pat = T.poly ? chordPat(shownBar()) : T.drums ? T.parts[S.cur] : parts[S.cur]; }
 function selectPart(k) { S.cur = k; refreshPat(); render(); }
-function selectSlot(i) { S.sel = S.sel === i ? -1 : i; if (S.sel >= 0) S.cur = arr[i]; stepIdx = 0; playPos = 0; refreshPat(); render(); }
+function selectSlot(i) {
+  S.sel = S.sel === i ? -1 : i; if (S.sel >= 0) S.cur = arr[i];
+  if (T.poly && S.sel >= 0) { const c = firstChordIn(i) || chordAtBeat(i * 4); if (c) S.csel = c.id; }
+  stepIdx = 0; playPos = 0; refreshPat(); render();
+}
+// Chords tab: the chords of bar b go to every other bar of the same part; locked chords there stay
+function copyBarChords(b) {
+  const k = arr[b], targets = arr.map((p, j) => p === k && j !== b ? j : -1).filter(j => j >= 0);
+  if (!targets.length) return;
+  const fromDeg = [0, 1, 2, 3].map(degreeOf);
+  const srcC = sortedChords().filter(c => overlapsBar(c, b)).map(c => ({ ...c, start: Math.max(c.start, b * 4), end: Math.min(c.start + c.len, b * 4 + 4) }));
+  let kept = 0, placed = 0;
+  for (const b2 of targets) {
+    const a = b2 * 4, z = a + 4;
+    const locked = chords.filter(c => c.lock && overlapsBar(c, b2));
+    kept += locked.length;
+    // the unlocked chords leave the bar: inside ones go, crossing ones are cut at the bar line
+    chords = chords.filter(c => c.lock || !(c.start >= a && c.start + c.len <= z));
+    chords.forEach(c => { if (c.lock || !overlapsBar(c, b2)) return; if (c.start < a) c.len = a - c.start; else { c.len = c.start + c.len - z; c.start = z; } });
+    chords = chords.filter(c => c.len > 0);
+    for (const c of srcC) {
+      let s = c.start + (b2 - b) * 4, e = c.end + (b2 - b) * 4;
+      for (const L of locked) { if (L.start <= s && s < L.start + L.len) s = L.start + L.len; if (s < L.start && L.start < e) e = L.start; }
+      if (e > s) { chords.push(mkChord(s, e - s, c.deg, { type: c.type, inv: c.inv, rhythm: c.rhythm })); placed++; }
+    }
+  }
+  if (!selChord()) S.csel = sortedChords()[0]?.id ?? null;
+  say(`Bar ${b + 1} → ${targets.map(j => 'bar ' + (j + 1)).join(', ')}: ${placed} chord${placed === 1 ? '' : 's'} copied` + (kept ? `, ${kept} locked kept` : ''));
+  laneChanged(fromDeg); push();
+}
+// Riff tab: the notes of part k become part k2's starting point; the target's lock is respected
+function copyPartPicker(anchor, k) {
+  openPop(anchor, P => {
+    const h = document.createElement('h4'); h.textContent = 'Copy ' + PARTS[k] + ' to'; P.appendChild(h);
+    PARTS.forEach((nm, k2) => {
+      if (k2 === k) return;
+      const d = document.createElement('div'); d.className = 'pi' + (locks[k2] ? ' off' : '');
+      d.innerHTML = `<b>${nm}</b><span>${PART_HINT[k2]} · ${locks[k2] ? 'locked: unlock it first' : hasNotes(parts[k2]) ? 'replaces its notes' : 'empty'}</span>`;
+      d.title = locks[k2] ? PARTS[k2] + ' is locked: the dice, All and copies skip it. Unlock it on its bar or in the inspector' : 'Copy ' + PARTS[k] + ' into ' + nm + ' and show ' + nm;
+      if (!locks[k2]) d.onclick = () => { closePop(); copyPart(k, k2); };
+      P.appendChild(d);
+    });
+  });
+}
+function copyPart(k, k2) {
+  if (locks[k2]) { say(PARTS[k2] + ' is locked: unlock it to copy into it', true); return; }
+  const q = clone(parts[k]); delete q.base; q.steps.forEach(s => { s.locked = false; });
+  setPart(k2, q); src[k2] = src[k];
+  S.cur = k2; S.sel = -1; stepIdx = 0; playPos = 0;
+  fixChordTones(k2);
+  say(PARTS[k] + ' copied to ' + PARTS[k2] + (arr.includes(k2) ? '' : ' (not in the form yet: the ▾ on a bar puts it there)'));
+  push(parts[k2]);
+}
 
 // ---- scale and chord maths ---------------------------------------------------------------
 const pcOf = n => ((n - S.root) % 12 + 12) % 12;
@@ -846,19 +914,6 @@ function applyTyped() {
   say('Applied ' + chords.length + ' chord' + (chords.length > 1 ? 's' : '') + ' · quality from the scale');
   commitVersion();
 }
-// "+" repeats the last chord after it (adds a bar when the lane is full and there are fewer than 4)
-function appendChord() {
-  const s = sortedChords(), end = s.length ? s[s.length - 1].start + s[s.length - 1].len : 0;
-  if (end >= total()) {
-    if (arr.length >= 4) return say('The lane is full (4 bars): shorten or remove a chord first', true);
-    const k = [0, 1, 2, 3].find(x => !arr.includes(x)) ?? arr.length % 4;
-    arr.push(k); tabs.forEach(tab => extendPart(tab, k));
-  }
-  const prev = s[s.length - 1];
-  const c = mkChord(end, Math.min(prev ? prev.len : 4, total() - end), prev ? prev.deg : 0, { type: prev?.type || '7th', inv: prev?.inv || 0, rhythm: prev?.rhythm || 'whole' });
-  chords.push(c); S.csel = c.id;
-  laneChanged(); say(''); push();
-}
 function addChord(atBeat) {
   const s = sortedChords(); let gaps = [], p = 0;
   s.forEach(c => { if (c.start > p) gaps.push([p, c.start]); p = c.start + c.len; });
@@ -1175,8 +1230,6 @@ function renderLane() {
     HS.appendChild(d);
   });
   const s = sortedChords(), end = s.length ? s[s.length - 1].start + s[s.length - 1].len : 0, full = end >= Tt && arr.length >= 4;
-  $('cadd').disabled = full;
-  $('cadd').title = full ? 'All 4 bars are filled: shorten or remove a chord to add one' : 'Repeat the last chord after it' + (end >= Tt ? ' (adds a bar)' : '');
 
   // generators
   const G = $('cgen'); G.innerHTML = '';
@@ -1276,6 +1329,25 @@ function render() {
     d.querySelector('.dot').onclick = e => { e.stopPropagation(); tab.on = !tab.on; push(); };
     TB.appendChild(d);
   });
+  if (!T.poly) {
+    const Pl = document.createElement('div'); Pl.className = 'pal'; Pl.title = 'The part the roll edits; every bar of the form with that part changes with it';
+    const LK0 = tabLocks();
+    PARTS.forEach((nm, k) => {
+      const b = document.createElement('button'); b.className = 'pt' + (k === S.cur ? ' on' : '') + (LK0[k] ? ' locked' : '');
+      const bars = arr.map((p, i) => p === k ? i + 1 : 0).filter(Boolean);
+      b.innerHTML = nm + (bars.length ? '<i>' + bars.join(' ') + '</i>' : '');
+      b.title = `${nm} · ${PART_HINT[k]}${LK0[k] ? ' · locked: the dice and All skip it' : ''} · ${bars.length ? 'in bar' + (bars.length > 1 ? 's ' : ' ') + bars.join(', ') : 'not in the form (▾ on a bar puts it there)'} · click to edit it in the roll`;
+      b.onclick = () => { if (k === S.cur && S.sel < 0) return; S.cur = k; S.sel = -1; stepIdx = 0; playPos = 0; refreshPat(); render(); };
+      Pl.appendChild(b);
+    });
+    if (!T.drums) {
+      const cp = document.createElement('button'); cp.className = 'pt cpy'; cp.textContent = 'Copy to…';
+      cp.title = `Copy the notes of ${PARTS[S.cur]} into another part as a starting point (a locked part is skipped); one undo step`;
+      cp.onclick = () => copyPartPicker(cp, S.cur);
+      Pl.appendChild(cp);
+    }
+    TB.appendChild(Pl);
+  }
   const set = document.createElement('div'); set.className = 'tabset';
   const lbl = t => { const s = document.createElement('span'); s.className = 'lbl'; s.textContent = t; set.appendChild(s); };
   lbl(T.name);
@@ -1290,26 +1362,41 @@ function render() {
   A.style.gridTemplateColumns = `repeat(${Math.max(1, arr.length)}, 1fr)`;
   arr.forEach((k, i) => {
     const t = document.createElement('div');
-    const cb = T.poly ? chordBar(selChord()) : -1;
-    const level = T.poly ? (i === cb || (cb < 0 && i === b0) ? ' ctx' : '') : i === b0 ? ' prim' : k === S.cur ? ' ctx' : '';
+    const level = T.poly ? (i === b0 ? ' ctx' : '') : i === b0 ? ' prim' : k === S.cur ? ' ctx' : '';
     const LK = tabLocks();
-    t.className = 'slot' + level + (LK[k] ? ' locked' : '') + (i === ps ? ' playing' : '');
-    t.title = `Bar ${i + 1}: part ${PARTS[k]} · ${i === S.sel ? 'selected: Play loops this bar; click again to deselect' : 'click to select it and edit ' + PARTS[k]} (every ${PARTS[k]} bar changes with it)`;
-    t.innerHTML = `<span class="bn">${i + 1}</span><span class="lk" title="${LK[k] ? 'Unlock (Shift+click): ' + PARTS[k] + ' is locked, the dice and All skip it' : 'Lock (Shift+click): the dice and All keep ' + PARTS[k] + ' as it is'}">${LK[k] ? '🔒' : '🔓'}</span><span class="tn" title="Which part plays in bar ${i + 1}: click to choose">${PARTS[k]}<i>▾</i></span><div class="tt"></div><button class="x" title="Remove this bar from the form (its chords go with it)">×</button><i class="pp"></i>`;
-    if (T.drums) drumThumb(t.querySelector('.tt'), T.parts[k]); else thumb(t.querySelector('.tt'), [parts[k]], 44, 16);
-    const toggleLock = () => { LK[k] = !LK[k]; push(); };
-    t.onclick = e => e.shiftKey ? toggleLock() : selectSlot(i);
-    t.querySelector('.lk').onclick = e => { e.stopPropagation(); toggleLock(); };
-    t.querySelector('.tn').onclick = e => { e.stopPropagation(); partPicker(t.querySelector('.tn'), i); };
-    t.querySelector('.x').onclick = e => { e.stopPropagation(); removeBar(i); };
+    t.className = 'slot' + level + (!T.poly && LK[k] ? ' locked' : '') + (i === ps ? ' playing' : '');
+    if (T.poly) {
+      // Chords are per bar: the bar shows its number and its chords; the parts stay on Riff and Beats
+      const cs = sortedChords().filter(c => overlapsBar(c, i)), sib = arr.filter((p, j) => p === k && j !== i).length;
+      t.title = `Bar ${i + 1}: ${cs.length ? cs.map(chordName).join(', ') : 'no chord'} · ${i === S.sel ? 'selected: Play loops this bar, the inspector edits its chords; click again to deselect' : 'click to select it and edit its chords'}`;
+      t.innerHTML = `<span class="bn">${i + 1}</span><span class="cn">${cs.length ? cs.map(c => '<b>' + numeral(c.deg, c.type) + '</b>').join(' · ') : 'no chord'}</span><button class="x cp" title="${sib ? 'Copy the chords of bar ' + (i + 1) + ' to the other ' + PARTS[k] + ' bar' + (sib > 1 ? 's' : '') + ' (locked chords there stay); one undo step' : 'No other bar plays ' + PARTS[k] + ': nothing to copy to'}">⧉</button><button class="x" title="Remove this bar from the form (its chords go with it)">×</button><i class="pp"></i>`;
+      t.querySelector('.cp').disabled = !sib;
+      t.querySelector('.cp').onclick = e => { e.stopPropagation(); copyBarChords(i); };
+      t.onclick = () => selectSlot(i);
+    } else {
+      t.title = `Bar ${i + 1}: part ${PARTS[k]} · ${i === S.sel ? 'selected: Play loops this bar; click again to deselect' : 'click to select it and edit ' + PARTS[k]} (every ${PARTS[k]} bar changes with it)`;
+      t.innerHTML = `<span class="bn">${i + 1}</span><span class="lk" title="${LK[k] ? 'Unlock (Shift+click): ' + PARTS[k] + ' is locked, the dice and All skip it' : 'Lock (Shift+click): the dice and All keep ' + PARTS[k] + ' as it is'}">${LK[k] ? '🔒' : '🔓'}</span><span class="tn" title="Which part plays in bar ${i + 1}: click to choose">${PARTS[k]}<i>▾</i></span><div class="tt"></div><button class="x" title="Remove this bar from the form (its chords go with it)">×</button><i class="pp"></i>`;
+      if (T.drums) drumThumb(t.querySelector('.tt'), T.parts[k]); else thumb(t.querySelector('.tt'), [parts[k]], 44, 16);
+      const toggleLock = () => { LK[k] = !LK[k]; push(); };
+      t.onclick = e => e.shiftKey ? toggleLock() : selectSlot(i);
+      t.querySelector('.lk').onclick = e => { e.stopPropagation(); toggleLock(); };
+      t.querySelector('.tn').onclick = e => { e.stopPropagation(); partPicker(t.querySelector('.tn'), i); };
+    }
+    t.querySelector('.x:not(.cp)').onclick = e => { e.stopPropagation(); removeBar(i); };
     A.appendChild(t);
   });
   if (!arr.length) { const h = document.createElement('span'); h.className = 'arrhint'; h.textContent = 'No bars yet: + adds bar 1 with part A'; A.appendChild(h); }
   // the square + repeats the last bar: A → A A → A A A (the same part, so the same riff)
   const ab = document.createElement('button'); ab.className = 'aadd'; ab.textContent = '+';
   ab.disabled = arr.length >= MAX_BARS;
-  ab.title = arr.length >= MAX_BARS ? '4 bars at most' : arr.length ? `Repeat the last bar after it (${PARTS[arr[arr.length - 1]]} again); the ▾ on a bar changes its part` : 'Add bar 1 with part A';
-  ab.onclick = () => { arr.push(arr.length ? arr[arr.length - 1] : 0); S.sel = -1; laneChanged(); push(); };
+  ab.title = arr.length >= MAX_BARS ? '4 bars at most' : arr.length ? `Repeat the last bar after it (${PARTS[arr[arr.length - 1]]} again)` + (T.poly ? ' with a copy of its chords; its part changes on Riff or Beats' : '; the ▾ on a bar changes its part') : 'Add bar 1 with part A';
+  ab.onclick = () => {
+    const fromDeg = [0, 1, 2, 3].map(degreeOf), last = arr.length - 1;
+    arr.push(arr.length ? arr[arr.length - 1] : 0); S.sel = -1;
+    // on Chords the new bar starts with the chords of the bar before it (chords are per bar)
+    if (T.poly && last >= 0) sortedChords().filter(c => overlapsBar(c, last)).forEach(c => { const s = Math.max(c.start, last * 4), e = Math.min(c.start + c.len, last * 4 + 4); chords.push(mkChord(s + 4, e - s, c.deg, { type: c.type, inv: c.inv, rhythm: c.rhythm })); });
+    laneChanged(fromDeg); push();
+  };
   $('radd').innerHTML = ''; $('radd').appendChild(ab);
   $('playinfo').textContent = 'BPM · ' + (S.sel >= 0 ? 'bar ' + (S.sel + 1) : arr.length ? arr.length + ' bar' + (arr.length > 1 ? 's' : '') : 'this part');
   $('playinfo').title = S.sel >= 0 ? 'Play loops only the selected bar (Esc deselects)' : 'Play loops the whole form';
@@ -1577,7 +1664,6 @@ function endDrag(e) { if (!drag || (e && e.pointerId !== drag.pid)) return; cons
 function revertDrag() { if (!drag) return; const c = chords.find(x => x.id === drag.id); if (c) { c.start = drag.orig.start; c.len = drag.orig.len; } drag = null; render(); }
 laneEl.addEventListener('pointerup', endDrag);
 laneEl.addEventListener('pointercancel', e => { if (drag && e.pointerId === drag.pid) revertDrag(); });
-$('cadd').onclick = appendChord;
 
 // ---- popovers: the part of a bar, ⚙, ? ---------------------------------------------------------
 const POP = $('pop');
