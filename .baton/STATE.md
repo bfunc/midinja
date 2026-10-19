@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-18 21:56 · fable-5.1#24cf · a775f09
+Updated: 2026-10-19 19:40 · fable-5.1#24cf · a3b4e0c
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -57,7 +57,7 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 - (none)
 
 ## Next
-1. User reviews on Home at http://localhost:8765/: the restructured mockup (04220cc) and the Beats tab (e33f657); Raptor deploys to bfunc.cc only on the user's word; the layout port to JUCE only after the user says so
+1. User reviews the mockup at https://bfunc.cc/static/midinja/ (deployed 2026-10-19 on the user's word, bfunc.cc b77e077; same as Home's localhost:8765): the restructured layout (04220cc) and the Beats tab (e33f657); the layout port to JUCE only after the user says so
 2. User tests the Windows zip from the latest pre-release in FL: Beats on channel 10, fills and the crash, the MIDI Out picker reaching the Minitaur directly (no double notes); report via raptor
 3. Tag v0.2.0 after the user's FL confirmation
 4. Generation: augmented-second pairs resolve into tonic/fifth (♭6–7–1, 3–♭2–1, ♭3–♯4–5); colour notes on strong beats
