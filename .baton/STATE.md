@@ -1,10 +1,10 @@
 # Midinja · Baton
-Updated: 2026-10-19 20:02 · fable-5.1#24cf · 8fb54d1
+Updated: 2026-10-19 21:30 · fable-5.1#24cf · 18fdb7c
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
 ## Now
-Focus: the **real build** v0.2: the JUCE app follows the web preview; Standalone with sound + VST3 with drag-and-drop of the arrangement into FL Studio. Built and checked on Home; waiting for the user to try it in FL.
+Focus: the **real build** v0.2: the JUCE app follows the web preview (8fb54d1 ported in 18fdb7c: parts selector, Chords per bar, ⧉, one +); Standalone with sound + VST3 with drag-and-drop of the arrangement into FL Studio. Waiting for the user to try the Windows zip in FL.
 Who: home builds the app (CI) and the preview; raptor relays user feedback; the user tests in FL Studio. No deploys to bfunc.cc.
 
 ## Decisions (accepted, don't "fix")
@@ -61,8 +61,7 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 - (none)
 
 ## Next
-1. User reviews on Home at http://localhost:8765/ (bfunc.cc stays at b77e077 until the user says deploy): part selector back on Riff and Beats, Chords with bars only, ⧉ on Chords bars, level 2 without the jump (8fb54d1); the layout port to JUCE only after the user says so
-2. User tests the Windows zip from the latest pre-release in FL: Beats on channel 10, fills and the crash, the MIDI Out picker reaching the Minitaur directly (no double notes); report via raptor
-3. Tag v0.2.0 after the user's FL confirmation
-4. Generation: augmented-second pairs resolve into tonic/fifth (♭6–7–1, 3–♭2–1, ♭3–♯4–5); colour notes on strong beats
-5. AU later
+1. User tests the Windows zip from the latest pre-release (18fdb7c) in FL: the parts selector on the tab row, Chords bars with ⧉, the bar + (copies chords on Chords), the ▾ part picker; plus the earlier Beats on channel 10, fills and the crash, the MIDI Out picker reaching the Minitaur directly; report via raptor. bfunc.cc stays at b77e077 until the user says deploy
+2. Tag v0.2.0 after the user's FL confirmation
+3. Generation: augmented-second pairs resolve into tonic/fifth (♭6–7–1, 3–♭2–1, ♭3–♯4–5); colour notes on strong beats
+4. AU later
