@@ -148,8 +148,6 @@ input.num{width:64px}
 .slot .cp + .x{margin-left:0}
 .slot .cn{flex:1;min-width:0;font-size:11px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .slot .cn b{color:var(--ink);font-weight:800}
-.pi.off{opacity:.4;cursor:default}
-.pal .pt.cpy{font-weight:400;color:var(--ink2)}
 .slot.prim .bn{color:var(--prim)}
 .slot:hover{border-color:#4a5163}
 .slot.ctx{border-color:var(--ctx);color:var(--ink)}
@@ -528,30 +526,6 @@ function copyBarChords(b) {
   say(`Bar ${b + 1} → ${targets.map(j => 'bar ' + (j + 1)).join(', ')}: ${placed} chord${placed === 1 ? '' : 's'} copied` + (kept ? `, ${kept} locked kept` : ''));
   laneChanged(fromDeg); push();
 }
-// Riff tab: the notes of part k become part k2's starting point; the target's lock is respected
-function copyPartPicker(anchor, k) {
-  openPop(anchor, P => {
-    const h = document.createElement('h4'); h.textContent = 'Copy ' + PARTS[k] + ' to'; P.appendChild(h);
-    PARTS.forEach((nm, k2) => {
-      if (k2 === k) return;
-      const d = document.createElement('div'); d.className = 'pi' + (locks[k2] ? ' off' : '');
-      d.innerHTML = `<b>${nm}</b><span>${PART_HINT[k2]} · ${locks[k2] ? 'locked: unlock it first' : hasNotes(parts[k2]) ? 'replaces its notes' : 'empty'}</span>`;
-      d.title = locks[k2] ? PARTS[k2] + ' is locked: the dice, All and copies skip it. Unlock it on its bar or in the inspector' : 'Copy ' + PARTS[k] + ' into ' + nm + ' and show ' + nm;
-      if (!locks[k2]) d.onclick = () => { closePop(); copyPart(k, k2); };
-      P.appendChild(d);
-    });
-  });
-}
-function copyPart(k, k2) {
-  if (locks[k2]) { say(PARTS[k2] + ' is locked: unlock it to copy into it', true); return; }
-  const q = clone(parts[k]); delete q.base; q.steps.forEach(s => { s.locked = false; });
-  setPart(k2, q); src[k2] = src[k];
-  S.cur = k2; S.sel = -1; stepIdx = 0; playPos = 0;
-  fixChordTones(k2);
-  say(PARTS[k] + ' copied to ' + PARTS[k2] + (arr.includes(k2) ? '' : ' (not in the form yet: the ▾ on a bar puts it there)'));
-  push(parts[k2]);
-}
-
 // ---- scale and chord maths ---------------------------------------------------------------
 const pcOf = n => ((n - S.root) % 12 + 12) % 12;
 const inScale = n => SCALES[S.scale].intervals.includes(pcOf(n));
@@ -1340,12 +1314,6 @@ function render() {
       b.onclick = () => { if (k === S.cur && S.sel < 0) return; S.cur = k; S.sel = -1; stepIdx = 0; playPos = 0; refreshPat(); render(); };
       Pl.appendChild(b);
     });
-    if (!T.drums) {
-      const cp = document.createElement('button'); cp.className = 'pt cpy'; cp.textContent = 'Copy to…';
-      cp.title = `Copy the notes of ${PARTS[S.cur]} into another part as a starting point (a locked part is skipped); one undo step`;
-      cp.onclick = () => copyPartPicker(cp, S.cur);
-      Pl.appendChild(cp);
-    }
     TB.appendChild(Pl);
   }
   const set = document.createElement('div'); set.className = 'tabset';
