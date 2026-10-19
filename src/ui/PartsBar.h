@@ -7,10 +7,12 @@
 #include <functional>
 #include <vector>
 
-// The row above the chord lane (web `.tabs`): the arrangement's bars on the left (lock, name with
-// the bar's chord degree under it, thumbnail, remove) and a square + that repeats the last bar, a
-// note about what is shown in the middle, room kept for the editor's Unlock button, and the
-// palette of the four parts on the right (letters; click adds a bar).
+// The row above the chord lane (web `.ruler`): the form's bars on the left and a square + that
+// repeats the last bar (bar 1 with A when the form is empty; on Chords the new bar gets a copy of
+// the previous bar's chords). On Riff and Beats a bar shows its number, lock, part (the ▾ picks
+// another) and thumbnail; on Chords its number and its chords, with ⧉ copying them to the other
+// bars of the same part (chords are per bar). A note about what is shown sits in the middle, and
+// room is kept on the right for the editor's Unlock bar button.
 class PartsBar : public juce::Component, public juce::TooltipClient
 {
 public:
@@ -18,8 +20,9 @@ public:
 
     midinja::Session* sess = nullptr;
     int playingSlot = -1;
-    int reserveW = 0; // width kept free before the palette (the Unlock bar button)
-    std::function<void (int)> onSelectSlot, onToggleLock, onRemoveBar, onAddBar;
+    int reserveW = 0; // width kept free on the right (the Unlock bar button)
+    std::function<void (int)> onSelectSlot, onToggleLock, onRemoveBar, onCopyBar;
+    std::function<void (int, int)> onSetBarPart; // (bar, part)
     std::function<void()> onRepeatBar;
 
     juce::Rectangle<int> reservedArea() const { return layout().reserved; }
@@ -31,17 +34,18 @@ public:
     juce::String getTooltip() override;
 
 private:
-    struct Hit { enum Kind { None, Slot, SlotLock, SlotX, Add, Tab, Info } kind = None; int index = -1; };
+    struct Hit { enum Kind { None, Slot, SlotLock, SlotName, SlotCopy, SlotX, Add, Info } kind = None; int index = -1; };
     struct Layout
     {
-        std::vector<juce::Rectangle<int>> slots, slotLocks, slotXs, tabs;
+        std::vector<juce::Rectangle<int>> slots, slotLocks, slotNames, slotCopies, slotXs;
         juce::Rectangle<int> add, info, reserved;
         bool full = false;
     };
     Layout layout() const;
     Hit hitAt (juce::Point<int>) const;
-    int nameWidth (int k, int bar) const;
-    void drawName (juce::Graphics&, int k, int bar, int x, juce::Colour ink) const;
+    juce::String chordsText (int bar) const;
+    bool canCopy (int bar) const;
+    void showPartPicker (int bar);
     static void drawPadlock (juce::Graphics&, juce::Rectangle<float>, juce::Colour, bool open);
 
     juce::Point<int> hover { -1, -1 };

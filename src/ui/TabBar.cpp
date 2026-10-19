@@ -1,10 +1,24 @@
 #include "TabBar.h"
 #include "Theme.h"
 
+#include <cmath>
+
 namespace
 {
 juce::String u8 (const char* s) { return juce::String (juce::CharPointer_UTF8 (s)); }
 const char* tabName (int i) { return i == midinja::kChordTab ? "Chords" : i == midinja::kBeatTab ? "Beats" : "Riff"; }
+juce::Font palFont() { return theme::font (12.0f, true); }
+juce::Font barsFont() { return theme::font (9.0f); }
+
+// the bars part k plays in, as "1 3"
+juce::String barsOf (const midinja::Doc& d, int k)
+{
+    juce::StringArray bars;
+    for (int i = 0; i < (int) d.arr.size(); ++i)
+        if (d.arr[(size_t) i] == k)
+            bars.add (juce::String (i + 1));
+    return bars.joinIntoString (" ");
+}
 } // namespace
 
 TabBar::TabBar()
@@ -35,10 +49,32 @@ void TabBar::resized()
         dots[(size_t) i] = { x + 9, (height - 11) / 2, 11, 11 };
         x += w + 8;
     }
+    tabsRight = x - 8;
     const int rx = getWidth() - 14;
     rRange = { rx - 70, 0, 70, height };
     channel.setBounds (rRange.getX() - 8 - 66 - 50, (height - 24) / 2, 66, 24);
     rLabel = { channel.getX() - 60, 0, 56, height };
+}
+
+// the part selector (web `.pal`): after the tabs, behind a thin line; not on Chords
+TabBar::Pal TabBar::palLayout() const
+{
+    Pal P;
+    if (sess == nullptr || sess->doc.T().poly)
+        return P;
+    const auto& d = sess->doc;
+    int x = tabsRight + 4;
+    P.sep = x;
+    x += 1 + 10;
+    for (int k = 0; k < midinja::kNumParts; ++k)
+    {
+        const auto bars = barsOf (d, k);
+        const int w = 9 + (int) std::ceil (theme::textWidth (palFont(), u8 (midinja::partName (k))))
+                    + (bars.isEmpty() ? 0 : 3 + (int) std::ceil (theme::textWidth (barsFont(), bars))) + 9;
+        P.boxes[(size_t) k] = { x, (height - 24) / 2, w, 24 };
+        x += w + 4;
+    }
+    return P;
 }
 
 void TabBar::paint (juce::Graphics& g)
@@ -76,6 +112,38 @@ void TabBar::paint (juce::Graphics& g)
         g.setFont (theme::font (13.0f, true));
         g.drawText (tabName (i), boxes[(size_t) i].withTrimmedLeft (9 + 11 + 8), juce::Justification::centredLeft);
     }
+    const auto P = palLayout();
+    if (P.sep >= 0)
+    {
+        g.setColour (theme::line);
+        g.fillRect (P.sep, 6, 1, height - 12);
+        const auto& t = d.T().drums ? d.T() : d.riff(); // the locks of the tab shown
+        for (int k = 0; k < midinja::kNumParts; ++k)
+        {
+            const auto b = P.boxes[(size_t) k];
+            const auto r = b.toFloat().reduced (0.5f);
+            const bool on = k == d.cur, locked = t.locks[(size_t) k];
+            g.setColour (on ? theme::teal.withAlpha (0.12f) : theme::panel2);
+            g.fillRoundedRectangle (r, 7.0f);
+            g.setColour (on ? theme::teal : locked ? theme::state : theme::line);
+            g.drawRoundedRectangle (r, 7.0f, 1.0f);
+            if (locked) // the inset ring of a lock
+                g.drawRoundedRectangle (r.reduced (1.0f), 6.0f, 1.0f);
+            const auto name = u8 (midinja::partName (k));
+            const int nw = (int) std::ceil (theme::textWidth (palFont(), name));
+            g.setColour (on ? theme::teal : theme::ink2);
+            g.setFont (palFont());
+            g.drawText (name, b.getX() + 9, 0, nw, height, juce::Justification::centredLeft);
+            const auto bars = barsOf (d, k);
+            if (bars.isNotEmpty())
+            {
+                g.setColour (on ? theme::teal : theme::ink3);
+                g.setFont (barsFont());
+                const int bx = b.getX() + 9 + nw + 3;
+                g.drawText (bars, bx, 0, b.getRight() - 9 - bx, height, juce::Justification::centredLeft);
+            }
+        }
+    }
     const auto& t = d.T();
     g.setColour (theme::ink3);
     g.setFont (theme::font (10.0f));
@@ -103,23 +171,51 @@ void TabBar::mouseDown (const juce::MouseEvent& e)
             return;
         }
     }
+    const auto P = palLayout();
+    if (P.sep < 0)
+        return;
+    for (int k = 0; k < midinja::kNumParts; ++k)
+        if (P.boxes[(size_t) k].contains (e.getPosition()))
+        {
+            const auto& d = sess->doc;
+            if (k == d.cur && d.sel < 0)
+                return;
+            if (onSelectPart) onSelectPart (k);
+            return;
+        }
 }
 
 juce::String TabBar::getTooltip()
 {
     if (sess == nullptr)
         return {};
+    const auto& d = sess->doc;
     for (int i = 0; i < midinja::kNumTabs; ++i)
     {
-        const auto& t = sess->doc.tabs[(size_t) i];
+        const auto& t = d.tabs[(size_t) i];
         if (dots[(size_t) i].expanded (3).contains (hover))
             return t.on ? "On: plays and exports. Click to turn off" : "Off: no play, no export. Click to turn on";
         if (boxes[(size_t) i].contains (hover))
             return juce::String (tabName (i)) + " on channel " + juce::String (t.channel) + (t.on ? ", on" : ", off") + u8 (" \xC2\xB7 click the name to show it, the dot to turn it on or off");
     }
+    const auto P = palLayout();
+    if (P.sep >= 0)
+    {
+        const auto& t = d.T().drums ? d.T() : d.riff();
+        for (int k = 0; k < midinja::kNumParts; ++k)
+            if (P.boxes[(size_t) k].contains (hover))
+            {
+                juce::StringArray list;
+                list.addTokens (barsOf (d, k), " ", juce::String());
+                return u8 (midinja::partName (k)) + u8 (" \xC2\xB7 ") + midinja::partHint (k)
+                     + (t.locks[(size_t) k] ? u8 (" \xC2\xB7 locked: the dice and All skip it") : juce::String())
+                     + u8 (" \xC2\xB7 ") + (list.isEmpty() ? u8 ("not in the form (\xE2\x96\xBE on a bar puts it there)") : "in bar" + juce::String (list.size() > 1 ? "s " : " ") + list.joinIntoString (", "))
+                     + u8 (" \xC2\xB7 click to edit it in the roll");
+            }
+    }
     if (rRange.contains (hover))
-        return sess->doc.T().drums ? "Nine GM drum notes, Kick 36 to Crash 49; the key and the octave do not apply"
-             : sess->doc.T().poly ? "The rows of the Chords roll: + and - at the edges crop the view only, chords never move; cut notes show as ghosts"
-                                  : "The rows of the roll: grow or shrink it with + and - at the top and bottom edges; - and + by the key move it an octave";
-    return "The tabs share the key, the arrangement and the chord lane; each has its own channel (Riff and Chords an octave and a range, Riff and Beats their parts). Export = one .mid, a track per tab that is on";
+        return d.T().drums ? "Nine GM drum notes, Kick 36 to Crash 49; the key and the octave do not apply"
+             : d.T().poly ? "The rows of the Chords roll: + and - at the edges crop the view only, chords never move; cut notes show as ghosts"
+                          : "The rows of the roll: grow or shrink it with + and - at the top and bottom edges; - and + by the key move it an octave";
+    return "The tabs share the key, the form and the chord lane; each has its own channel (Riff and Chords an octave and a range, Riff and Beats their parts). Export = one .mid, a track per tab that is on";
 }

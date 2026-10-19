@@ -30,8 +30,6 @@ ChordLane::HitAt ChordLane::hitAt (juce::Point<int> pt) const
 {
     if (sess == nullptr)
         return {};
-    if (addRect().contains (pt))
-        return { Act::Add, -1 };
     const auto& d = sess->doc;
     for (int i : d.sortedChordIndices())
     {
@@ -60,18 +58,6 @@ void ChordLane::paint (juce::Graphics& g)
         return;
     const auto& d = sess->doc;
     const auto la = laneArea();
-    // the square +
-    {
-        const auto r = addRect().toFloat().reduced (0.5f);
-        const bool can = sess->canAppendChord();
-        g.setColour (theme::panel2.withAlpha (can ? 1.0f : 0.4f));
-        g.fillRoundedRectangle (r, 7.0f);
-        g.setColour (theme::line);
-        g.drawRoundedRectangle (r, 7.0f, 1.0f);
-        g.setColour (theme::accent.withAlpha (can ? 1.0f : 0.35f));
-        g.fillRect (r.getCentreX() - 1.0f, r.getCentreY() - 6.0f, 2.0f, 12.0f);
-        g.fillRect (r.getCentreX() - 6.0f, r.getCentreY() - 1.0f, 12.0f, 2.0f);
-    }
     g.setColour (theme::panel);
     g.fillRoundedRectangle (la.toFloat(), 6.0f);
     const int total = std::max (1, d.totalBeats());
@@ -148,7 +134,6 @@ void ChordLane::mouseDown (const juce::MouseEvent& e)
     const auto h = hitAt (e.getPosition());
     switch (h.act)
     {
-        case Act::Add:   if (sess->canAppendChord()) { sess->appendChord(); if (onChanged) onChanged(); } return;
         case Act::Lock:  sess->selectChord (h.chordId); sess->toggleChordLock (h.chordId); if (onChanged) onChanged(); return;
         case Act::Inv:   sess->selectChord (h.chordId); sess->cycleInversion (h.chordId); if (onChanged) onChanged(); return;
         case Act::Regen: sess->selectChord (h.chordId); sess->regenChord (h.chordId); if (onChanged) onChanged(); return;
@@ -258,8 +243,6 @@ juce::String ChordLane::getTooltip()
     const auto* c = h.chordId >= 0 ? sess->doc.chordById (h.chordId) : nullptr;
     switch (h.act)
     {
-        case Act::Add:   return sess->canAppendChord() ? juce::String ("Repeat the last chord after it") + (sess->doc.laneEnd() >= sess->doc.totalBeats() ? " (adds a bar)" : "")
-                                                       : "All 4 bars are filled: shorten or remove a chord to add one";
         case Act::Lock:  return c != nullptr && c->lock ? "Unlock" : "Lock: rolls keep this chord";
         case Act::Inv:   return "Inversion: click for the next";
         case Act::Regen: return "Another chord here";

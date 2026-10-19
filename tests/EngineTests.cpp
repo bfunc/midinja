@@ -688,16 +688,21 @@ static void testDocument()
     CHECK (s.currentOp (op) && op == Op::Mutate);
     s.mutateMode = false; s.doRhythm = true; s.doNotes = true;
 
-    // The square + repeats the last chord and adds bars; the riff + repeats the last bar.
-    s.appendChord();
-    CHECK (d.arr.size() == 2 && d.chords.size() == 2 && d.laneEnd() == 8);
-    s.appendChord();
-    s.appendChord();
-    CHECK (d.arr.size() == 4 && d.chords.size() == 4 && ! s.canAppendChord());
-    s.removeChord (d.chords.back().id);
-    CHECK (d.chords.size() == 3 && s.canAppendChord());
+    // The + repeats the last bar: on Riff with no chord of its own, on Chords with a copy of the
+    // previous bar's chords; the ▾ on a bar changes its part.
+    s.repeatLastBar();
+    s.setBarPart (1, 1);
+    s.selectTab (kChordTab);
+    s.addChordAt (4);
+    s.repeatLastBar();
+    s.setBarPart (2, 2);
+    s.repeatLastBar();
+    CHECK ((d.arr == std::vector<int> { 0, 1, 2, 2 }) && d.chords.size() == 4 && d.laneEnd() == 16);
     s.repeatLastBar();
     CHECK (d.arr.size() == 4); // never more than 4 bars
+    s.removeChord (d.chords[(size_t) d.chordAtBeat (12)].id);
+    CHECK (d.chords.size() == 3);
+    s.selectTab (kRiffTab);
     const size_t beforeBars = d.arr.size();
     s.removeBar (3);
     CHECK (d.arr.size() == beforeBars - 1 && d.laneEnd() <= d.totalBeats());
@@ -916,6 +921,84 @@ static void testDocument()
     CHECK (s.message.find ("No notes found") == 0);
 }
 
+// Chords are per bar: the + copies the previous bar's chords on Chords, the ▾ changes a bar's
+// part, a bar click on Chords selects its chord, ⧉ copies a bar's chords to the other bars of
+// its part (locked chords there stay, crossing chords are cut at the bar line, one undo step).
+static void testChordsPerBar()
+{
+    Session s;
+    const auto& d = s.doc;
+    s.repeatLastBar(); // Riff: the + repeats A, the new bar has no chord of its own
+    CHECK ((d.arr == std::vector<int> { 0, 0 }) && d.chords.size() == 1 && d.sel == -1);
+    s.setBarPart (1, 1); // the ▾ on bar 2: A', an empty part, comes in as a copy of A
+    CHECK ((d.arr == std::vector<int> { 0, 1 }) && d.cur == 1 && countOn (d.riff().parts[1]) == countOn (d.riff().parts[0]));
+    const int undo0 = (int) s.undo.size();
+    s.setBarPart (1, 1); // the same part again: nothing happens, no undo step
+    CHECK ((int) s.undo.size() == undo0);
+    s.choosePart (0);
+    CHECK (d.cur == 0 && d.sel == -1);
+
+    s.selectTab (kChordTab);
+    s.addChordAt (4);
+    const int id2 = d.csel;
+    CHECK (d.chordById (id2) != nullptr && d.chordById (id2)->start == 4);
+    s.setChordDeg (id2, 3);
+    s.setChordSpan (id2, 5, 2, true); // bar 2, beats 2-3
+    s.repeatLastBar();                // bar 3 = A' again, with a copy of bar 2's chords
+    CHECK ((d.arr == std::vector<int> { 0, 1, 1 }) && d.chords.size() == 3);
+    const int i3 = d.chordAtBeat (9);
+    CHECK (i3 >= 0 && d.chords[(size_t) i3].start == 9 && d.chords[(size_t) i3].len == 2 && d.chords[(size_t) i3].deg == 3 && d.chordAtBeat (8) < 0);
+    const int id3 = d.chords[(size_t) i3].id;
+    s.selectSlot (2); // a bar click on Chords selects its first chord
+    CHECK (d.sel == 2 && d.cur == 1 && d.csel == id3);
+    s.selectSlot (2);
+    CHECK (d.sel == -1);
+
+    // ⧉ on bar 2: bar 3's unlocked chord goes, its locked one stays and the copy is trimmed around it
+    s.setChordSpan (id3, 8, 2, true);
+    s.toggleChordLock (id3);
+    s.addChordAt (10);
+    const int idGone = d.csel;
+    CHECK (idGone != id3 && d.chordById (idGone)->start == 10);
+    s.setChordSpan (id2, 4, 4, true);
+    const int undo1 = (int) s.undo.size();
+    s.copyBarChords (1);
+    CHECK ((int) s.undo.size() == undo1 + 1);
+    CHECK (d.chords.size() == 4 && d.chordById (id3) != nullptr && d.chordById (id3)->lock && d.chordById (idGone) == nullptr);
+    {
+        const int c = d.chordAtBeat (10);
+        CHECK (c >= 0 && d.chords[(size_t) c].start == 10 && d.chords[(size_t) c].len == 2 && d.chords[(size_t) c].deg == 3 && d.chords[(size_t) c].id != id2);
+        CHECK (d.chordAtBeat (8) >= 0 && d.chords[(size_t) d.chordAtBeat (8)].id == id3);
+    }
+    CHECK (s.message.find ("1 chord copied") != std::string::npos && s.message.find ("1 locked kept") != std::string::npos);
+    const size_t n = d.chords.size();
+    s.copyBarChords (0); // bar 1 is the only A bar: nothing to copy to, no undo step
+    CHECK (d.chords.size() == n && (int) s.undo.size() == undo1 + 1);
+    s.undoTo (s.ui - 1);
+    CHECK (d.chords.size() == 4 && d.chordById (idGone) != nullptr);
+
+    // a chord crossing into the target bar is cut at the bar line
+    {
+        Session t;
+        const auto& e = t.doc;
+        t.selectTab (kChordTab);
+        t.repeatLastBar();
+        t.repeatLastBar(); // A A A, a I in every bar
+        CHECK ((e.arr == std::vector<int> { 0, 0, 0 }) && e.chords.size() == 3);
+        t.setBarPart (0, 2); // bar 1 = B: bar 3's ⧉ reaches bar 2 only
+        const int idHead = e.chords[(size_t) e.chordAtBeat (0)].id, idMid = e.chords[(size_t) e.chordAtBeat (4)].id, idLast = e.chords[(size_t) e.chordAtBeat (8)].id;
+        t.removeChord (idMid);
+        t.setChordSpan (idHead, 2, 4, true); // beats 2-5: crosses into bar 2
+        t.setChordDeg (idLast, 4);
+        t.copyBarChords (2);
+        CHECK (e.chords.size() == 3);
+        CHECK (e.chordById (idHead) != nullptr && e.chordById (idHead)->start == 2 && e.chordById (idHead)->len == 2);
+        const int c = e.chordAtBeat (4);
+        CHECK (c >= 0 && e.chords[(size_t) c].start == 4 && e.chords[(size_t) c].len == 4 && e.chords[(size_t) c].deg == 4);
+        CHECK (t.message.find ("1 chord copied") != std::string::npos);
+    }
+}
+
 static void testMidiFile (const char* path)
 {
     GenSettings g;
@@ -951,6 +1034,7 @@ int main (int argc, char** argv)
     testStartOnRoot();
     testDetectKey();
     testDocument();
+    testChordsPerBar();
     testMidiFile (argc > 1 ? argv[1] : nullptr);
 
     if (failures == 0)

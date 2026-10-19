@@ -37,16 +37,22 @@ The harmony lives in the **chord lane**: every bar starts on the root of the cho
   dice roll the part shown; **All** does the same to all four parts (A first, then A′ B C from it).
   On the Chords tab the dice pick a new rhythm for the selected chord, All for every unlocked one.
   Space = dice, Shift+Space = All. Locked notes, parts and chords stay.
-- **Arrangement** (left): up to 4 bars, each one a part; a new riff starts with one bar A. The
-  square **+** after the last bar repeats it (A → A A); clicking a letter in the **palette** on the
-  right adds that part (an empty part comes in as a copy of A moved to its bar's chord). Click a bar to
-  select it and edit its part (Play then loops only that bar; Esc deselects), Shift+click or the
-  padlock locks the part, × removes the bar and its chords. **Unlock bar** removes every lock of the
-  bar shown. Keys 1–4 show a part.
+- **Parts**: on Riff and Beats the tab bar holds the selector **A A′ B C** (with the bars each part
+  plays in); click a letter to edit that part in the roll, keys 1–4 do the same. Chords are per bar,
+  so the Chords tab has no selector.
+- **Form** (above the lane): up to 4 bars; a new riff starts with one bar A. The square **+** after
+  the last bar repeats it (A → A A; bar 1 with A when the form is empty); on Chords the new bar also
+  gets a copy of the previous bar's chords. On Riff and Beats a bar shows its number, lock, part and
+  thumbnail: click it to select it and edit its part (Play then loops only that bar; Esc deselects),
+  ▾ picks another part for it (an empty part comes in as a copy of A moved to its bar's chord),
+  Shift+click or the padlock locks the part, × removes the bar and its chords. On Chords a bar shows
+  its number and its chords: click it to select it and edit its chords, ⧉ copies its chords to the
+  other bars of the same part (locked chords there stay; one undo step), × removes it. **Unlock bar**
+  removes every lock of the bar shown.
 - **Chord lane**: blocks with a start and a length in beats. Drag a block to move it, drag its edge
   to resize it (one-beat snap, blocks never overlap, a gap = no chord). On each block: lock, ↕ next
-  inversion, ↻ another chord, ×. The square **+** on the left repeats the last chord (and adds a bar
-  below four); double-click the empty lane to add a chord there; Del removes the selected one.
+  inversion, ↻ another chord, ×. Double-click the empty lane to add a chord there; Del removes the
+  selected one.
 - **Generators** under the lane: **⚄ Progression** picks one typical for the scale; the moods
   **Bright, Colour, Fable, Drama, Dark** use only moves that exist in the current scale (a mood with
   none is disabled); the styles **Jazz, R&B, Funk, House, Drum & Bass** set chord types and a rhythm;

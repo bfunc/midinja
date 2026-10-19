@@ -1498,46 +1498,6 @@ void Session::regenChord (int id)
     commitVersion();
 }
 
-bool Session::canAppendChord() const
-{
-    return doc.laneEnd() < doc.totalBeats() || (int) doc.arr.size() < kMaxBars;
-}
-
-void Session::addPartBar (int k)
-{
-    doc.arr.push_back (k);
-    doc.sel = -1;
-    for (auto& t : doc.tabs)
-        extendPart (t, k);
-}
-
-void Session::appendChord()
-{
-    const auto order = doc.sortedChordIndices();
-    const int end = doc.laneEnd();
-    if (end >= doc.totalBeats())
-    {
-        if ((int) doc.arr.size() >= kMaxBars)
-        {
-            say ("The lane is full (4 bars): shorten or remove a chord first", true);
-            return;
-        }
-        int k = (int) doc.arr.size() % kNumParts;
-        for (int x = 0; x < kNumParts; ++x)
-            if (std::find (doc.arr.begin(), doc.arr.end(), x) == doc.arr.end()) { k = x; break; }
-        addPartBar (k);
-    }
-    const Chord* prev = order.empty() ? nullptr : &doc.chords[(size_t) order.back()];
-    const int len = std::min (prev != nullptr ? prev->len : 4, doc.totalBeats() - end);
-    Chord c = mk (end, len, prev != nullptr ? prev->deg : 0, prev != nullptr ? prev->type : ChordType::Seventh,
-                  prev != nullptr ? prev->inv : 0, prev != nullptr ? prev->rhythm : Rhythm::Whole);
-    doc.chords.push_back (c);
-    doc.csel = c.id;
-    laneChanged (nullptr);
-    message.clear();
-    push();
-}
-
 void Session::addChordAt (int beat)
 {
     std::vector<std::pair<int, int>> gaps;
@@ -1585,6 +1545,14 @@ void Session::removeChord (int id)
 }
 
 // ---- generators -----------------------------------------------------------------------------
+
+void Session::addPartBar (int k)
+{
+    doc.arr.push_back (k);
+    doc.sel = -1;
+    for (auto& t : doc.tabs)
+        extendPart (t, k);
+}
 
 void Session::fourBars()
 {
@@ -1813,11 +1781,28 @@ void Session::selectPart (int k)
         doc.cur = k;
 }
 
+void Session::choosePart (int k)
+{
+    if (k < 0 || k >= kNumParts)
+        return;
+    doc.cur = k;
+    doc.sel = -1;
+}
+
 void Session::selectSlot (int i)
 {
     doc.sel = doc.sel == i ? -1 : i;
-    if (doc.sel >= 0 && doc.sel < (int) doc.arr.size())
-        doc.cur = doc.arr[(size_t) doc.sel];
+    if (doc.sel < 0 || doc.sel >= (int) doc.arr.size())
+        return;
+    doc.cur = doc.arr[(size_t) doc.sel];
+    if (doc.T().poly)
+    {
+        int c = doc.firstChordInBar (doc.sel);
+        if (c < 0)
+            c = doc.chordAtBeat (doc.sel * 4);
+        if (c >= 0)
+            doc.csel = doc.chords[(size_t) c].id;
+    }
 }
 
 void Session::toggleLock (int k)
@@ -1861,23 +1846,115 @@ void Session::removeBar (int i)
     push();
 }
 
-void Session::addBar (int k)
+void Session::setBarPart (int i, int k)
 {
-    if ((int) doc.arr.size() >= kMaxBars || k < 0 || k >= kNumParts)
+    if (i < 0 || i >= (int) doc.arr.size() || k < 0 || k >= kNumParts || doc.arr[(size_t) i] == k)
         return;
+    doc.arr[(size_t) i] = k;
     doc.cur = k;
-    addPartBar (k);
+    if (doc.sel >= 0)
+        doc.sel = i;
+    for (auto& t : doc.tabs)
+        extendPart (t, k);
     laneChanged (nullptr);
     push();
 }
 
 void Session::repeatLastBar()
 {
-    if ((int) doc.arr.size() >= kMaxBars || doc.arr.empty())
+    if ((int) doc.arr.size() >= kMaxBars)
         return;
-    doc.arr.push_back (doc.arr.back());
+    const auto from = degreesNow();
+    const int last = (int) doc.arr.size() - 1;
+    doc.arr.push_back (last >= 0 ? doc.arr.back() : 0);
     doc.sel = -1;
-    laneChanged (nullptr);
+    // on Chords the new bar starts with the chords of the bar before it (chords are per bar)
+    if (doc.T().poly && last >= 0)
+        for (int i : doc.sortedChordIndices())
+        {
+            const Chord c = doc.chords[(size_t) i];
+            if (! doc.overlapsBar (c, last))
+                continue;
+            const int s = std::max (c.start, last * 4), e = std::min (c.start + c.len, last * 4 + 4);
+            doc.chords.push_back (mk (s + 4, e - s, c.deg, c.type, c.inv, c.rhythm));
+        }
+    laneChanged (&from);
+    push();
+}
+
+void Session::copyBarChords (int b)
+{
+    if (b < 0 || b >= (int) doc.arr.size())
+        return;
+    const int k = doc.arr[(size_t) b];
+    std::vector<int> targets;
+    for (int j = 0; j < (int) doc.arr.size(); ++j)
+        if (doc.arr[(size_t) j] == k && j != b)
+            targets.push_back (j);
+    if (targets.empty())
+        return;
+    const auto from = degreesNow();
+    struct Span { int start, end; Chord c; };
+    std::vector<Span> src; // the source bar's chords, clipped to the bar
+    for (int i : doc.sortedChordIndices())
+    {
+        const auto& c = doc.chords[(size_t) i];
+        if (doc.overlapsBar (c, b))
+            src.push_back ({ std::max (c.start, b * 4), std::min (c.start + c.len, b * 4 + 4), c });
+    }
+    int kept = 0, placed = 0;
+    for (int b2 : targets)
+    {
+        const int a = b2 * 4, z = a + 4;
+        std::vector<Chord> locked;
+        for (const auto& c : doc.chords)
+            if (c.lock && doc.overlapsBar (c, b2))
+                locked.push_back (c);
+        kept += (int) locked.size();
+        // the unlocked chords leave the bar: inside ones go, crossing ones are cut at the bar line
+        doc.chords.erase (std::remove_if (doc.chords.begin(), doc.chords.end(), [&] (const Chord& c) { return ! c.lock && c.start >= a && c.start + c.len <= z; }), doc.chords.end());
+        for (auto& c : doc.chords)
+        {
+            if (c.lock || ! doc.overlapsBar (c, b2))
+                continue;
+            if (c.start < a)
+                c.len = a - c.start;
+            else
+            {
+                c.len = c.start + c.len - z;
+                c.start = z;
+            }
+        }
+        doc.chords.erase (std::remove_if (doc.chords.begin(), doc.chords.end(), [] (const Chord& c) { return c.len <= 0; }), doc.chords.end());
+        // the copies, trimmed around the locked chords
+        for (const auto& s : src)
+        {
+            int st = s.start + (b2 - b) * 4, en = s.end + (b2 - b) * 4;
+            for (const auto& L : locked)
+            {
+                if (L.start <= st && st < L.start + L.len) st = L.start + L.len;
+                if (st < L.start && L.start < en) en = L.start;
+            }
+            if (en > st)
+            {
+                doc.chords.push_back (mk (st, en - st, s.c.deg, s.c.type, s.c.inv, s.c.rhythm));
+                ++placed;
+            }
+        }
+    }
+    if (doc.chordById (doc.csel) == nullptr)
+    {
+        const auto order = doc.sortedChordIndices();
+        doc.csel = order.empty() ? -1 : doc.chords[(size_t) order.front()].id;
+    }
+    std::string msg = "Bar " + std::to_string (b + 1) + " \xE2\x86\x92 ";
+    for (size_t j = 0; j < targets.size(); ++j)
+        msg += (j > 0 ? ", bar " : "bar ") + std::to_string (targets[j] + 1);
+    msg += ": " + std::to_string (placed) + (placed == 1 ? " chord copied" : " chords copied");
+    if (kept > 0)
+        msg += ", " + std::to_string (kept) + " locked kept";
+    say (msg);
+    laneChanged (&from);
     push();
 }
 

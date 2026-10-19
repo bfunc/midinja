@@ -239,10 +239,8 @@ public:
     void rhythmToAll (int id);
     void toggleChordLock (int id);
     void regenChord (int id);              // another chord here (not the neighbours', no diminished)
-    void appendChord();                    // the square +: repeats the last chord (adds a bar below 4)
     void addChordAt (int beat);            // double-click on the empty lane
     void removeChord (int id);
-    bool canAppendChord() const;
     // Generators. Locked chords are kept.
     void progression();
     bool moodAvailable (int mood) const;
@@ -252,13 +250,16 @@ public:
     void style (int style);
     bool applyTyped (const std::string& text); // false: the message says what was wrong
 
-    // Arrangement.
-    void selectPart (int k);
-    void selectSlot (int i);
+    // Arrangement. Chords are per bar: the lane is one lane over the form, the Chords tab shows
+    // bars only; the parts live on Riff and Beats.
+    void selectPart (int k);               // the part the roll edits (the playhead follows too)
+    void choosePart (int k);               // the selector on the tab row: the part, no bar selected
+    void selectSlot (int i);               // on Chords the bar's first chord becomes the selected one
     void toggleLock (int k);
     void removeBar (int i);                // its chords go, later ones move left
-    void addBar (int k);                   // an empty part joins as a copy of A moved to its degree
-    void repeatLastBar();                  // the square +: A -> A A
+    void setBarPart (int i, int k);        // the ▾ on a bar: an empty part comes in as a copy of A moved to its degree
+    void repeatLastBar();                  // the square +: A -> A A (bar 1 with A when empty); on Chords the new bar gets a copy of the previous bar's chords
+    void copyBarChords (int b);            // ⧉ on a Chords bar: its chords go to the other bars of its part, locked chords there stay; one undo step
     // Unlock bar: every lock of the bar shown (the part and its notes on Riff, the chords on Chords).
     int barLocks() const;
     void unlockBar();
@@ -316,7 +317,7 @@ private:
     void fourBars();
     void fillBars (const std::vector<int>& degs, const std::string& label, const std::vector<ChordType>* types, const Rhythm* rhythm);
     Chord mk (int start, int len, int deg, ChordType type, int inv, Rhythm rhythm);
-    void addPartBar (int k);
+    void addPartBar (int k);               // a bar for part k at the end (an empty part comes in as a copy of A)
 };
 
 } // namespace midinja

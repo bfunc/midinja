@@ -162,6 +162,7 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     tabBar.onSelect = [this] (int i) { sess.selectTab (i); render(); };
     tabBar.onChannel = [this] (int i, int ch) { sess.setTabChannel (i, ch); changed(); };
     tabBar.onOn = [this] (int i, bool on) { sess.setTabOn (i, on); changed(); };
+    tabBar.onSelectPart = [this] (int k) { sess.choosePart (k); proc.restartPlayback(); changed(); };
     addAndMakeVisible (tabBar);
 
     // ---- Side panel ----
@@ -193,7 +194,8 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
     parts.onSelectSlot = [this] (int i) { sess.selectSlot (i); proc.restartPlayback(); changed(); };
     parts.onToggleLock = [this] (int k) { sess.toggleLock (k); changed(); };
     parts.onRemoveBar = [this] (int i) { sess.removeBar (i); changed(); };
-    parts.onAddBar = [this] (int k) { sess.addBar (k); changed(); };
+    parts.onSetBarPart = [this] (int i, int k) { sess.setBarPart (i, k); changed(); };
+    parts.onCopyBar = [this] (int b) { sess.copyBarChords (b); changed(); };
     parts.onRepeatBar = [this] { sess.repeatLastBar(); changed(); };
     addAndMakeVisible (parts);
     unlockBarB.onClick = [this] { sess.unlockBar(); changed(); };

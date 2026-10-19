@@ -17,6 +17,8 @@ inline const juce::Colour ink3    { 0xff626a7c };
 inline const juce::Colour accent  { 0xffff9f43 };
 inline const juce::Colour teal    { 0xff5ad1c7 };
 inline const juce::Colour lock    { 0xfff5d76e };
+inline const juce::Colour ctx     { 0xff8a5a2c }; // web --ctx: the bar or part the primary belongs to
+inline const juce::Colour state   { 0xff4a5163 }; // web --state: a lock's frame, never orange
 inline const juce::Colour blue    { 0xff7aa2f7 };
 inline const juce::Colour purple  { 0xffc792ea };
 inline const juce::Colour off     { 0xff333845 };

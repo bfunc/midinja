@@ -9,7 +9,8 @@
 // The chord lane (web `.lanebox`): the arrangement's beats as a grid, the chords as blocks. Drag a
 // block to move it, drag its left or right edge to resize it (one-beat snap, blocks never overlap,
 // a gap = no chord). On each block: lock, inversion cycle, another chord, remove. Double-click on
-// the empty lane adds a chord there. The square + on the left repeats the last chord.
+// the empty lane adds a chord there; bars come from the + of the bar row above (on Chords with a
+// copy of the previous bar's chords), so the lane has no + of its own.
 class ChordLane : public juce::Component, public juce::TooltipClient
 {
 public:
@@ -32,11 +33,10 @@ public:
     juce::String getTooltip() override;
 
 private:
-    enum class Act { None, Add, Lock, Inv, Regen, Del, EdgeL, EdgeR, Move, Empty };
+    enum class Act { None, Lock, Inv, Regen, Del, EdgeL, EdgeR, Move, Empty };
     struct HitAt { Act act = Act::None; int chordId = -1; };
-    juce::Rectangle<int> laneArea() const { return getLocalBounds().withTrimmedLeft (44).reduced (0, 1); }
+    juce::Rectangle<int> laneArea() const { return getLocalBounds().reduced (0, 1); }
     juce::Rectangle<int> blockRect (const midinja::Chord& c) const;
-    juce::Rectangle<int> addRect() const { return { 7, (height - 30) / 2, 30, 30 }; }
     HitAt hitAt (juce::Point<int>) const;
     float beatWidth() const;
 
