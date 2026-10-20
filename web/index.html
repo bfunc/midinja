@@ -84,7 +84,7 @@ input.num{width:64px}
 .tabset .lbl:first-child{margin-left:0}
 .main{display:flex;align-items:stretch}
 .undoredo{display:flex}
-.adv-off .advbox,.adv-off .lanes,.adv-off .undoredo{display:none}
+.adv-off .advbox,.adv-off .undoredo{display:none}
 .rside{width:318px;flex:none;padding:10px 12px 12px;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:10px}
 .ctxhead{display:flex;align-items:center;justify-content:space-between}
 .box{border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:9px 10px;display:flex;flex-direction:column;gap:8px}
@@ -95,7 +95,7 @@ input.num{width:64px}
 .advR{display:flex;flex-direction:column;gap:10px}
 .advC{display:flex;flex-direction:column;gap:6px}
 .advC input{padding:4px 8px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);color:var(--ink);font-size:11px;width:100%}
-.poly #riffGen,.poly .advR,.poly .hstrip{display:none}
+.poly #riffGen,.poly .advR,.poly .hstrip,.poly .ovbar{display:none}
 .plug:not(.poly) .cgen,.plug:not(.poly) .advC,.plug:not(.poly) .clane{display:none}
 .knobs{flex-wrap:wrap;gap:8px 10px}
 .knobs .kv{gap:5px}.knobs .kv span{font-size:10px}
@@ -119,7 +119,7 @@ input.num{width:64px}
 .pop .grp{padding:4px 0}
 .beats #what,.beats #mutseg,.beats .knobs .kv{display:none}
 .beats .edge,.beats .gstrip{visibility:hidden} /* keep their space: the roll starts at the same height on every tab */
-.beats .advR>div{display:none}.beats .advR>.advVel{display:block}
+.beats .advR{display:none}
 .beats .genrow .gen>.seg{display:none}
 .key.drum{font-size:10px;color:var(--ink2)}
 .key.drum.root{color:var(--ink)}
@@ -247,8 +247,11 @@ input.num{width:64px}
 .cell{touch-action:pan-y}
 .edge .en.dl{width:auto;padding:0 0 0 6px;color:var(--ink2)}
 .note.locked{outline:2px solid var(--lock);outline-offset:-1px}
-.note .rat{position:absolute;inset:0;display:flex;gap:2px;padding:2px}
-.note .rat i{flex:1;background:#00000033;border-radius:2px}
+.note::after{content:'';position:absolute;top:0;bottom:0;right:0;width:calc(100% - var(--dur,100%));background:#15171cb8;border-radius:0 4px 4px 0;pointer-events:none} /* the tail after the duration: the note holds its place but is silent */
+.note.ghost::after,.note.chord::after,.note.drum::after{display:none}
+.note .rat{position:absolute;inset:0;display:flex;pointer-events:none} /* a ratcheted note: its hits split the length */
+.note .rat i{flex:1}
+.note .rat i+i{box-shadow:inset 3px 0 0 var(--bg)}
 .lockic{position:absolute;right:3px;top:50%;transform:translateY(-50%);font-size:8px}
 .rootmk{position:absolute;left:2px;top:50%;transform:translateY(-50%);font-size:9px;line-height:1;font-weight:800;color:#15171c;background:#fff;border-radius:3px;padding:1px 3px;z-index:3;pointer-events:none}
 .arcs{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:visible}
@@ -263,15 +266,37 @@ input.num{width:64px}
 .empty-hint{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink3);pointer-events:none}
 .play{height:4px;margin:4px 0 6px}
 .play i.on{background:var(--acc2);border-radius:2px;box-shadow:0 0 8px var(--acc2)}
-.lanes{display:flex;flex-direction:column;gap:5px;margin-bottom:6px}
-.lane{position:relative;align-items:end;height:40px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:3px 0;cursor:ns-resize}
-.lane .ll{font-size:9.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px;align-self:center;justify-self:center}
-.bar{margin:0 3px;border-radius:3px 3px 1px 1px;background:var(--acc2);opacity:.85;pointer-events:none}
-.bar.off{background:#333845;opacity:1}
-.dens{margin:0 3px;display:flex;flex-direction:column-reverse;gap:2px;height:100%;pointer-events:none}
-.dens i{height:6px;border-radius:1px;background:#333845}.dens i.on{background:var(--rpt)}
-.lane.offlane{height:24px;align-items:center;cursor:default}
-.laneoff{grid-column:2/-1;align-self:center;color:var(--ink3);font-size:11px;padding-left:6px}
+/* edit modes over the roll: Notes, or bars to drag for Duration / Velocity / Ratchets */
+.ovbar{display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap;margin:0 0 6px}
+.ovbar .ovc{display:none;align-items:center;gap:8px;color:var(--ink2);font-size:10.5px}
+.ovbar[data-m=dur] .ovc[data-m=dur],.ovbar[data-m=vel] .ovc[data-m=vel],.ovbar[data-m=rep] .ovc[data-m=rep]{display:flex}
+.ovbar .ovc .range{width:130px;margin:0 6px}
+.ovbar .ovc span{min-width:26px;text-align:center;font-variant-numeric:tabular-nums}
+.ovhint{color:var(--ink3);font-size:10.5px}
+.beats #ovseg [data-m=dur],.beats #ovseg [data-m=rep]{display:none}
+.roll.ovl .note{opacity:.18!important;pointer-events:none}
+.ovlay{position:absolute;top:0;bottom:0;left:44px;right:0;z-index:5;cursor:ns-resize;touch-action:none}
+.ovlay .ob{position:absolute;bottom:0;margin-left:2px;border-radius:4px 4px 1px 1px;background:var(--acc2);opacity:.85;pointer-events:none;min-height:3px}
+.ovlay .ob b{position:absolute;left:0;right:0;top:-15px;text-align:center;font-size:9.5px;font-weight:600;color:var(--ink);white-space:nowrap}
+.ovlay .ob.rep{background:var(--rpt)}
+.ovlay .ob.na{background:repeating-linear-gradient(45deg,#ffffff1a 0 4px,transparent 4px 8px);border:1px dashed var(--line2);opacity:1}
+.ovlay .ob.na b{color:var(--ink3)}
+.ovlay.off{cursor:default}.ovlay.off .ob{opacity:.3}
+.ovlay .ob.dv{margin-left:3px;border-radius:2px;bottom:auto}
+/* a kit: the note each drum sound sends */
+.plug:not(.kitv) .kit{display:none}
+.kitv .genrow,.kitv .advR,.kitv .gridw{display:none}
+.kit{padding:10px 14px 14px}
+.kit .kh{display:flex;align-items:center;gap:10px;margin-bottom:8px;color:var(--ink2)}
+.kit .kh b{color:var(--ink);font-size:13px}
+.kit table{border-collapse:collapse}
+.kit td{padding:3px 10px 3px 0;color:var(--ink2)}
+.kit td:first-child{color:var(--ink);font-weight:600;min-width:90px}
+.kit input.num{width:56px;padding:3px 6px}
+.kit tr.dup td{color:var(--bad)}
+.kit tr.foc td:first-child{color:var(--acc)}
+.key.drum{cursor:pointer}
+.key.drum em{font-style:normal;font-size:8.5px;color:var(--ink3);margin-left:3px}
 .steps div{text-align:center;color:var(--ink3);font-size:9.5px}
 .legend{display:flex;gap:14px;align-items:center;color:var(--ink2);font-size:11px;margin-top:4px;flex-wrap:wrap;line-height:1.5}
 .legend i{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
@@ -321,7 +346,7 @@ input.num{width:64px}
 .advrow>div{width:140px;flex:none}
 .advrow>.advTog{width:auto}.advrow .advTog .pill{margin-top:5px}
 .advrow>.advSeed{width:84px}
-@media (max-width:520px){.advrow{gap:8px 14px}.advrow>.advLen,.advrow>.advVel{width:calc(50% - 7px)}.advrow>#rptbox{width:118px}.advrow>.advSeed{width:70px}} /* phone: two rows */.advrow .advSeed .num{width:100%;margin-top:2px;padding:3px 6px;font-size:11px}
+@media (max-width:520px){.advrow{gap:8px 14px}.advrow>.advLen{width:calc(50% - 7px)}.advrow>.advSeed{width:70px}} /* phone: two rows */.advrow .advSeed .num{width:100%;margin-top:2px;padding:3px 6px;font-size:11px}
 .advrow h5{margin:0 0 2px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px;display:flex;justify-content:space-between;align-items:center}
 .hidden{display:none}
 .narrow .body{flex-direction:column}
@@ -350,7 +375,7 @@ body.dragging .drop{display:grid}
     <button class="btn" id="imp" title="Import a .mid file (or drop one on the page) into the Riff tab: up to 4 bars become A A′ B C">⤒ Import</button>
     <input type="file" id="impFile" accept=".mid,.midi,audio/midi" hidden>
     <button class="btn" id="exp" title="Save the arrangement as one .mid file: a track per tab that is on, each on its channel">⤓ Export</button>
-    <div class="tog" id="adv" title="Riff: length, velocity, ratchets, seed, start on root and the lanes under the roll. Also the undo buttons"><div class="sw"></div>Advanced</div>
+    <div class="tog" id="adv" title="Riff: length, seed, start on root, and the edit modes over the roll (Duration, Velocity, Ratchets; Drums: Velocity). Also the undo buttons"><div class="sw"></div>Advanced</div>
     <button class="btn" id="help" data-pop title="Legend and keyboard shortcuts">?</button>
     <button class="btn" id="gear" data-pop title="Set once: the preview synth and the MIDI out port">⚙</button>
   </div>
@@ -387,34 +412,67 @@ body.dragging .drop{display:grid}
       </div>
       <div class="advrow advbox advR">
         <div class="advLen"><h5>Length</h5><div class="range" id="rgLen"></div><div class="rl"><span id="lLenLo"></span><span id="lLenHi"></span></div></div>
-        <div class="advVel"><h5>Velocity</h5><div class="range" id="rgVel"></div><div class="rl"><span id="lVelLo"></span><span id="lVelHi"></span></div></div>
-        <div id="rptbox"><h5>Ratchets <span class="pill" id="rptpill">OFF</span></h5><div class="range" id="rgRep"></div><div class="rl"><span id="lRepLo"></span><span id="lRepHi"></span></div></div>
         <div class="advTog"><h5>Start on root</h5><span class="pill on" id="rootpill" title="Every bar begins with the root of its degree. Imported bars are left as they are">ON</span></div>
         <div class="advSeed"><h5>Seed</h5><input class="num" id="seed" title="The seed of the last roll. Type one and press Enter to roll the whole form from it"></div>
       </div>
       <div class="gridw">
+        <div class="ovbar advbox" id="ovbar">
+          <div class="seg xs" id="ovseg" title="What the roll edits: the notes, or one value per note as bars to drag (drag across several notes to draw them)"><button data-m="notes">Notes</button><button data-m="dur">Duration</button><button data-m="vel">Velocity</button><button data-m="rep">Ratchets</button></div>
+          <div class="ovc" data-m="dur" title="The dice give each new note a duration in this range: the part of its length that sounds (100% = legato, low = a short pluck)">Dice <span id="lDurLo"></span><div class="range" id="rgDur"></div><span id="lDurHi"></span></div>
+          <div class="ovc" data-m="vel" title="The dice give each new note (and each drum hit) a velocity in this range">Dice <span id="lVelLo"></span><div class="range" id="rgVel"></div><span id="lVelHi"></span></div>
+          <div class="ovc" data-m="rep" id="rptbox" title="Ratchets: a note split into 2–5 hits over its length. On: the dice ratchet some notes, with a count in this range">Dice <span class="pill" id="rptpill">OFF</span><span id="lRepLo"></span><div class="range" id="rgRep"></div><span id="lRepHi"></span></div>
+          <span class="ovhint" id="ovhint"></span>
+        </div>
         <div class="edge" id="edgeTop"></div>
         <div class="gstrip" id="gtop"></div>
         <div class="roll cols" id="grid"></div>
         <div class="gstrip" id="gbot"></div>
         <div class="edge" id="edgeBot"></div>
         <div class="cols play" id="play"></div>
-        <div class="lanes" id="lanes"></div>
         <div class="cols steps" id="stepn"></div>
         <div class="msg" id="msg"></div>
       </div>
+      <div class="kit" id="kit"></div>
     </div>
   </div>
   <!-- chords are hidden for now: the lane and its generators stay in the code, off screen -->
   <div class="hidden"><div class="hstrip" id="hstrip"></div><div class="lanebox" id="lane"></div><div id="cgen"></div><div id="advC"></div></div>
 </div></div>
 <div class="pop" id="pop"></div>
-<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>the other track (ghost)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, 🔒 keeps it when you roll · keys 1–4 = part · Space = dice, Shift+Space = All · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
+<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>the other track (ghost)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Advanced: Duration / Velocity / Ratchets over the roll, drag the bars · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, 🔒 keeps it when you roll · keys 1–4 = part · Space = dice, Shift+Space = All · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
 <script src="midinja-core.js"></script>
 
 <script>
 (async () => {
 const core = await MidinjaCore();
+// The core knows no duration, caps a length at 8 steps and ratchets at 4. After every call: a note the
+// call kept (same step, same length) keeps its duration, length and ratchets; a new note gets a duration
+// from the dice range, and a length or a ratchet count beyond the core's caps when the ranges ask for one.
+// Seeded from the call's seed, so a seed gives the same riff.
+function afterCore(pin, q, g, salt) {
+  let a = ((g.seed >>> 0) ^ Math.imul(salt + 1, 0x9e3779b9)) >>> 0 || 1;
+  const rand = () => { a = (a + 0x6d2b79f5) >>> 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const between = (lo, hi) => Math.min(lo, hi) + Math.floor(rand() * (Math.abs(hi - lo) + 1));
+  q.steps.forEach((b, i) => {
+    if (!b.on) return;
+    const o = pin && pin.steps[i];
+    if (o && o.on && b.length === Math.min(o.length, CORE_LEN) && (o.note === b.note || !g.doRhythm)) { // kept (Notes keeps the rhythm, new pitches)
+      b.length = o.length; b.dur = durOf(o); if (b.repeats === Math.min(o.repeats, CORE_REP)) b.repeats = o.repeats;
+      return;
+    }
+    b.dur = between(g.durMin, g.durMax);
+    if (g.lenMax > CORE_LEN) b.length = between(g.lenMin, g.lenMax);
+    if (b.repeats > 1 && g.repMax > CORE_REP) b.repeats = between(Math.max(2, g.repMin), g.repMax);
+  });
+  fitP(q);
+  return q;
+}
+{
+  const run = core.run, part = core.part, form = core.form;
+  core.run = (op, p, g, amt) => afterCore(p, run(op, p, g, amt), g, 0);
+  core.part = (k, p, A, g) => afterCore(p, part(k, p, A, g), g, k + 1);
+  core.form = (ps, mask, g) => form(ps, mask, g).map((q, k) => afterCore(ps[k], q, g, k + 1));
+}
 const SCALES = core.scales();
 const NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const RIFF_PARTS = ['A', 'A′', 'B', 'C'], RIFF_HINT = ['the motif', 'variation of A', 'contrast', 'leads home'];
@@ -444,12 +502,15 @@ const pick = a => a[Math.floor(Math.random() * a.length)];
 // Chords tab plays the lane.
 const S = {
   mode: 1, root: 4, scale: 2, numSteps: 16, rate: 4, notes: 10, swing: 0.18,
-  lenMin: 1, lenMax: 2, velMin: 70, velMax: 120,
+  lenMin: 1, lenMax: 2, velMin: 70, velMax: 120, durMin: 50, durMax: 100, ovl: 'notes', kit: false, kitFocus: null,
   repeatsOn: false, repMin: 2, repMax: 3, repChance: 0.25, color: 0.4, surprise: 0.15, similarity: 0.65,
   seed: 4821, adv: false, doRhythm: true, doNotes: true, mutate: false, mutAmt: 0.15, startOnRoot: true,
   cur: 0, sel: -1, tab: 0, csel: null,
 };
 const MAX_BARS = 4, MAX_SPAN = 36, MAX_LEN = 16; // MAX_LEN: a note holds a whole bar at most (16 sixteenths)
+const MAX_REP = 5, CORE_LEN = 8, CORE_REP = 4; // ratchets per note; the core (shared with the app) caps length at 8 and ratchets at 4
+// duration: the percent of a note's length that sounds (100 = legato, low = a pluck); older notes have none = 100
+const durOf = st => st.dur ?? 100;
 let lastLen = 1; // the length a click on an empty cell gives: the last one added or resized
 // lengths in sixteenths as note values
 const lenValue = l => ({ 1: '1/16', 2: '1/8', 3: '1/8.', 4: '1/4', 6: '1/4.', 8: '1/2', 12: '1/2.', 16: '1' })[l] || l + '/16'; // three octaves: more rows get too thin to click
@@ -460,6 +521,8 @@ const newTab = (name, ch, poly, on, rootNote, span) => ({ name, ch, poly, on, ro
 // on step 1 of the bar after a fill.
 const DRUMS = [[49, 'Crash'], [50, 'High tom'], [47, 'Mid tom'], [45, 'Low tom'], [46, 'Open hat'], [42, 'Closed hat'], [39, 'Clap'], [38, 'Snare'], [36, 'Kick']];
 const DRUM_NAME = Object.fromEntries(DRUMS);
+// the kit: the note each sound sends (MIDI out, export); hits stay keyed by the GM note, so grooves and the dice don't change
+const outNote = x => (drumT.map && drumT.map[x] != null ? drumT.map[x] : x);
 const DRUM_SHORT = { 49: 'CR', 50: 'HT', 47: 'MT', 45: 'LT', 46: 'OH', 42: 'CH', 39: 'CP', 38: 'SN', 36: 'BD' }; // the roll's row labels; the tooltip keeps the full name
 const HATS = [
   { name: 'offbeat 8ths', f: (s, q) => s % q === q >> 1 },
@@ -1185,7 +1248,8 @@ const drawers = [
   knob('kSurprise', () => S.surprise, v => S.surprise = v, 0, 1, 0.05, v => Math.round(v * 100) + '%'),
   range('rgLen', 1, MAX_LEN, () => [S.lenMin, S.lenMax], ([a, b]) => { S.lenMin = a; S.lenMax = b; }, lenValue),
   range('rgVel', 1, 127, () => [S.velMin, S.velMax], ([a, b]) => { S.velMin = a; S.velMax = b; }, v => v),
-  range('rgRep', 1, 4, () => [S.repMin, S.repMax], ([a, b]) => { S.repMin = a; S.repMax = b; }, v => '×' + v),
+  range('rgRep', 1, MAX_REP, () => [S.repMin, S.repMax], ([a, b]) => { S.repMin = a; S.repMax = b; }, v => '×' + v),
+  range('rgDur', 5, 100, () => [S.durMin, S.durMax], ([a, b]) => { S.durMin = a; S.durMax = b; }, v => v + '%'),
 ];
 function colorParts() {
   const sc = SCALES[S.scale], out = [], used = new Set();
@@ -1437,6 +1501,7 @@ function render() {
   plug.classList.toggle('adv-off', !S.adv);
   plug.classList.toggle('poly', T.poly);
   plug.classList.toggle('beats', !!T.drums);
+  plug.classList.toggle('kitv', !!T.drums && S.kit); if (T.drums && S.kit) renderKit();
   $('adv').classList.toggle('on', S.adv);
   const oct = Math.floor((T.drums ? tabs[0].rootNote : S.rootNote) / 12) - 1;
   if ($('root').options.length !== 12 || $('root').options[0].text !== 'C' + oct) $('root').innerHTML = NAMES.map((n, i) => `<option value="${i}">${n}${oct}</option>`).join('');
@@ -1504,7 +1569,11 @@ function render() {
   });
   const set = $('tset'); set.innerHTML = '';
   const chs = document.createElement('select'); chs.className = 'sel xs'; chs.title = 'MIDI channel of this track'; chs.innerHTML = Array.from({ length: 16 }, (_, c) => `<option value="${c + 1}">Ch ${c + 1}</option>`).join(''); chs.value = T.ch; chs.onchange = () => { T.ch = +chs.value; push(); }; set.appendChild(chs);
-  const rg = document.createElement('span'); rg.textContent = T.drums ? 'GM drums' : `${nn(S.lowNote)}–${nn(S.highNote)}`; rg.title = T.drums ? 'Nine GM drum notes, Kick 36 to Crash 49; the key and the octave do not apply' : 'The rows of the roll: grow or shrink it with + and − at the top and bottom edges; − and + by the key move it an octave'; set.appendChild(rg);
+  if (T.drums) {
+    const kb = document.createElement('button'); kb.className = 'btn xs' + (S.kit ? ' on' : ''); kb.textContent = S.kit ? '▦ Roll' : '🥁 Kit · ' + (kitIsGM() ? 'GM' : 'custom');
+    kb.title = S.kit ? 'Back to the roll' : 'The note each drum sound sends (MIDI out and export): GM by default, set it for your drum machine';
+    kb.onclick = () => { S.kit = !S.kit; S.kitFocus = null; render(); }; set.appendChild(kb);
+  } else { const rg = document.createElement('span'); rg.textContent = `${nn(S.lowNote)}–${nn(S.highNote)}`; rg.title = 'The rows of the roll: grow or shrink it with + and − at the top and bottom edges; − and + by the key move it an octave'; set.appendChild(rg); }
 
   // arrangement and palette
   const A = $('arr'); A.innerHTML = '';
@@ -1589,7 +1658,10 @@ function render() {
         d.className = 'note' + (st.locked ? ' locked' : '') + (SCALES[S.scale].colors.includes(pc) && inS ? ' colr' : '') + (inS ? '' : ' outn');
         d.style.width = `calc(${st.length * 100}% + ${st.length - 1}px - 4px)`;
         d.style.opacity = 0.55 + 0.45 * st.velocity / 127;
+        // a ratcheted note shows its hits and ignores the duration; another shows its duration as a bright part and a dim tail
         if (st.repeats > 1) { const rt = document.createElement('div'); rt.className = 'rat'; for (let i = 0; i < st.repeats; i++) rt.appendChild(document.createElement('i')); d.appendChild(rt); }
+        else d.style.setProperty('--dur', durOf(st) + '%');
+        d.title = `${nn(note)} · ${lenValue(st.length)}` + (st.repeats > 1 ? ` · ratchet ×${st.repeats}` : ` · duration ${durOf(st)}%`) + ` · velocity ${st.velocity}`;
         if (st.locked) { const l = document.createElement('span'); l.className = 'lockic'; l.textContent = '🔒'; d.appendChild(l); }
         if (s === 0 && S.startOnRoot && pc === chordPc) { const m = document.createElement('span'); m.className = 'rootmk'; m.textContent = chordName0; d.appendChild(m); d.title = `Start on chord root: step 1 of ${PARTS[S.cur]} is held on its bar's chord root (${chordName0}); the dice keep it. Turn off under Advanced`; }
         d.onpointerdown = e => noteDown(e, s);
@@ -1603,7 +1675,7 @@ function render() {
         c.onpointerdown = e => {
           if (e.button !== 0 || (pat.steps[s].locked && !pat.steps[s].on)) return;
           const d = document.createElement('div'); d.className = 'note draft'; c.appendChild(d);
-          lenDrag(e, d, c, s, Math.min(lastLen, roomAt(s)), len => { pat.steps[s] = { on: true, note, length: len, velocity: 100, repeats: 1, locked: !inScale(note) }; }, true);
+          lenDrag(e, d, c, s, Math.min(lastLen, roomAt(s)), len => { pat.steps[s] = { on: true, note, length: len, dur: 100, velocity: 100, repeats: 1, locked: !inScale(note) }; }, true);
         };
       }
       g.appendChild(c);
@@ -1644,28 +1716,13 @@ function render() {
   const pl = $('play'); pl.innerHTML = '<i></i>';
   for (let s = 0; s < n; s++) { const i = document.createElement('i'); if (s === ph) i.className = 'on'; pl.appendChild(i); }
 
-  // lanes (Riff tab only)
-  const L = $('lanes'); L.innerHTML = '';
-  L.style.display = T.poly || T.drums ? 'none' : '';
-  if (!T.poly && !T.drums) {
-    const laneRow = (name, val, setv, max, col) => {
-      const l = document.createElement('div'); l.className = 'lane cols'; l.style.setProperty('--n', n);
-      l.innerHTML = `<div class="ll">${name}</div>`;
-      for (let s = 0; s < n; s++) { const b = document.createElement('div'); const st = pat.steps[s]; const v = st.on ? val(st) / max : 0; b.className = 'bar' + (st.on ? '' : ' off'); b.style.height = (st.on ? Math.max(10, v * 100) : 6) + '%'; if (st.on) b.style.background = col; l.appendChild(b); }
-      laneDrag(l, setv, max);
-      L.appendChild(l);
-    };
-    laneRow('Vel', st => st.velocity, (st, v) => st.velocity = Math.max(1, Math.round(v)), 127, 'var(--acc2)');
-    laneRow('Len', st => st.length, (st, v) => st.length = Math.max(1, Math.ceil(v)), MAX_LEN, 'var(--len)');
-    if (S.repeatsOn) {
-      const l = document.createElement('div'); l.className = 'lane cols'; l.style.setProperty('--n', n); l.innerHTML = '<div class="ll">Ratch</div>';
-      for (let s = 0; s < n; s++) { const d = document.createElement('div'); d.className = 'dens'; const c = pat.steps[s].on ? pat.steps[s].repeats : 0; for (let i = 0; i < 4; i++) { const x = document.createElement('i'); if (i < c) x.className = 'on'; d.appendChild(x); } l.appendChild(d); }
-      laneDrag(l, (st, v) => st.repeats = Math.min(4, Math.max(1, Math.ceil(v))), 4);
-      L.appendChild(l);
-    } else {
-      const l = document.createElement('div'); l.className = 'lane cols offlane'; l.style.setProperty('--n', n); l.innerHTML = '<div class="ll">Ratch</div><div class="laneoff">Ratchets off · turn on in the left panel</div>'; L.appendChild(l);
-    }
-  }
+  // edit modes: Notes, or one bar per note (per hit on drums) to drag over the dimmed roll
+  const om = ovMode(), ob = $('ovbar');
+  ob.dataset.m = om;
+  ob.querySelectorAll('#ovseg button').forEach(b => b.classList.toggle('on', b.dataset.m === om));
+  $('ovhint').textContent = om === 'notes' ? '' : om === 'rep' && !S.repeatsOn ? 'Ratchets off: turn them on to roll and edit them' : T.drums ? 'Drag a hit up or down; drag along a row to draw' : 'Drag a bar up or down; drag across notes to draw' + (om === 'dur' ? ' · a ratcheted note has no duration' : '');
+  g.classList.toggle('ovl', om !== 'notes');
+  if (om !== 'notes' && R.length) { const o = document.createElement('div'); o.className = 'ovlay'; g.appendChild(o); ovDraw(o, om, rowH); ovDrag(o, om, rowH); }
   const sn = $('stepn'); sn.innerHTML = '<div></div>';
   for (let s = 0; s < n; s++) { const d = document.createElement('div'); d.textContent = s % 4 === 0 ? s / 4 + 1 : '·'; sn.appendChild(d); }
 
@@ -1692,9 +1749,29 @@ function render() {
   fitW();
 }
 
+// the kit: one row per sound, the note it sends; two sounds on one note would merge, so they show red
+const kitIsGM = () => DRUMS.every(([x]) => outNote(x) === x);
+function renderKit() {
+  const K = $('kit'), seen = {};
+  DRUMS.forEach(([x]) => { const o = outNote(x); seen[o] = (seen[o] || 0) + 1; });
+  K.innerHTML = `<div class="kh"><b>Kit</b><span>the note each sound sends on channel ${drumT.ch}, to MIDI out and in the export. The roll and the dice keep working as before.</span><button class="btn xs" id="kitGM" ${kitIsGM() ? 'disabled' : ''} title="Back to the General MIDI notes">Reset to GM</button></div><table></table>`;
+  const tb = K.querySelector('table');
+  DRUMS.forEach(([x, name]) => {
+    const o = outNote(x), tr = document.createElement('tr');
+    tr.className = (seen[o] > 1 ? 'dup' : '') + (S.kitFocus === x ? ' foc' : '');
+    tr.innerHTML = `<td>${name}</td><td><button class="eb">−</button></td><td><input class="num" type="number" min="0" max="127" value="${o}"></td><td><button class="eb">+</button></td><td>${nn(o)}</td><td>${o === x ? 'GM' : 'GM ' + x}</td><td>${seen[o] > 1 ? 'same note as another sound: their hits merge' : ''}</td>`;
+    const setN = v => { v = Math.max(0, Math.min(127, Math.round(+v))); if (isNaN(v)) return render(); drumT.map = { ...(drumT.map || {}), [x]: v }; S.kitFocus = x; push(); };
+    const [dn, up] = tr.querySelectorAll('button'), inp = tr.querySelector('input');
+    dn.onclick = () => setN(o - 1); up.onclick = () => setN(o + 1);
+    inp.onchange = () => setN(inp.value);
+    tb.appendChild(tr);
+    if (S.kitFocus === x) setTimeout(() => { inp.focus(); inp.select(); });
+  });
+  K.querySelector('#kitGM').onclick = () => { delete drumT.map; push(); };
+}
 // one row of the drum grid: hits toggle on click, Shift+click locks, right-click cycles the accent
 function drumRow(g, note, r, n, ph, rowH, b0) {
-  const k = document.createElement('div'); k.className = 'key drum' + (note === 36 ? ' root' : ''); k.style.height = rowH + 'px'; k.textContent = DRUM_SHORT[note]; k.title = `${DRUM_NAME[note]} · GM note ${note} (${nn(note)})`; g.appendChild(k);
+  const k = document.createElement('div'); k.className = 'key drum' + (note === 36 ? ' root' : ''); k.style.height = rowH + 'px'; k.innerHTML = `${DRUM_SHORT[note]}<em>${outNote(note)}</em>`; k.title = `${DRUM_NAME[note]} · sends note ${outNote(note)} (${nn(outNote(note))}) · click to change it in the kit`; k.onclick = () => { S.kit = true; S.kitFocus = note; render(); }; g.appendChild(k);
   const row = pat.hits[note], L = fillLen(pat, S.cur), crash = note === 49 && autoCrash(b0);
   for (let s = 0; s < n; s++) {
     const c = document.createElement('div'); c.className = 'cell' + (s % 4 === 0 ? ' beat' : '') + (r % 2 ? ' alt' : '') + (s === ph ? ' ph' : '') + (L && s >= n - L ? ' fillz' : '');
@@ -1784,21 +1861,56 @@ function noteDown(e, s) {
   };
   for (const t in h) addEventListener(t, h[t], true);
 }
-function laneDrag(l, setv, max) {
-  l.addEventListener('pointerdown', e => {
-    l.setPointerCapture(e.pointerId);
-    const apply2 = ev => {
-      const r = l.getBoundingClientRect(), k = plugScale();
-      const colW = (r.width - 44 * k) / pat.numSteps;
-      const s = Math.floor((ev.clientX - r.left - 44 * k) / colW);
-      if (s < 0 || s >= pat.numSteps || !pat.steps[s].on) return;
-      const v = (1 - (ev.clientY - r.top) / r.height) * max;
-      setv(pat.steps[s], Math.max(0, Math.min(max, v)));
-      fit(); render();
+// the edit mode shown: Notes outside Advanced, on Chords, and on Drums except Velocity
+const ovMode = () => !S.adv || T.poly ? 'notes' : T.drums && S.ovl !== 'vel' ? 'notes' : S.ovl;
+// the note that sounds at step s of the part shown (its start, or -1)
+function noteAt(s) { for (let i = s; i >= 0; i--) if (pat.steps[i].on) return i + pat.steps[i].length > s ? i : -1; return -1; }
+// bars over the roll: one per note as wide as the note (riffs), one per hit inside its cell (drums)
+function ovDraw(o, om, rowH) {
+  o.innerHTML = '';
+  const n = pat.numSteps, bar = (cls, css, label) => { const b = document.createElement('div'); b.className = 'ob ' + cls; b.style.cssText = css; if (label) b.innerHTML = `<b>${label}</b>`; o.appendChild(b); return b; };
+  if (T.drums) {
+    DRUMS.forEach(([x], r) => { for (let s = 0; s < n; s++) { const h = pat.hits[x][s]; if (!h.on) continue; const v = h.velocity / 127, H = (rowH - 4) * v; bar('dv', `left:${s / n * 100}%;width:calc(${100 / n}% - 6px);top:${r * rowH + 2 + (rowH - 4 - H)}px;height:${H}px`); } });
+    return;
+  }
+  for (let s = 0; s < n; s++) {
+    const st = pat.steps[s]; if (!st.on) continue;
+    const css = `left:${s / n * 100}%;width:calc(${st.length / n * 100}% - 4px)`;
+    if (om === 'dur' && st.repeats > 1) { bar('na', css + ';height:100%', '×' + st.repeats); continue; }
+    const v = om === 'dur' ? durOf(st) / 100 : om === 'vel' ? st.velocity / 127 : st.repeats / MAX_REP;
+    const label = om === 'dur' ? durOf(st) + '%' : om === 'vel' ? st.velocity : st.repeats > 1 ? '×' + st.repeats : '1';
+    const b = bar(om === 'rep' ? 'rep' : '', css + `;height:${Math.max(3, v * 100)}%`, label);
+    if (v > 0.25) { b.firstChild.style.top = '3px'; b.firstChild.style.color = '#15171c'; }
+  }
+}
+// drag on the bars: up and down sets the value, across notes draws it (drums: along the row first pressed)
+function ovDrag(o, om, rowH) {
+  if (om === 'rep' && !S.repeatsOn) { o.classList.add('off'); return; }
+  o.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    e.preventDefault(); o.setPointerCapture(e.pointerId);
+    let changed = false, row = null;
+    const set = ev => {
+      const r = o.getBoundingClientRect(), n = pat.numSteps;
+      const x = (ev.clientX - r.left) / r.width, y = (ev.clientY - r.top) / r.height, s = Math.floor(x * n);
+      if (s < 0 || s >= n) return;
+      const v = f => Math.max(0, Math.min(1, f));
+      if (T.drums) {
+        const rows = DRUMS.length; if (row === null) row = Math.floor(y * rows); if (row < 0 || row >= rows) return;
+        const h = pat.hits[DRUMS[row][0]][s]; if (!h.on) return;
+        h.velocity = Math.max(1, Math.round(v(1 - (y * rows - row)) * 127));
+      } else {
+        const i = noteAt(s); if (i < 0) return;
+        const st = pat.steps[i], f = v(1 - y);
+        if (om === 'dur') { if (st.repeats > 1) return; st.dur = Math.max(5, Math.round(f * 100)); }
+        else if (om === 'vel') st.velocity = Math.max(1, Math.round(f * 127));
+        else st.repeats = Math.max(1, Math.min(MAX_REP, Math.ceil(f * MAX_REP)));
+      }
+      changed = true; ovDraw(o, om, rowH);
     };
-    apply2(e);
-    const up = () => { l.removeEventListener('pointermove', apply2); l.removeEventListener('pointerup', up); push(pat); };
-    l.addEventListener('pointermove', apply2); l.addEventListener('pointerup', up);
+    set(e);
+    const end = () => { o.removeEventListener('pointermove', set); o.removeEventListener('pointerup', end); o.removeEventListener('pointercancel', end); if (changed) push(pat); };
+    o.addEventListener('pointermove', set); o.addEventListener('pointerup', end); o.addEventListener('pointercancel', end);
   });
 }
 
@@ -1923,6 +2035,7 @@ document.querySelector('#mutseg button').onclick = () => {
 };
 $('adv').onclick = () => { S.adv = !S.adv; render(); };
 $('rptpill').onclick = () => { S.repeatsOn = !S.repeatsOn; render(); };
+document.querySelectorAll('#ovseg button').forEach(b => b.onclick = () => { S.ovl = b.dataset.m; render(); });
 $('rootpill').onclick = () => { S.startOnRoot = !S.startOnRoot; render(); };
 $('seed').onkeydown = e => { if (e.key === 'Enter') { S.seed = (+$('seed').value >>> 0) || 1; applyAll('roll', true); } };
 $('undo').onclick = () => ui > 0 && undoTo(ui - 1);
@@ -2004,7 +2117,7 @@ function importMidi(u8, name) {
   let m;
   try { m = parseMidi(u8); } catch (e) { say(`Could not read ${name}: ${e.message}`, true); render(); return; }
   const N = 16, MAX = 4 * N, stepTicks = m.ppq / 4;
-  const q = m.notes.map(x => { const s = Math.round(x.tick / stepTicks); let e = Math.round((x.tick + x.dur) / stepTicks); if (e <= s) e = s + 1; return { s, e, note: x.note, vel: x.vel }; })
+  const q = m.notes.map(x => { const s = Math.round(x.tick / stepTicks); let e = Math.round((x.tick + x.dur) / stepTicks); if (e <= s) e = s + 1; return { s, e, note: x.note, vel: x.vel, d: x.dur }; })
     .filter(x => x.s >= 0 && x.s < MAX).sort((a, b) => a.s - b.s || a.note - b.note);
   const placed = [];
   let last = null;
@@ -2027,7 +2140,7 @@ function importMidi(u8, name) {
   T.rootNote = lo + ((S.root - lo) % 12 + 12) % 12;
   S.rate = 4; S.numSteps = N;
   const fresh = [0, 1, 2, 3].map(newPat);
-  placed.forEach(x => { const b = Math.floor(x.s / N); fresh[b].steps[x.s - b * N] = { on: true, note: x.note, length: Math.min(MAX_LEN, x.e - x.s), velocity: Math.max(1, Math.min(127, x.vel)), repeats: 1, locked: false }; });
+  placed.forEach(x => { const b = Math.floor(x.s / N); const len = Math.min(MAX_LEN, x.e - x.s); fresh[b].steps[x.s - b * N] = { on: true, note: x.note, length: len, dur: Math.max(5, Math.min(100, Math.round(100 * x.d / (len * stepTicks)))), velocity: Math.max(1, Math.min(127, x.vel)), repeats: 1, locked: false }; });
   T.parts = fresh; T.locks = [false, false, false, false]; T.src = [0, 1, 2, 3].map(b => b < nBars ? 'import' : 'roll');
   useTab(0);
   parts.forEach(p => { fitP(p); rebase(p); });
@@ -2067,17 +2180,19 @@ function exportMidi() {
     const ch = tab.ch - 1, ev = [];
     const name = text(`Midinja ${tab.name}`);
     ev.push({ tick: 0, data: [0xff, 0x03, ...vlq(name.length), ...name] });
-    const add = (startStep, lenSteps, notes, vel, reps) => {
+    // dur: the percent of the length that sounds, in ticks (shorter than a step is fine; 1/128 at least); ratchets: the hits split the length
+    const add = (startStep, lenSteps, notes, vel, reps, dur = 100) => {
       const start = Math.round(startStep * stepT + (startStep % 2 ? S.swing * 0.5 * stepT : 0));
       const tot = Math.round(lenSteps * stepT), each = Math.floor(tot / reps);
-      for (let r = 0; r < reps; r++) notes.forEach(note => { const nte = Math.max(0, Math.min(127, note)); ev.push({ tick: start + r * each, pri: 1, data: [0x90 | ch, nte, vel] }); ev.push({ tick: start + r * each + Math.max(1, each - 1), pri: 0, data: [0x80 | ch, nte, 0] }); });
+      const gate = reps > 1 ? Math.max(1, each - 1) : Math.max(PPQ / 32, Math.min(tot - 1, Math.round(tot * dur / 100)));
+      for (let r = 0; r < reps; r++) notes.forEach(note => { const nte = Math.max(0, Math.min(127, note)); ev.push({ tick: start + r * each, pri: 1, data: [0x90 | ch, nte, vel] }); ev.push({ tick: start + r * each + gate, pri: 0, data: [0x80 | ch, nte, 0] }); });
     };
     for (let bar = 0; bar < bars; bar++) {
       const b = bar % tab.arr.length, p = tab.parts[tab.arr[b]], at0 = bar * p.numSteps;
       if (tab.drums) {
-        for (let s = 0; s < p.numSteps; s++) DRUMS.forEach(([note]) => { const h = p.hits[note][s]; if (h.on) add(at0 + s, 1, [note], h.velocity, 1); });
-        if (autoCrash(b, tab)) add(at0, 1, [49], DEF_VEL(1), 1);
-      } else for (let s = 0; s < p.numSteps; s++) { const st = p.steps[s]; if (st.on) add(at0 + s, st.length, [st.note], st.velocity, Math.max(1, st.repeats)); }
+        for (let s = 0; s < p.numSteps; s++) DRUMS.forEach(([note]) => { const h = p.hits[note][s]; if (h.on) add(at0 + s, 1, [outNote(note)], h.velocity, 1); });
+        if (autoCrash(b, tab)) add(at0, 1, [outNote(49)], DEF_VEL(1), 1);
+      } else for (let s = 0; s < p.numSteps; s++) { const st = p.steps[s]; if (st.on) add(at0 + s, st.length, [st.note], st.velocity, Math.max(1, st.repeats), durOf(st)); }
     }
     ev.sort((a, b) => a.tick - b.tick || (a.pri || 0) - (b.pri || 0));
     bytes.push(...track(ev));
