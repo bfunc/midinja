@@ -250,6 +250,7 @@ input.num{width:64px}
 .edge{display:flex;align-items:center;gap:3px;height:18px;margin:2px 0}
 .edge .en{width:44px;text-align:right;padding-right:5px;font-size:9.5px;color:var(--ink3);flex:none}
 .edge .en.r{width:auto;flex:1;text-align:right;padding-right:4px}
+.eb.az{width:auto;padding:0 7px;font-size:10px}
 .eb{width:20px;height:16px;line-height:1;padding:0;font-size:11px;border-radius:4px;background:var(--panel2);border:1px solid var(--line);color:var(--ink2);cursor:pointer}
 .eb:hover:not(:disabled){border-color:#4a5163}
 .eb:disabled{opacity:.3;cursor:default}
@@ -557,13 +558,13 @@ function useTrack(id) {
 }
 // the riff roll zooms to its notes after a roll: the rows from the lowest to the highest note, plus
 // two rows below and three above (within the range); the + at an edge of the roll shows more rows again
-function fitView(t = T) {
-  if (t.drums || t.poly) return;
+function fitOf(t) {
   const ns = notesOf(t);
-  if (!ns.length) { t.view = null; return; }
+  if (!ns.length) return null;
   const lo = Math.max(t.lowNote, Math.min(...ns) - 2), hi = Math.min(t.highNote, Math.max(...ns) + 3);
-  t.view = lo <= t.lowNote && hi >= t.highNote ? null : [lo, hi];
+  return lo <= t.lowNote && hi >= t.highNote ? null : [lo, hi];
 }
+function fitView(t = T) { if (!t.drums && !t.poly) t.view = fitOf(t); }
 // the zoom never hides a note: notes moved out of it (a key or scale change) widen it
 const notesOf = t => t.parts.flatMap(p => p.steps.slice(0, p.numSteps).filter(s => s.on).map(s => s.note));
 const viewLo = () => T.view ? Math.max(S.lowNote, Math.min(T.view[0], ...notesOf(T))) : S.lowNote;
@@ -1242,6 +1243,14 @@ function edge(top, grow) {
   }
   push();
 }
+// Auto zoom: back to the zoom a roll gives (2 rows below the notes, 3 above); greyed out when the roll is there
+function autoZoomBtn(el) {
+  const f = fitOf(T), now = T.view ? [viewLo(), viewHi()] : null, same = JSON.stringify(f) === JSON.stringify(now);
+  const z = document.createElement('button'); z.className = 'eb az'; z.textContent = 'Auto zoom'; z.disabled = same;
+  z.title = same ? 'The roll is at the auto zoom: 2 rows below the lowest note, 3 above the highest' : 'Zoom back to the notes: 2 rows below the lowest, 3 above the highest (as after a roll)';
+  z.onclick = () => { fitView(); render(); };
+  el.appendChild(z);
+}
 function edgeBar(el, top, R) {
   el.innerHTML = '';
   if (!R.length) return;
@@ -1253,7 +1262,7 @@ function edgeBar(el, top, R) {
     const mk = (txt, title, dis, fn) => { const b = document.createElement('button'); b.className = 'eb'; b.textContent = txt; b.title = title; b.disabled = dis; b.onclick = fn; el.appendChild(b); };
     mk('+', `Show the row ${top ? 'above' : 'below'}: ${nn(cur + (top ? 1 : -1))} (zoomed in on the notes; the range is ${nn(S.lowNote)}–${nn(S.highNote)})`, false, () => edge(top, true));
     mk('−', has ? nn(cur) + ' has notes: the zoom keeps them' : `Hide the ${top ? 'top' : 'bottom'} row ${nn(cur)} (the range stays)`, has || R.length <= 1, () => edge(top, false));
-    if (top) { const t = document.createElement('span'); t.className = 'en r'; t.textContent = `${T.name} range ${nn(S.lowNote)}–${nn(S.highNote)} · zoomed ${nn(viewLo())}–${nn(viewHi())}`; el.appendChild(t); }
+    if (top) { const t = document.createElement('span'); t.className = 'en r'; t.textContent = `${T.name} range ${nn(S.lowNote)}–${nn(S.highNote)} · zoomed ${nn(viewLo())}–${nn(viewHi())}`; el.appendChild(t); autoZoomBtn(el); }
     return;
   }
   const canGrow = span < MAX_SPAN && nextRow(cur, top ? 1 : -1) !== cur;
@@ -1263,6 +1272,7 @@ function edgeBar(el, top, R) {
   const noShrink = T.poly ? (span <= 12 ? 'One octave at least: a four-note chord needs it' : '') : lk ? nn(cur) + ' holds a locked note: unlock it first' : lastScale ? nn(cur) + ' is the last scale note in the range: the range keeps at least one' : one ? 'The range is one note' : '';
   mk('−', noShrink || (T.poly ? `Remove the ${top ? 'top' : 'bottom'} row ${nn(cur)}: chord notes beyond it show as ghosts` : `Remove the ${top ? 'top' : 'bottom'} row ${nn(cur)}: notes on it fold into the range by octave`), !!noShrink, () => edge(top, false));
   if (top) { const t = document.createElement('span'); t.className = 'en r'; t.textContent = `${T.name} range ${nn(S.lowNote)}–${nn(S.highNote)}` + (T.view ? ` · zoomed ${nn(viewLo())}–${nn(viewHi())}` : ''); el.appendChild(t); }
+  if (top && !T.poly) autoZoomBtn(el);
 }
 function degreeBadge(n) {
   const sc = SCALES[S.scale], pc = pcOf(n);
