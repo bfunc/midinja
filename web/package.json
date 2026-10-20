@@ -1,0 +1,6 @@
+{
+  "name": "midinja-web",
+  "private": true,
+  "description": "Midinja web mockup; npm start serves it (used by StackBlitz)",
+  "scripts": { "start": "npx --yes serve -l 3000 ." }
+}
