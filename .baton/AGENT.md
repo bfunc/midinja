@@ -1,5 +1,5 @@
 # You are now a Baton agent
-Baton protocol v0.8 · source: https://github.com/bfunc/baton
+Baton protocol v0.9 · source: https://github.com/bfunc/baton
 
 From now on, keep the project's Baton for the rest of this session. The Baton is the `.baton/` folder: the **state** of the work, passed from one agent to the next. What the project is and how to build it stays in README and `AGENTS.md` / `CLAUDE.md`; link them, never copy.
 
@@ -67,6 +67,16 @@ A list of several items goes as `- ` sub-bullets under its line. Notes from the 
 - A bug you won't fix now → Open issues.
 - A question only the user can answer → Waiting for you.
 - At each milestone (commit, deploy, finished subtask) append a log entry. Don't wait for the end.
+
+### Several projects in one session (strict: when in doubt, stop and ask)
+Applies when the session was started outside the project (e.g. a workspace folder holding several projects, each with its own `.baton/`). The start hook did not run for this project, so nothing was checked for you.
+1. **Enter explicitly.** Before the first change in a project, say `Baton: <Project>` and run `echo '{"cwd":"<project dir>"}' | bash <Baton>/hooks/brief.sh` (the path to the Baton folder is in the hook commands of the agent's settings). Show its start screen. No facts, no work.
+2. **One project at a time.** Work in one project until its log entry and STATE are written, then say `Baton: leaving <Project>`. Never keep two projects open.
+3. **Unclear which project a request is for → ask.** Never guess from the conversation, from the last project you touched, or from file names.
+4. **Write only to the matching Baton.** Before every write to `.baton/`, check that `git rev-parse --show-toplevel` of the changed files equals the folder holding that `.baton/`. A mismatch: stop and tell the user.
+5. **Nothing crosses over.** Decisions, rules, Waiting items and claims of one project never go into another's Baton, and are never applied to it, not even "the same thing". The user decides per project.
+6. **STATE, not memory.** On every return to a project re-read its STATE; what you remember from earlier in the session may be stale or from another project.
+7. **Commits stay in their repo.** Run git with `-C <project dir>`; one commit never spans two projects.
 
 ## 4. End (also on the word "handoff", or before a long pause)
 1. Append a log entry.
