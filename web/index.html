@@ -1365,14 +1365,14 @@ function renderLane() {
   const IN = $('inspName');
   if (T.drums) {
     const b0 = shownBar(), k = S.cur, p = T.parts[k], L = fillLen(p, k), nl = DRUMS.reduce((a, [x]) => a + p.hits[x].slice(0, p.numSteps).filter(h => h.locked).length, 0);
-    IN.innerHTML = `${b0 >= 0 ? 'Bar ' + (b0 + 1) + ' · ' : ''}${PARTS[k]}<small>${k === 5 ? 'a stop' : k === 6 ? 'half-time, 8ths' : 'hats: ' + HATS[p.hat].name}${p.clap && k !== 5 ? ' · clap' : ''}${L ? ' · fill: ' + FILLS[p.fill].name : ''}${arr.filter(x => x === k).length > 1 ? ' · in ' + arr.filter(x => x === k).length + ' bars' : ''}</small>`;
+    IN.innerHTML = `${(S.sel >= 0 || timer) && b0 >= 0 ? 'Bar ' + (b0 + 1) + ' · ' : ''}${PARTS[k]}<small>${k === 5 ? 'a stop' : k === 6 ? 'half-time, 8ths' : 'hats: ' + HATS[p.hat].name}${p.clap && k !== 5 ? ' · clap' : ''}${L ? ' · fill: ' + FILLS[p.fill].name : ''}${arr.filter(x => x === k).length > 1 ? ' · in ' + arr.filter(x => x === k).length + ' bars' : ''}</small>`;
     const lk = document.createElement('button'); lk.className = 'btn xs' + (T.locks[k] ? ' on' : ''); lk.textContent = T.locks[k] ? '🔒 Locked' : '🔓 Lock'; lk.title = T.locks[k] ? 'Unlock: the dice may change ' + PARTS[k] + ' again' : 'Lock: the dice and All keep ' + PARTS[k] + ' as it is'; lk.onclick = () => { T.locks[k] = !T.locks[k]; push(); }; I.appendChild(lk);
     const un = document.createElement('button'); un.className = 'btn xs'; un.textContent = `Unlock ${nl} hit${nl === 1 ? '' : 's'}`; un.disabled = !nl; un.title = nl ? 'Remove the locks of the hits in ' + PARTS[k] : 'No locked hit in ' + PARTS[k] + ' (Shift+click a hit to lock it)'; un.onclick = () => { DRUMS.forEach(([x]) => p.hits[x].forEach(h => { h.locked = false; })); push(); }; I.appendChild(un);
     return;
   }
   if (!T.poly) {
     const b0 = shownBar(), k = S.cur, p = parts[k], nOn = p.steps.slice(0, p.numSteps).filter(x => x.on).length, nl = p.steps.slice(0, p.numSteps).filter(x => x.locked).length;
-    IN.innerHTML = `${b0 >= 0 ? 'Bar ' + (b0 + 1) + ' · ' : ''}${PARTS[k]}<small>${PART_HINT[k]} · on ${numeral(degreeOf(k))} · ${nOn} note${nOn === 1 ? '' : 's'}${src[k] === 'import' ? ' · imported' : ''}${arr.filter(x => x === k).length > 1 ? ' · in ' + arr.filter(x => x === k).length + ' bars' : ''}</small>`;
+    IN.innerHTML = `${(S.sel >= 0 || timer) && b0 >= 0 ? 'Bar ' + (b0 + 1) + ' · ' : ''}${PARTS[k]}<small>${PART_HINT[k]} · on ${numeral(degreeOf(k))} · ${nOn} note${nOn === 1 ? '' : 's'}${src[k] === 'import' ? ' · imported' : ''}${arr.filter(x => x === k).length > 1 ? ' · in ' + arr.filter(x => x === k).length + ' bars' : ''}</small>`;
     const lk = document.createElement('button'); lk.className = 'btn xs' + (locks[k] ? ' on' : ''); lk.textContent = locks[k] ? '🔒 Locked' : '🔓 Lock'; lk.title = locks[k] ? 'Unlock: the dice and All may change ' + PARTS[k] + ' again' : 'Lock: the dice and All keep ' + PARTS[k] + ' as it is (Shift+click on its bar does the same)'; lk.onclick = () => { locks[k] = !locks[k]; push(); }; I.appendChild(lk);
     const un = document.createElement('button'); un.className = 'btn xs'; un.textContent = `Unlock ${nl} note${nl === 1 ? '' : 's'}`; un.disabled = !nl; un.title = nl ? 'Remove the locks of the notes in ' + PARTS[k] + ', chromatic ones included' : 'No locked note in ' + PARTS[k] + ' (Shift+click a note to lock it)'; un.onclick = () => { p.steps.forEach(x => { x.locked = false; }); push(p); }; I.appendChild(un);
     return;
@@ -1480,7 +1480,7 @@ function render() {
   A.style.gridTemplateColumns = `repeat(${MAX_BARS}, 1fr)`; // a bar is a quarter of the row on every track, so forms of 1–4 bars compare at a glance
   arr.forEach((k, i) => {
     const t = document.createElement('div');
-    const level = T.poly ? (i === b0 ? ' ctx' : '') : i === b0 ? ' prim' : k === S.cur ? ' ctx' : '';
+    const level = T.poly ? (i === b0 ? ' ctx' : '') : i === S.sel ? ' prim' : k === S.cur ? ' ctx' : ''; // strong only for the bar clicked; picking a part outlines every bar that uses it
     const LK = tabLocks();
     t.className = 'slot' + level + (!T.poly && LK[k] ? ' locked' : '') + (i === ps ? ' playing' : '');
     if (T.poly) {
