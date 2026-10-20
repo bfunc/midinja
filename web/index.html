@@ -556,12 +556,12 @@ function useTrack(id) {
   if (timer) { playPos = Math.max(0, stepIdx - 1) % cycleLen(); S.cur = playingPart(); refreshPat(); }
 }
 // the riff roll zooms to its notes after a roll: the rows from the lowest to the highest note, plus
-// two rows above and below (within the range); the + at an edge of the roll shows more rows again
+// two rows below and three above (within the range); the + at an edge of the roll shows more rows again
 function fitView(t = T) {
   if (t.drums || t.poly) return;
   const ns = notesOf(t);
   if (!ns.length) { t.view = null; return; }
-  const lo = Math.max(t.lowNote, Math.min(...ns) - 2), hi = Math.min(t.highNote, Math.max(...ns) + 2);
+  const lo = Math.max(t.lowNote, Math.min(...ns) - 2), hi = Math.min(t.highNote, Math.max(...ns) + 3);
   t.view = lo <= t.lowNote && hi >= t.highNote ? null : [lo, hi];
 }
 // the zoom never hides a note: notes moved out of it (a key or scale change) widen it
