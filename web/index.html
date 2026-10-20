@@ -172,6 +172,8 @@ input.num{width:64px}
 .slot.prim .tt i{background:var(--prim)}
 .aadd{width:30px;height:30px;padding:0;display:grid;place-items:center;color:var(--acc);border-radius:7px;background:var(--panel2);border:1px solid var(--line);font-size:18px;line-height:1}
 .aadd:disabled{opacity:.35;cursor:default}
+.arr .aadd{justify-self:start;align-self:center}
+.formrow .addcol:empty{display:none}
 .tt{width:44px;height:16px;border-radius:4px;background:#00000040;position:relative;overflow:hidden}
 .tt i{position:absolute;width:2px;height:2px;background:var(--ink2)}
 .msg{color:var(--acc2);font-size:11px;margin:6px 0 0;min-height:14px}
@@ -1300,8 +1302,8 @@ function thumb(el, ps, w, h) {
     p.steps.slice(0, p.numSteps).forEach((st, s) => {
       if (!st.on) return;
       const d = document.createElement('i');
-      d.style.left = (2 + (off + s) * (w - 6) / tot) + 'px';
-      d.style.width = Math.max(2, st.length * (w - 6) / tot - 1) + 'px';
+      if (!w) { d.style.left = ((off + s) / tot * 100) + '%'; d.style.width = `max(2px, calc(${st.length / tot * 100}% - 1px))`; } // w 0: fill the box
+      else { d.style.left = (2 + (off + s) * (w - 6) / tot) + 'px'; d.style.width = Math.max(2, st.length * (w - 6) / tot - 1) + 'px'; }
       d.style.top = (2 + (1 - (st.note - lo) / span) * (h - 7)) + 'px';
       el.appendChild(d);
     });
@@ -1478,7 +1480,7 @@ function render() {
   // arrangement and palette
   const A = $('arr'); A.innerHTML = '';
   const ps = playingSlot(), b0 = shownBar();
-  A.style.gridTemplateColumns = `repeat(${Math.max(1, arr.length)}, 1fr)`;
+  A.style.gridTemplateColumns = `repeat(${MAX_BARS}, 1fr)`; // a bar is a quarter of the row on every track, so forms of 1–4 bars compare at a glance
   arr.forEach((k, i) => {
     const t = document.createElement('div');
     const level = T.poly ? (i === b0 ? ' ctx' : '') : i === b0 ? ' prim' : k === S.cur ? ' ctx' : '';
@@ -1495,7 +1497,7 @@ function render() {
     } else {
       t.title = `Bar ${i + 1}: part ${PARTS[k]} · ${i === S.sel ? 'selected: Play loops this bar; click again to deselect' : 'click to select it and edit ' + PARTS[k]} (every ${PARTS[k]} bar changes with it)`;
       t.innerHTML = `<span class="bn">${i + 1}</span><span class="lk" title="${LK[k] ? 'Unlock (Shift+click): ' + PARTS[k] + ' is locked, the dice and All skip it' : 'Lock (Shift+click): the dice and All keep ' + PARTS[k] + ' as it is'}">${LK[k] ? '🔒' : '🔓'}</span><span class="tn" title="Which part plays in bar ${i + 1}: click to choose">${PARTS[k]}<i>▾</i></span><div class="tt"></div><button class="x" title="Remove this bar from the form (its chords go with it)">×</button><i class="pp"></i>`;
-      if (T.drums) drumThumb(t.querySelector('.tt'), T.parts[k]); else thumb(t.querySelector('.tt'), [parts[k]], 44, 16);
+      if (T.drums) drumThumb(t.querySelector('.tt'), T.parts[k]); else thumb(t.querySelector('.tt'), [parts[k]], 0, 16);
       const toggleLock = () => { LK[k] = !LK[k]; push(); };
       t.onclick = e => e.shiftKey ? toggleLock() : selectSlot(i);
       t.querySelector('.lk').onclick = e => { e.stopPropagation(); toggleLock(); };
@@ -1517,7 +1519,7 @@ function render() {
     if (T.poly && last >= 0) sortedChords().filter(c => overlapsBar(c, last)).forEach(c => { const s = Math.max(c.start, last * 4), e = Math.min(c.start + c.len, last * 4 + 4); chords.push(mkChord(s + 4, e - s, c.deg, { type: c.type, inv: c.inv, rhythm: c.rhythm })); });
     laneChanged(fromDeg); push();
   };
-  $('radd').innerHTML = ''; $('radd').appendChild(ab);
+  $('radd').innerHTML = ''; if (arr.length < MAX_BARS) A.appendChild(ab); // + sits right after the last bar
   $('playinfo').textContent = 'BPM · ' + (S.sel >= 0 ? 'bar ' + (S.sel + 1) : arr.length ? arr.length + ' bar' + (arr.length > 1 ? 's' : '') : 'this part');
   $('playinfo').title = S.sel >= 0 ? 'Play loops only the selected bar (Esc deselects)' : 'Play loops every track, each over its own form';
   renderLane();
