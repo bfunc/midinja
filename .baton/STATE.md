@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-20 22:05 · opus-5.5@home#50bb · d375776
+Updated: 2026-10-20 22:38 · opus-5.5@raptor#af93 · 3f44612
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -17,6 +17,10 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 - 2026-10-20 · Riff range: a new riff spans 2½ octaves (30 rows) from its root, e.g. E2–A#4; + still grows it to 3 octaves · user decision
 - 2026-10-20 · Grid: fixed 1/16, Rate removed from the UI (the engine's rate stays, fixed at 1/16; older state with another rate loads as 16 steps) · user decision
 - 2026-10-20 · Note length: up to a whole bar (16 steps, never past the next note or the bar end); a click uses the last length, drag right from an empty cell to draw, drag a note's right edge to resize; right-click no longer cycles · user decision
+- 2026-10-20 · Duration: the percent of a note's own length that sounds (100% legato, low = pluck), applied in ticks (can be shorter than 1/16); the dice take it from a Duration range (default 50–100%); manual notes start at 100%; Length range stays in Advanced · user decision
+- 2026-10-20 · Ratchets: up to 5 hits that split the note's length; duration does not apply to a ratcheted note; drawn as separate hits · user decision
+- 2026-10-20 · Roll edit modes (Advanced): Notes · Duration · Velocity · Ratchets as bars over the dimmed roll, replacing the lanes under it; each mode's dice range sits in its header; Drums: Notes · Velocity only · user decision (overlay like Riffer)
+- 2026-10-20 · Drum kit: a Kit view on the Drums track sets the note each sound sends (default GM, duplicates warned); hits stay keyed by GM inside · user decision (note mapping only, no CC)
 - 2026-10-20 · Layout: controls back in one row above the roll (no right column); new tabs/track design; chords hidden for now · user decision
 - 2026-10-20 · Web preview hosting: none (no bfunc.cc, no GitHub Pages); local server or StackBlitz only · user decision
 - 2026-10-13 · Builds: only on GitHub Actions · user keeps the laptop free of toolchains
@@ -40,7 +44,7 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 - C in scales without a fifth falls back to ii (Locrian ♭II); keep it? · since 2026-10-17
 
 ## In progress
-- opus-5.5@raptor#af93: web mockup Duration %, ratchets up to 5, roll overlay modes instead of lanes, drum Kit tab (note per sound) · since 2026-10-20 22:28
+(none)
 
 ## Next
 1. User reviews the redesigned mockup (tracks: 6 riffs + Drums, one-row controls, drum parts, chords hidden) on StackBlitz; then decide whether the JUCE app follows
@@ -48,4 +52,4 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 3. Tag v0.2.0 after the user's FL confirmation
 4. Generation: augmented-second pairs resolve into tonic/fifth (♭6–7–1, 3–♭2–1, ♭3–♯4–5); colour notes on strong beats
 5. AU later
-6. JUCE app: port the note length rework (fixed 1/16 grid, notes up to a bar, drag to draw/resize, last-used length) after the user approves it in the mockup
+6. JUCE app: port the note length rework (fixed 1/16 grid, notes up to a bar, drag to draw/resize, last-used length) and Duration / ratchets up to 5 / edit modes / drum kit after the user approves them in the mockup; the core then needs duration and the caps raised (kMaxLength 8 → 16, kMaxRepeats 4 → 5), which the mockup works around in JS (afterCore)
