@@ -8,6 +8,7 @@ Focus: the **real build** v0.2: the JUCE app follows the web preview (8fb54d1 po
 Who: home builds the app (CI) and the preview; raptor relays user feedback; the user tests in FL Studio. No deploys to bfunc.cc.
 
 ## Decisions (accepted, don't "fix")
+- 2026-10-20 · Web preview: GitHub Pages (bfunc.github.io/midinja), auto on push to main (web/) · user chose auto
 - 2026-10-13 · Builds: only on GitHub Actions · user keeps the laptop free of toolchains
 - 2026-10-16 · Preview: a UI mockup, no sound · user decision
 - 2026-10-16 · Form: ≤4 bars, 1 part = 1 bar 4/4, 16 steps; import mono (chords → lowest note), 1/16 grid, cut at bar lines, velocity kept, key guessed · agreed in discussion
