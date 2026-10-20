@@ -13,6 +13,7 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 - 2026-10-20 · Drums: own parts independent of the riffs (groove, fills, crash-in, break, bridge…), a fill every 2 bars by default · user decision
 - 2026-10-20 · Drum fills: Fill 1 / Fill 2 always end with their fill; no Fill on/off button · user: the toggle was confusing
 - 2026-10-20 · Bar highlight: picking a part gives every bar using it the same soft outline, none looks selected; the strong style is only for a clicked bar (the one Play loops); an unused part lights no bar · user decision
+- 2026-10-20 · Track header: no "Bar N · part" label or detail line; the part's details (chord degree, notes; drums: what the dice picked) live in the tooltips of its button and bars; Lock / Unlock stay · user agreed after review
 - 2026-10-20 · Layout: controls back in one row above the roll (no right column); new tabs/track design; chords hidden for now · user decision
 - 2026-10-20 · Web preview hosting: none (no bfunc.cc, no GitHub Pages); local server or StackBlitz only · user decision
 - 2026-10-13 · Builds: only on GitHub Actions · user keeps the laptop free of toolchains

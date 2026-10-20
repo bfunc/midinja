@@ -308,6 +308,7 @@ input.num{width:64px}
 .genrow .knobs{flex-wrap:nowrap;gap:12px}
 .thead .insp{display:flex;align-items:center;gap:6px}
 .thead .iname{margin:0;font-size:12px;font-weight:800;color:var(--trk);white-space:nowrap;text-align:right}
+.thead .iname:empty{display:none}
 .thead .iname small{display:block;font-size:10px;font-weight:400;color:var(--ink3)}
 .advrow{display:flex;gap:22px;align-items:flex-start;padding:8px 14px 10px;border-bottom:1px solid var(--line);background:var(--panel)}
 .advrow>div{width:150px}
@@ -601,6 +602,12 @@ const lockMask = () => locks.reduce((m, l, k) => m | (l ? 1 << k : 0), 0);
 const hasNotes = p => p.drum ? DRUMS.some(([x]) => p.hits[x].slice(0, p.numSteps).some(h => h.on)) : p.steps.slice(0, p.numSteps).some(s => s.on);
 const lastOnIdx = p => { for (let i = p.numSteps - 1; i >= 0; i--) if (p.steps[i].on) return i; return -1; };
 function setPart(k, p) { parts[k] = p; refreshPat(); }
+// a part's details for tooltips: the chord it sits on and its notes (riff), or what the dice picked (drums)
+function partInfo(k) {
+  if (T.drums) { const p = T.parts[k], L = fillLen(p, k); return (k === 5 ? 'a stop' : k === 6 ? 'half-time, 8ths' : 'hats: ' + HATS[p.hat].name) + (p.clap && k !== 5 ? ' · clap' : '') + (L ? ' · fill: ' + FILLS[p.fill].name : ''); }
+  const p = parts[k], n = p.steps.slice(0, p.numSteps).filter(x => x.on).length;
+  return `on ${numeral(degreeOf(k))} · ${n} note${n === 1 ? '' : 's'}${src[k] === 'import' ? ' · imported' : ''}`;
+}
 // during Play the bar shown is the bar playing (a part can sit in several bars: A A′ A B)
 const shownBar = () => S.sel >= 0 && S.sel < arr.length ? S.sel : timer && arr.length ? playingBar() : T && T.poly && selChord() ? Math.min(arr.length - 1, chordBar(selChord())) : arr.indexOf(S.cur); // Chords: the bar of the selected chord
 function refreshPat() { pat = T.poly ? chordPat(shownBar()) : T.drums ? T.parts[S.cur] : parts[S.cur]; }
@@ -1365,14 +1372,14 @@ function renderLane() {
   const IN = $('inspName');
   if (T.drums) {
     const b0 = shownBar(), k = S.cur, p = T.parts[k], L = fillLen(p, k), nl = DRUMS.reduce((a, [x]) => a + p.hits[x].slice(0, p.numSteps).filter(h => h.locked).length, 0);
-    IN.innerHTML = `${(S.sel >= 0 || timer) && b0 >= 0 ? 'Bar ' + (b0 + 1) + ' · ' : ''}${PARTS[k]}<small>${k === 5 ? 'a stop' : k === 6 ? 'half-time, 8ths' : 'hats: ' + HATS[p.hat].name}${p.clap && k !== 5 ? ' · clap' : ''}${L ? ' · fill: ' + FILLS[p.fill].name : ''}${arr.filter(x => x === k).length > 1 ? ' · in ' + arr.filter(x => x === k).length + ' bars' : ''}</small>`;
+    IN.innerHTML = ''; // the part's details live in the tooltips of its button and bars (partInfo)
     const lk = document.createElement('button'); lk.className = 'btn xs' + (T.locks[k] ? ' on' : ''); lk.textContent = T.locks[k] ? '🔒 Locked' : '🔓 Lock'; lk.title = T.locks[k] ? 'Unlock: the dice may change ' + PARTS[k] + ' again' : 'Lock: the dice and All keep ' + PARTS[k] + ' as it is'; lk.onclick = () => { T.locks[k] = !T.locks[k]; push(); }; I.appendChild(lk);
     const un = document.createElement('button'); un.className = 'btn xs'; un.textContent = `Unlock ${nl} hit${nl === 1 ? '' : 's'}`; un.disabled = !nl; un.title = nl ? 'Remove the locks of the hits in ' + PARTS[k] : 'No locked hit in ' + PARTS[k] + ' (Shift+click a hit to lock it)'; un.onclick = () => { DRUMS.forEach(([x]) => p.hits[x].forEach(h => { h.locked = false; })); push(); }; I.appendChild(un);
     return;
   }
   if (!T.poly) {
     const b0 = shownBar(), k = S.cur, p = parts[k], nOn = p.steps.slice(0, p.numSteps).filter(x => x.on).length, nl = p.steps.slice(0, p.numSteps).filter(x => x.locked).length;
-    IN.innerHTML = `${(S.sel >= 0 || timer) && b0 >= 0 ? 'Bar ' + (b0 + 1) + ' · ' : ''}${PARTS[k]}<small>${PART_HINT[k]} · on ${numeral(degreeOf(k))} · ${nOn} note${nOn === 1 ? '' : 's'}${src[k] === 'import' ? ' · imported' : ''}${arr.filter(x => x === k).length > 1 ? ' · in ' + arr.filter(x => x === k).length + ' bars' : ''}</small>`;
+    IN.innerHTML = '';
     const lk = document.createElement('button'); lk.className = 'btn xs' + (locks[k] ? ' on' : ''); lk.textContent = locks[k] ? '🔒 Locked' : '🔓 Lock'; lk.title = locks[k] ? 'Unlock: the dice and All may change ' + PARTS[k] + ' again' : 'Lock: the dice and All keep ' + PARTS[k] + ' as it is (Shift+click on its bar does the same)'; lk.onclick = () => { locks[k] = !locks[k]; push(); }; I.appendChild(lk);
     const un = document.createElement('button'); un.className = 'btn xs'; un.textContent = `Unlock ${nl} note${nl === 1 ? '' : 's'}`; un.disabled = !nl; un.title = nl ? 'Remove the locks of the notes in ' + PARTS[k] + ', chromatic ones included' : 'No locked note in ' + PARTS[k] + ' (Shift+click a note to lock it)'; un.onclick = () => { p.steps.forEach(x => { x.locked = false; }); push(p); }; I.appendChild(un);
     return;
@@ -1461,7 +1468,7 @@ function render() {
     const b = document.createElement('button'); b.className = 'pt' + (k === S.cur ? ' on' : '') + (LK0[k] ? ' locked' : '') + (made ? '' : ' empty');
     const bars = arr.map((p, i) => p === k ? i + 1 : 0).filter(Boolean);
     b.innerHTML = nm + (bars.length ? '<i>' + bars.join(' ') + '</i>' : '');
-    b.title = `${nm} · ${PART_HINT[k]}${LK0[k] ? ' · locked: the dice and All skip it' : ''} · ${bars.length ? 'in bar' + (bars.length > 1 ? 's ' : ' ') + bars.join(', ') : 'not in the form (▾ on a bar puts it there)'} · ${made ? 'click to edit it in the roll' : `not made yet: click to build it from ${PARTS[0]}`}`;
+    b.title = `${nm} · ${PART_HINT[k]} · ${partInfo(k)}${LK0[k] ? ' · locked: the dice and All skip it' : ''} · ${bars.length ? 'in bar' + (bars.length > 1 ? 's ' : ' ') + bars.join(', ') : 'not in the form (▾ on a bar puts it there)'} · ${made ? 'click to edit it in the roll' : `not made yet: click to build it from ${PARTS[0]}`}`;
     b.onclick = () => {
       if (k === S.cur && S.sel < 0 && made) return;
       S.cur = k; S.sel = -1; if (!timer) { stepIdx = 0; playPos = 0; }
@@ -1492,7 +1499,7 @@ function render() {
       t.querySelector('.cp').onclick = e => { e.stopPropagation(); copyBarChords(i); };
       t.onclick = () => selectSlot(i);
     } else {
-      t.title = `Bar ${i + 1}: part ${PARTS[k]} · ${i === S.sel ? 'selected: Play loops this bar; click again to deselect' : 'click to select it and edit ' + PARTS[k]} (every ${PARTS[k]} bar changes with it)`;
+      t.title = `Bar ${i + 1}: part ${PARTS[k]} (${partInfo(k)}) · ${i === S.sel ? 'selected: Play loops this bar; click again to deselect' : 'click to select it and edit ' + PARTS[k]} (every ${PARTS[k]} bar changes with it)`;
       t.innerHTML = `<span class="bn">${i + 1}</span><span class="lk" title="${LK[k] ? 'Unlock (Shift+click): ' + PARTS[k] + ' is locked, the dice and All skip it' : 'Lock (Shift+click): the dice and All keep ' + PARTS[k] + ' as it is'}">${LK[k] ? '🔒' : '🔓'}</span><span class="tn" title="Which part plays in bar ${i + 1}: click to choose">${PARTS[k]}<i>▾</i></span><div class="tt"></div><button class="x" title="Remove this bar from the form (its chords go with it)">×</button><i class="pp"></i>`;
       if (T.drums) drumThumb(t.querySelector('.tt'), T.parts[k]); else thumb(t.querySelector('.tt'), [parts[k]], 0, 16);
       const toggleLock = () => { LK[k] = !LK[k]; push(); };
