@@ -69,8 +69,8 @@ input.num{width:64px}
 .tb .dot{width:11px;height:11px;border-radius:50%;border:2px solid var(--ink3);background:transparent;flex:none}
 .tb .dot.on{background:var(--acc2);border-color:var(--acc2);box-shadow:0 0 6px var(--acc2)}
 .tb.off .dot{border-color:var(--ink3)}
-.pal{display:flex;align-items:center;gap:4px;padding-left:12px;border-left:1px solid var(--line)}
-.pal .pt{padding:4px 9px;border-radius:7px;border:1px solid var(--line);background:var(--panel2);color:var(--ink2);font-weight:700;font-size:12px;line-height:1.2}
+.pal{display:flex;align-items:center;gap:4px;padding-left:12px;border-left:1px solid var(--line);flex-wrap:wrap;row-gap:4px;min-width:0}
+.pal .pt{padding:4px 9px;border-radius:7px;border:1px solid var(--line);background:var(--panel2);color:var(--ink2);font-weight:700;font-size:12px;line-height:1.2;white-space:nowrap} /* a name never breaks: Groove 2, Crash-in, Fill 1 */
 .pal .pt:hover{border-color:#4a5163;color:var(--ink)}
 .pal .pt.on{background:#ffffff0d;border-color:var(--trk);color:var(--trk);box-shadow:inset 0 0 0 1px var(--trk)}
 .pal .pt.empty{border-style:dashed;color:var(--ink3);opacity:.7}
