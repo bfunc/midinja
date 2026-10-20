@@ -1,21 +1,20 @@
 # Midinja · Baton
-Updated: 2026-10-20 21:14 · opus-5.5@home#cfaa · 3bed897
+Updated: 2026-10-20 21:16 · opus-5.5@raptor#af93 · 996ab92
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
 ## Now
-Focus: the web mockup redesign (tracks: 6 riffs + Drums with own forms, one-row controls, parts grown from A / Groove; on Pages via CI since cf4b4dc), up to 15312e3. The JUCE app (v0.2, last port 18fdb7c) follows only after the user approves the mockup; the Windows zip still awaits the FL test.
-Who: home builds the app (CI) and the preview; raptor relays user feedback; the user tests in FL Studio. No deploys to bfunc.cc.
+Focus: the web mockup redesign (tracks: 6 riffs + Drums with own forms, one-row controls, parts grown from A / Groove), up to 15312e3. The JUCE app (v0.2, last port 18fdb7c) follows only after the user approves the mockup; the Windows zip still awaits the FL test.
+Who: home builds the app (CI) and the preview; raptor relays user feedback; the user tests in FL Studio.
 
 ## Decisions (accepted, don't "fix")
 Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/decisions.md
 - 2026-10-20 · Tracks: up to 6 riffs + 1 drum track, each its own length 1–4 bars, looping independently (polyrhythm like 3 vs 4 is fine); riffs keep parts A/A′/B/C · user decision
 - 2026-10-20 · Drums: own parts independent of the riffs (groove, fills, crash-in, break, bridge…), a fill every 2 bars by default · user decision
 - 2026-10-20 · Layout: controls back in one row above the roll (no right column); new tabs/track design; chords hidden for now · user decision
-- 2026-10-20 · Web preview: GitHub Pages (bfunc.github.io/midinja), auto on push to main (web/) · user chose auto
+- 2026-10-20 · Web preview hosting: none (no bfunc.cc, no GitHub Pages); local server or StackBlitz only · user decision
 - 2026-10-13 · Builds: only on GitHub Actions · user keeps the laptop free of toolchains
 - 2026-10-16 · Preview: a UI mockup, no sound · user decision
-- 2026-10-17 · Deploys: none to bfunc.cc until the user asks · user decision
 - 2026-10-17 · Release: rolling "latest" pre-release from CI; a tagged release only after the user confirms it works in FL · user said "Defaults ok"
 - 2026-10-18 · New UI features go to the web mockup first (served on Home at localhost), into the JUCE app only after the user approves the mockup · user: "continue to ui tasks, for this only web maket"
 - 2026-10-19 · Chords per bar (option 2): the chord lane stays one continuous lane over the form; the Chords tab shows bar numbers and their chords only, no part controls; the part selector A/A′/B/C lives on Riff and Beats · the user chose it over per-part chords (option 1) the same day
@@ -29,7 +28,7 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 -    Not clicked through by hand: Start-on-root toggle, root marker at narrow widths (preview)
 
 ## Waiting for you
-- Chord part: the prototype's lane is built in the mockup (75125a6) and the app (4d7a1dd); the user tests both (bfunc.cc, latest zip) · since 2026-10-18
+- Chord part: the prototype's lane is built in the mockup (75125a6) and the app (4d7a1dd); the user tests both (local mockup, latest zip) · since 2026-10-18
 - Start-on-root: per-bar override (click the marker)? · since 2026-10-17
 - Start-on-root: a middle setting "root on a strong beat"? · since 2026-10-17
 - C in scales without a fifth falls back to ii (Locrian ♭II); keep it? · since 2026-10-17
@@ -38,8 +37,8 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 (none)
 
 ## Next
-1. User reviews the redesigned mockup (tracks: 6 riffs + Drums, one-row controls, drum parts, chords hidden) on StackBlitz / Pages; then decide whether the JUCE app follows
-2. User tests the Windows zip from the latest pre-release (18fdb7c) in FL: the parts selector on the tab row, Chords bars with ⧉, the bar + (copies chords on Chords), the ▾ part picker; plus the earlier Beats on channel 10, fills and the crash, the MIDI Out picker reaching the Minitaur directly; report via raptor. bfunc.cc stays at b77e077 until the user says deploy
+1. User reviews the redesigned mockup (tracks: 6 riffs + Drums, one-row controls, drum parts, chords hidden) on StackBlitz; then decide whether the JUCE app follows
+2. User tests the Windows zip from the latest pre-release (18fdb7c) in FL: the parts selector on the tab row, Chords bars with ⧉, the bar + (copies chords on Chords), the ▾ part picker; plus the earlier Beats on channel 10, fills and the crash, the MIDI Out picker reaching the Minitaur directly; report via raptor.
 3. Tag v0.2.0 after the user's FL confirmation
 4. Generation: augmented-second pairs resolve into tonic/fifth (♭6–7–1, 3–♭2–1, ♭3–♯4–5); colour notes on strong beats
 5. AU later

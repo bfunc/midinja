@@ -102,8 +102,8 @@ Settings and the arrangement are saved when the app closes, and with the project
 ## Web preview
 
 `web/` is a browser preview of the generator: the same C++ core compiled to WebAssembly
-(`web/build.sh`, needs Docker or emcc), with the app's interface and no sound. Live at
-https://bfunc.cc/static/midinja/ (`web/publish.sh` copies it into the bfunc.cc repo). The preview is
+(`web/build.sh`, needs Docker or emcc), with the app's interface and no sound. To open it, serve
+`web/` locally (e.g. `python -m http.server` there). The preview is
 the reference for the app's interface; the app adds the sound, MIDI out and drag-and-drop. Windows builds only for now.
 
 ## Building
