@@ -1825,7 +1825,10 @@ let timer = null, nextAt = 0, stepIdx = 0;
 const cycleLen = () => playSeq().length * S.numSteps;
 function tick() {
   const now = performance.now();
-  if (now >= nextAt) {
+  if (nextAt && now - nextAt > 2000) nextAt = now; // back from a hidden tab: don't race through the missed steps
+  let moved = false;
+  while (now >= nextAt) {
+    moved = true;
     const n = S.numSteps, len = cycleLen();
     playPos = stepIdx % len;
     playStep = playPos % n;
@@ -1834,8 +1837,8 @@ function tick() {
     const swing = (playStep % 2 === 0 ? 1 : -1) * S.swing * 0.5 * stepMs;
     nextAt = (nextAt || now) + stepMs + swing;
     stepIdx++;
-    render();
   }
+  if (moved) render();
   timer = requestAnimationFrame(tick);
 }
 $('pl').onclick = () => {
