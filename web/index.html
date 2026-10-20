@@ -240,6 +240,12 @@ input.num{width:64px}
 .note.chord.sel{background:var(--acc)}
 .note.chord.croot{box-shadow:inset 3px 0 0 #fff8}
 .note.ghost{z-index:1;background:#9aa1b2;opacity:.22;pointer-events:none;box-shadow:none;cursor:default}
+.note .rh{position:absolute;right:-3px;top:-2px;bottom:-2px;width:10px;cursor:ew-resize;touch-action:none;z-index:3}
+.note .rh:after{content:'';position:absolute;right:4px;top:30%;bottom:30%;width:2px;border-radius:1px;background:#0004}
+@media (pointer:coarse){.note .rh{width:18px;right:-9px}} /* a finger needs a wider edge */
+.note.draft{opacity:.7;pointer-events:none}
+.cell{touch-action:pan-y}
+.edge .en.dl{width:auto;padding:0 0 0 6px;color:var(--ink2)}
 .note.locked{outline:2px solid var(--lock);outline-offset:-1px}
 .note .rat{position:absolute;inset:0;display:flex;gap:2px;padding:2px}
 .note .rat i{flex:1;background:#00000033;border-radius:2px}
@@ -334,7 +340,6 @@ body.dragging .drop{display:grid}
     </div>
     <div class="vsep"></div>
     <div class="ctl"><small>Key</small><div style="display:flex;gap:4px"><select class="sel" id="root" title="The root: pick the note here (both tabs move with it), − / + move this tab an octave. The range and the parts follow the root"></select><button class="btn sm" id="ocD" title="This tab an octave down: its root, range and parts">−</button><button class="btn sm" id="ocU" title="This tab an octave up: its root, range and parts">+</button><select class="sel" id="scale" title="The scale: notes keep their degree, colour notes and augmented-second pairs move to the new scale's; locked notes stay; chords take their quality from the scale"></select></div></div>
-    <div class="ctl"><small>Rate · steps/bar</small><select class="sel" id="rate" title="One part is one bar of 4/4; the rate sets how many steps it has"><option value="2">1/8 · 8</option><option value="4" selected>1/16 · 16</option><option value="6">1/16T · 12</option></select></div>
     <div class="sp"></div>
     <div class="ctl"><small>Versions</small><div class="hist"><button class="pg" id="hPrev" title="Older">◂</button><div class="hist" id="hist"></div><button class="pg" id="hNext" title="Newer">▸</button></div></div>
     <div class="undoredo"><button class="btn ghost" id="undo" title="Undo (Ctrl+Z)">↶</button><button class="btn ghost" id="redo" title="Redo (Ctrl+Shift+Z)">↷</button></div>
@@ -401,7 +406,7 @@ body.dragging .drop{display:grid}
   <div class="hidden"><div class="hstrip" id="hstrip"></div><div class="lanebox" id="lane"></div><div id="cgen"></div><div id="advC"></div></div>
 </div></div>
 <div class="pop" id="pop"></div>
-<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>the other track (ghost)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add / remove · drag = pitch (Alt = chromatic, locks the note) · Shift+click = lock · right-click = longer · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, 🔒 keeps it when you roll · keys 1–4 = part · Space = dice, Shift+Space = All · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
+<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>the other track (ghost)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, 🔒 keeps it when you roll · keys 1–4 = part · Space = dice, Shift+Space = All · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
 <script src="midinja-core.js"></script>
 
 <script>
@@ -441,7 +446,10 @@ const S = {
   seed: 4821, adv: false, doRhythm: true, doNotes: true, mutate: false, mutAmt: 0.15, startOnRoot: true,
   cur: 0, sel: -1, tab: 0, csel: null,
 };
-const MAX_BARS = 4, MAX_SPAN = 36; // three octaves: more rows get too thin to click
+const MAX_BARS = 4, MAX_SPAN = 36, MAX_LEN = 16; // MAX_LEN: a note holds a whole bar at most (16 sixteenths)
+let lastLen = 1; // the length a click on an empty cell gives: the last one added or resized
+// lengths in sixteenths as note values
+const lenValue = l => ({ 1: '1/16', 2: '1/8', 3: '1/8.', 4: '1/4', 6: '1/4.', 8: '1/2', 12: '1/2.', 16: '1' })[l] || l + '/16'; // three octaves: more rows get too thin to click
 const newPat = () => ({ numSteps: S.numSteps, steps: Array.from({ length: 32 }, () => ({ on: false, note: 60, length: 1, velocity: 100, repeats: 1, locked: false })) });
 const newTab = (name, ch, poly, on, rootNote, span) => ({ name, ch, poly, on, rootNote, lowNote: rootNote, highNote: rootNote + span, parts: [0, 1, 2, 3].map(newPat), locks: [false, false, false, false], src: ['roll', 'roll', 'roll', 'roll'] });
 // The Beats tab: a drum grid on GM notes. A part is a groove (kick on the beats, snare on 2 and 4,
@@ -714,7 +722,7 @@ function barHits(b) {
 function chordPat(b) {
   const q = newPat();
   if (b < 0) return q;
-  for (const h of barHits(b)) { const st = q.steps[h.s]; st.on = true; st.length = Math.min(8, h.len); st.note = 60; }
+  for (const h of barHits(b)) { const st = q.steps[h.s]; st.on = true; st.length = Math.min(MAX_LEN, h.len); st.note = 60; }
   return q;
 }
 // a note moved by scale steps; an altered (off-scale) note moves with the scale note below it
@@ -1084,11 +1092,12 @@ function snapshot() { return { riffs: clone(riffs), drumT: clone(drumT), chords:
 function restore(h) {
   riffs = clone(h.riffs); drumT = clone(h.drumT); chords = clone(h.chords); curRiff = h.curRiff;
   tabs = [riffs[curRiff], chordT, drumT]; S.sel = h.sel;
-  S.cur = h.cur; S.csel = h.csel; S.root = h.root; S.scale = h.scale; S.rate = h.rate;
+  S.cur = h.cur; S.csel = h.csel; S.root = h.root; S.scale = h.scale; S.rate = 4; // the grid is always 1/16: older state with another rate is stretched to 16 steps
+  [...riffs.map(t => t.parts), drumT.parts].forEach(ps => ps.forEach(to16));
   nextId = Math.max(nextId, ...chords.map(c => c.id + 1), 1);
   useTab(h.drums ? 2 : 0);
-  S.numSteps = parts[0].numSteps;
-  $('scale').value = S.scale; $('rate').value = S.rate;
+  S.numSteps = 16;
+  $('scale').value = S.scale;
 }
 function pushUndo(snap) {
   undoStack = undoStack.slice(0, ui + 1);
@@ -1250,6 +1259,9 @@ function autoZoomBtn(el) {
   z.title = same ? 'The roll is at the auto zoom: 2 rows below the lowest note, 3 above the highest' : 'Zoom back to the notes: 2 rows below the lowest, 3 above the highest (as after a roll)';
   z.onclick = () => { fitView(); render(); };
   el.appendChild(z);
+  const L = document.createElement('span'); L.className = 'en dl'; L.textContent = 'length: ' + lenValue(lastLen);
+  L.title = 'A click on an empty cell adds a note this long: the length of the last note added or resized. Drag right from an empty cell to draw a length, or drag the right edge of a note';
+  el.appendChild(L);
 }
 function edgeBar(el, top, R) {
   el.innerHTML = '';
@@ -1579,14 +1591,17 @@ function render() {
         if (st.locked) { const l = document.createElement('span'); l.className = 'lockic'; l.textContent = '🔒'; d.appendChild(l); }
         if (s === 0 && S.startOnRoot && pc === chordPc) { const m = document.createElement('span'); m.className = 'rootmk'; m.textContent = chordName0; d.appendChild(m); d.title = `Start on chord root: step 1 of ${PARTS[S.cur]} is held on its bar's chord root (${chordName0}); the dice keep it. Turn off under Advanced`; }
         d.onpointerdown = e => noteDown(e, s);
-        d.oncontextmenu = e => { e.preventDefault(); longer(s); };
+        const rh = document.createElement('i'); rh.className = 'rh'; rh.title = 'Drag to make the note longer or shorter (up to a bar, or the next note)';
+        rh.onpointerdown = e => lenDrag(e, d, c, s, st.length, len => { st.length = len; });
+        d.appendChild(rh);
         c.appendChild(d);
         cellEl[s + ':' + note] = c;
       } else {
-        c.onclick = () => {
-          if (pat.steps[s].locked && !pat.steps[s].on) return;
-          pat.steps[s] = { on: true, note, length: 1, velocity: 100, repeats: 1, locked: !inScale(note) };
-          fit(); push(pat);
+        // press adds a note of the last length; dragging right draws its length
+        c.onpointerdown = e => {
+          if (e.button !== 0 || (pat.steps[s].locked && !pat.steps[s].on)) return;
+          const d = document.createElement('div'); d.className = 'note draft'; c.appendChild(d);
+          lenDrag(e, d, c, s, Math.min(lastLen, roomAt(s)), len => { pat.steps[s] = { on: true, note, length: len, velocity: 100, repeats: 1, locked: !inScale(note) }; }, true);
         };
       }
       g.appendChild(c);
@@ -1639,7 +1654,7 @@ function render() {
       L.appendChild(l);
     };
     laneRow('Vel', st => st.velocity, (st, v) => st.velocity = Math.max(1, Math.round(v)), 127, 'var(--acc2)');
-    laneRow('Len', st => st.length, (st, v) => st.length = Math.max(1, Math.round(v)), 8, 'var(--len)');
+    laneRow('Len', st => st.length, (st, v) => st.length = Math.max(1, Math.ceil(v)), MAX_LEN, 'var(--len)');
     if (S.repeatsOn) {
       const l = document.createElement('div'); l.className = 'lane cols'; l.style.setProperty('--n', n); l.innerHTML = '<div class="ll">Ratch</div>';
       for (let s = 0; s < n; s++) { const d = document.createElement('div'); d.className = 'dens'; const c = pat.steps[s].on ? pat.steps[s].repeats : 0; for (let i = 0; i < 4; i++) { const x = document.createElement('i'); if (i < c) x.className = 'on'; d.appendChild(x); } l.appendChild(d); }
@@ -1697,15 +1712,46 @@ function drumRow(g, note, r, n, ph, rowH, b0) {
     g.appendChild(c);
   }
 }
+function to16(p) {
+  const n = p.numSteps; if (!n || n === 16) return;
+  const k = 16 / n, map = a => { const b = a.map(x => ({ ...x, on: false, locked: false })); a.forEach((x, i) => { if (i < n && x.on) { const j = Math.round(i * k); if (j < 16) b[j] = { ...x, length: x.length ? Math.max(1, Math.round(x.length * k)) : x.length }; } }); return b; };
+  if (p.drum) for (const x in p.hits) p.hits[x] = map(p.hits[x]); else p.steps = map(p.steps);
+  p.numSteps = 16; fitP(p);
+}
 function fitP(p) {
   if (p.drum) return;
   const n = p.numSteps;
-  for (let i = 0; i < n; i++) { const st = p.steps[i]; if (!st.on) continue; let nx = i + 1; while (nx < n && !p.steps[nx].on) nx++; st.length = Math.max(1, Math.min(st.length, 8, nx - i)); }
+  for (let i = 0; i < n; i++) { const st = p.steps[i]; if (!st.on) continue; let nx = i + 1; while (nx < n && !p.steps[nx].on) nx++; st.length = Math.max(1, Math.min(st.length, MAX_LEN, nx - i)); }
 }
 const fit = () => fitP(pat);
-function longer(s) {
-  const st = pat.steps[s], n = pat.numSteps; let nx = s + 1; while (nx < n && !pat.steps[nx].on) nx++;
-  st.length = st.length + 1 > Math.min(8, nx - s) ? 1 : st.length + 1; push(pat);
+// the longest a note at step s may be: a bar, the next note of the part, or the end of the part
+function roomAt(s) { let nx = s + 1; while (nx < pat.numSteps && !pat.steps[nx].on) nx++; return Math.min(MAX_LEN, nx - s); }
+const noteW = len => `calc(${len * 100}% + ${len - 1}px - 4px)`;
+// length by dragging: a note's right-edge handle, or a press on an empty cell (fresh); mouse and touch.
+// The roll is not redrawn during the drag (only the note's width), so touch keeps its target.
+function lenDrag(e, d, c, s, len0, commit, fresh) {
+  if (e.button !== 0) return;
+  e.stopPropagation(); e.preventDefault();
+  const id = e.pointerId, r = c.getBoundingClientRect(), max = roomAt(s);
+  let len = Math.max(1, Math.min(len0, max)), moved = false;
+  d.style.width = noteW(len);
+  const at = x => Math.max(1, Math.min(max, Math.floor((x - r.left) / r.width) + 1));
+  const h = {};
+  const stop = () => { for (const t in h) removeEventListener(t, h[t], true); };
+  h.pointermove = ev => {
+    if (ev.pointerId !== id) return;
+    if (!moved && at(ev.clientX) === at(e.clientX)) return; // a wobble inside the start column is still a tap
+    moved = true; len = at(ev.clientX); d.style.width = noteW(len);
+  };
+  h.pointerup = ev => {
+    if (ev.pointerId !== id) return;
+    stop();
+    if (!fresh && !moved) return;
+    if (moved) lastLen = len; // a plain click keeps the default, even when the next note cut it short
+    commit(len); fit(); push(pat);
+  };
+  h.pointercancel = ev => { if (ev.pointerId !== id) return; stop(); render(); };
+  for (const t in h) addEventListener(t, h[t], true);
 }
 function noteDown(e, s) {
   if (e.button !== 0) return;
@@ -1860,7 +1906,6 @@ const rekey = () => {
   push();
 };
 $('scale').onchange = rekey;
-$('rate').onchange = () => { S.rate = +$('rate').value; S.numSteps = { 2: 8, 4: 16, 6: 12 }[S.rate]; allTracks().forEach(t => t.parts.forEach((p, k) => { p.numSteps = S.numSteps; if (p.drum) rebuildDrum(p, k); else fitP(p); })); refreshPat(); push(); };
 $('roll').onclick = () => apply(opOf());
 $('rollAll').onclick = () => applyAll(opOf());
 document.querySelectorAll('#what button').forEach(b => b.onclick = () => {
@@ -1978,9 +2023,9 @@ function importMidi(u8, name) {
   const lo = Math.min(...placed.map(x => x.note)), hi = Math.max(...placed.map(x => x.note));
   T.lowNote = lo; T.highNote = Math.min(hi, lo + MAX_SPAN); T.view = null;
   T.rootNote = lo + ((S.root - lo) % 12 + 12) % 12;
-  S.rate = 4; S.numSteps = N; $('rate').value = 4;
+  S.rate = 4; S.numSteps = N;
   const fresh = [0, 1, 2, 3].map(newPat);
-  placed.forEach(x => { const b = Math.floor(x.s / N); fresh[b].steps[x.s - b * N] = { on: true, note: x.note, length: Math.min(8, x.e - x.s), velocity: Math.max(1, Math.min(127, x.vel)), repeats: 1, locked: false }; });
+  placed.forEach(x => { const b = Math.floor(x.s / N); fresh[b].steps[x.s - b * N] = { on: true, note: x.note, length: Math.min(MAX_LEN, x.e - x.s), velocity: Math.max(1, Math.min(127, x.vel)), repeats: 1, locked: false }; });
   T.parts = fresh; T.locks = [false, false, false, false]; T.src = [0, 1, 2, 3].map(b => b < nBars ? 'import' : 'roll');
   useTab(0);
   parts.forEach(p => { fitP(p); rebase(p); });
