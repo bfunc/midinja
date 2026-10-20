@@ -8,6 +8,9 @@ Focus: the **real build** v0.2: the JUCE app follows the web preview (8fb54d1 po
 Who: home builds the app (CI) and the preview; raptor relays user feedback; the user tests in FL Studio. No deploys to bfunc.cc.
 
 ## Decisions (accepted, don't "fix")
+- 2026-10-20 · Tracks: up to 6 riffs + 1 drum track, each its own length 1–4 bars, looping independently (polyrhythm like 3 vs 4 is fine); riffs keep parts A/A′/B/C · user decision
+- 2026-10-20 · Drums: own parts independent of the riffs (groove, fills, crash-in, break, bridge…), a fill every 2 bars by default · user decision
+- 2026-10-20 · Layout: controls back in one row above the roll (no right column); new tabs/track design; chords hidden for now · user decision
 - 2026-10-20 · Web preview: GitHub Pages (bfunc.github.io/midinja), auto on push to main (web/) · user chose auto
 - 2026-10-13 · Builds: only on GitHub Actions · user keeps the laptop free of toolchains
 - 2026-10-16 · Preview: a UI mockup, no sound · user decision
@@ -59,9 +62,10 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 - C in scales without a fifth falls back to ii (Locrian ♭II); keep it? · since 2026-10-17
 
 ## In progress
-- (none)
+(none)
 
 ## Next
+1. User reviews the redesigned mockup (tracks: 6 riffs + Drums, one-row controls, drum parts, chords hidden) on StackBlitz / Pages; then decide whether the JUCE app follows
 1. User tests the Windows zip from the latest pre-release (18fdb7c) in FL: the parts selector on the tab row, Chords bars with ⧉, the bar + (copies chords on Chords), the ▾ part picker; plus the earlier Beats on channel 10, fills and the crash, the MIDI Out picker reaching the Minitaur directly; report via raptor. bfunc.cc stays at b77e077 until the user says deploy
 2. Tag v0.2.0 after the user's FL confirmation
 3. Generation: augmented-second pairs resolve into tonic/fifth (♭6–7–1, 3–♭2–1, ♭3–♯4–5); colour notes on strong beats
