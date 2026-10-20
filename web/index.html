@@ -1451,13 +1451,14 @@ function render() {
     A.appendChild(t);
   });
   if (!arr.length) { const h = document.createElement('span'); h.className = 'arrhint'; h.textContent = 'No bars yet: + adds bar 1 with part A'; A.appendChild(h); }
-  // the square + repeats the last bar: A → A A → A A A (the same part, so the same riff)
+  // the square + adds a bar with the part selected above (A, B, Fill 1 …)
   const ab = document.createElement('button'); ab.className = 'aadd'; ab.textContent = '+';
   ab.disabled = arr.length >= MAX_BARS;
-  ab.title = arr.length >= MAX_BARS ? '4 bars at most per track' : arr.length ? `Repeat the last bar after it (${PARTS[arr[arr.length - 1]]} again)` + (T.poly ? ' with a copy of its chords; its part changes on Riff or Beats' : '; the ▾ on a bar changes its part') : 'Add bar 1 with part A';
+  ab.title = arr.length >= MAX_BARS ? '4 bars at most per track' : T.poly ? (arr.length ? `Repeat the last bar after it (${PARTS[arr[arr.length - 1]]} again) with a copy of its chords` : 'Add bar 1 with part A') : `Add a bar with part ${PARTS[S.cur ?? 0]} (the part selected above; ▾ on a bar changes it)`;
   ab.onclick = () => {
     const fromDeg = [0, 1, 2, 3].map(degreeOf), last = arr.length - 1;
-    arr.push(arr.length ? arr[arr.length - 1] : 0); S.sel = -1;
+    const k = T.poly ? (arr.length ? arr[arr.length - 1] : 0) : (S.cur ?? 0);
+    arr.push(k); S.sel = -1; extendPart(T, k);
     // on Chords the new bar starts with the chords of the bar before it (chords are per bar)
     if (T.poly && last >= 0) sortedChords().filter(c => overlapsBar(c, last)).forEach(c => { const s = Math.max(c.start, last * 4), e = Math.min(c.start + c.len, last * 4 + 4); chords.push(mkChord(s + 4, e - s, c.deg, { type: c.type, inv: c.inv, rhythm: c.rhythm })); });
     laneChanged(fromDeg); push();
