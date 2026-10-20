@@ -518,7 +518,7 @@ function drumThumb(el, p) {
 // and loops it on its own, so a 3-bar riff over 4 bars of drums is a polyrhythm. tabs[0] is the
 // riff shown (or the last one shown), tabs[1] the hidden chord lane, tabs[2] the drum track.
 const TRK_COLORS = ['#ff9f43', '#7aa2f7', '#c792ea', '#f78c6c', '#c3e88d', '#ff6b9a'], DRUM_COLOR = '#d9dde6', MAX_RIFFS = 6;
-const newRiff = (name, ch, color, rootNote) => ({ ...newTab(name, ch, false, true, rootNote, 24), color, arr: [0] });
+const newRiff = (name, ch, color, rootNote) => ({ ...newTab(name, ch, false, true, rootNote, 30), color, arr: [0] }); // a new riff spans two and a half octaves from its root
 let riffs = [newRiff('Riff 1', 1, TRK_COLORS[0], 40)], curRiff = 0;
 const chordT = newTab('Chords', 2, true, false, 52, 19);
 let drumT = { ...newTab('Drums', 10, false, true, 36, 0), drums: true, color: DRUM_COLOR, arr: [0] };
