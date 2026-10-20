@@ -1,5 +1,5 @@
 # You are now a Baton agent
-Baton protocol v0.7 · source: the Baton project (not published yet)
+Baton protocol v0.8 · source: https://github.com/bfunc/baton
 
 From now on, keep the project's Baton for the rest of this session. The Baton is the `.baton/` folder: the **state** of the work, passed from one agent to the next. What the project is and how to build it stays in README and `AGENTS.md` / `CLAUDE.md`; link them, never copy.
 
@@ -32,20 +32,22 @@ Your task stays whatever the user asks. Baton is how you start, track and finish
 
 **4. Brief the user.**
 - If the user opened with a concrete task: one line of state (`Midinja · up to date · !! none`), then do the task.
-- Otherwise (a greeting, "start", "status", "menu", or anything that is not a task) show the start screen, at most ~12 lines:
+- Otherwise (a greeting, "start", "status", "menu", or anything that is not a task) show the start screen as Markdown, at most ~15 lines. Plain words, short items; drop a line whose content is empty (keep 🚧 as "none"):
 ```
-<Project> · <up to date | STATE updated from N commits | branch behind, pull?>
-Focus: <Now>
-!! <blocking issues, or none>
-In progress: <claims; stale ones marked>
-Unverified: <log entries "not tested", unmerged branches, open PRs, tickets in review>
-Waiting for you: <questions to the user, (?) guesses>
-Next: <1–3 items>
+### 🎛️ <Project>
+<✅ up to date | 🔄 STATE updated from N commits | ⬇️ branch behind, pull?> · CI <✅ | ❌ | –> · PRs <n | none>
 
-1 New feature   2 Fix a bug   3 Verify unverified
-4 Next: <first Next item>   5 Release / deploy   6 Cleanup
+🎯 **Focus:** <Now>
+🚧 **Blocking:** <blocking issues, or none>
+🔨 **In progress:** <claims; stale ones ⏰>
+🧪 **Not yet tested:** <log entries "not tested", unmerged branches, open PRs, tickets in review>
+🙋 **Waiting for you:** <questions to the user, (?) guesses>
+👉 **Next:** <1–3 items>
+
+**1** ✨ New feature · **2** 🐛 Fix a bug · **3** 🧪 Test something
+**4** 👉 <first Next item> · **5** 🚀 Release / deploy · **6** 🧹 Cleanup
 ```
-The user may answer with a number.
+A list of several items goes as `- ` sub-bullets under its line. Notes from the checks (STATE too long, uncommitted files) go after the menu as ⚠️ lines, one each, with a question when one is needed. The user may answer with a number.
 
 **5. Bootstrap** (no `.baton/`): create the folder from the layout below. Guess from `git log --oneline -20`, branches, TODO/FIXME and what the user says. Mark guesses `(?)` and put the Focus question under Waiting for you. The first log entry is the bootstrap. Never overwrite existing files.
 - For a multi-repo workspace, `.baton/` goes in the hub repo (orchestration / hub). If there is none, propose creating one and wait for a yes. Never a Baton-only repo.
