@@ -543,9 +543,25 @@ function useTab(i) { S.tab = i; T = tabs[i]; parts = tabs[0].parts; locks = tabs
 // show a riff (its index) or the drum track ('d')
 function useTrack(id) {
   if (id !== 'd') { curRiff = id; tabs[0] = riffs[id]; }
-  S.sel = -1; S.cur = (id === 'd' ? drumT : riffs[id]).arr[0] ?? 0; stepIdx = 0; playPos = 0;
+  // during Play the tracks keep playing: only the view changes, and the roll follows the part playing
+  S.sel = -1;
+  if (!timer) { S.cur = (id === 'd' ? drumT : riffs[id]).arr[0] ?? 0; stepIdx = 0; playPos = 0; }
   useTab(id === 'd' ? 2 : 0);
+  if (timer) { playPos = Math.max(0, stepIdx - 1) % cycleLen(); S.cur = playingPart(); refreshPat(); }
 }
+// the riff roll zooms to its notes after a roll: the rows from the lowest to the highest note, plus
+// two rows above and below (within the range); the + at an edge of the roll shows more rows again
+function fitView(t = T) {
+  if (t.drums || t.poly) return;
+  const ns = notesOf(t);
+  if (!ns.length) { t.view = null; return; }
+  const lo = Math.max(t.lowNote, Math.min(...ns) - 2), hi = Math.min(t.highNote, Math.max(...ns) + 2);
+  t.view = lo <= t.lowNote && hi >= t.highNote ? null : [lo, hi];
+}
+// the zoom never hides a note: notes moved out of it (a key or scale change) widen it
+const notesOf = t => t.parts.flatMap(p => p.steps.slice(0, p.numSteps).filter(s => s.on).map(s => s.note));
+const viewLo = () => T.view ? Math.max(S.lowNote, Math.min(T.view[0], ...notesOf(T))) : S.lowNote;
+const viewHi = () => T.view ? Math.min(S.highNote, Math.max(T.view[1], ...notesOf(T))) : S.highNote;
 function addRiff() {
   if (riffs.length >= MAX_RIFFS) return;
   let n = 1; while (riffs.some(r => r.name === 'Riff ' + n)) n++;
@@ -557,6 +573,7 @@ function addRiff() {
   const g = settings(); g.seed = S.seed = newSeed(); g.degree = degreeOf(0);
   t.parts[0] = core.run('roll', t.parts[0], g, S.mutAmt);
   rebase(t.parts[0]);
+  fitView(t);
   commitVersion();
 }
 function removeRiff(i) {
@@ -801,7 +818,7 @@ function foldTab(tab) { if (!tab.poly) tab.parts.forEach(p => foldPattern(p, tab
 const foldAll = () => riffs.forEach(foldTab);
 function shiftTab(tab, d) {
   if (tab.drums) return;
-  tab.rootNote += d; tab.lowNote += d; tab.highNote += d;
+  tab.rootNote += d; tab.lowNote += d; tab.highNote += d; if (tab.view) tab.view = tab.view.map(x => x + d);
   tab.parts.forEach(p => { p.steps.forEach(s => { s.note += d; }); if (p.base) { p.base.notes = p.base.notes.map(x => x + d); p.base.root = ((p.base.root + d) % 12 + 12) % 12; } });
 }
 
@@ -830,6 +847,7 @@ function apply(op) {
   src[S.cur] = 'roll';
   fixChordTones(S.cur);
   rebase(parts[S.cur]);
+  fitView();
   commitVersion();
 }
 function applyAll(op, keepSeed) {
@@ -845,6 +863,7 @@ function applyAll(op, keepSeed) {
   fixAllChordTones();
   parts.forEach((p, k) => { if (!locks[k]) rebase(p); });
   if (!locks.some(Boolean)) msg('');
+  fitView();
   commitVersion();
 }
 
@@ -1159,7 +1178,7 @@ function colorWords() {
 }
 
 // ---- grid ----------------------------------------------------------------------------------
-function rows() { if (T.drums) return DRUMS.map(d => d[0]); const r = []; for (let n = S.highNote; n >= S.lowNote; n--) r.push(n); return r; }
+function rows() { if (T.drums) return DRUMS.map(d => d[0]); const r = []; for (let n = viewHi(); n >= viewLo(); n--) r.push(n); return r; }
 const scaleRows = () => rows().filter(inScale).length;
 const nextRow = (n, dir) => Math.max(0, Math.min(127, n + dir));
 function noteAtY(y, chromatic) {
@@ -1180,11 +1199,24 @@ function edge(top, grow) {
   const R = rows();
   if (!R.length) return;
   const cur = top ? R[0] : R[R.length - 1], span = S.highNote - S.lowNote;
+  // zoomed in: + shows one more row of the range; when the view reaches the range, the zoom ends
+  if (T.view && grow && (top ? cur < S.highNote : cur > S.lowNote)) {
+    T.view = top ? [viewLo(), cur + 1] : [cur - 1, viewHi()];
+    if (T.view[0] <= S.lowNote && T.view[1] >= S.highNote) T.view = null;
+    render(); return;
+  }
+  // zoomed in: − hides an edge row with no notes on it (the range stays)
+  if (T.view && !grow && (top ? cur < S.highNote : cur > S.lowNote)) {
+    if (R.length <= 1 || parts.some(p => p.steps.slice(0, p.numSteps).some(s => s.on && s.note === cur))) return;
+    T.view = top ? [viewLo(), cur - 1] : [cur + 1, viewHi()];
+    render(); return;
+  }
   if (grow) {
     if (span >= MAX_SPAN) return;
     const n = nextRow(cur, top ? 1 : -1);
     if (n === cur) return;
     if (top) S.highNote = n; else S.lowNote = n;
+    if (T.view) T.view = top ? [viewLo(), n] : [n, viewHi()];
   } else {
     if (T.poly) { if (span <= 12) return; }
     else if (R.length <= 1 || lockedOn(cur) || (inScale(cur) && scaleRows() <= 1)) return;
@@ -1197,13 +1229,23 @@ function edgeBar(el, top, R) {
   el.innerHTML = '';
   if (!R.length) return;
   const cur = top ? R[0] : R[R.length - 1], span = S.highNote - S.lowNote, lk = lockedOn(cur), one = R.length <= 1, lastScale = inScale(cur) && scaleRows() <= 1;
+  const hidden = T.view && (top ? cur < S.highNote : cur > S.lowNote); // zoomed in: rows of the range beyond this edge
+  if (hidden) {
+    const lab = document.createElement('span'); lab.className = 'en'; lab.textContent = nn(cur); el.appendChild(lab);
+    const has = parts.some(p => p.steps.slice(0, p.numSteps).some(s => s.on && s.note === cur));
+    const mk = (txt, title, dis, fn) => { const b = document.createElement('button'); b.className = 'eb'; b.textContent = txt; b.title = title; b.disabled = dis; b.onclick = fn; el.appendChild(b); };
+    mk('+', `Show the row ${top ? 'above' : 'below'}: ${nn(cur + (top ? 1 : -1))} (zoomed in on the notes; the range is ${nn(S.lowNote)}–${nn(S.highNote)})`, false, () => edge(top, true));
+    mk('−', has ? nn(cur) + ' has notes: the zoom keeps them' : `Hide the ${top ? 'top' : 'bottom'} row ${nn(cur)} (the range stays)`, has || R.length <= 1, () => edge(top, false));
+    if (top) { const t = document.createElement('span'); t.className = 'en r'; t.textContent = `${T.name} range ${nn(S.lowNote)}–${nn(S.highNote)} · zoomed ${nn(viewLo())}–${nn(viewHi())}`; el.appendChild(t); }
+    return;
+  }
   const canGrow = span < MAX_SPAN && nextRow(cur, top ? 1 : -1) !== cur;
   const lab = document.createElement('span'); lab.className = 'en'; lab.textContent = nn(cur); el.appendChild(lab);
   const mk = (txt, title, dis, fn) => { const b = document.createElement('button'); b.className = 'eb'; b.textContent = txt; b.title = title; b.disabled = dis; b.onclick = fn; el.appendChild(b); };
   mk('+', canGrow ? `Add a row ${top ? 'above' : 'below'}: ${nn(nextRow(cur, top ? 1 : -1))}` : 'The range is three octaves already', !canGrow, () => edge(top, true));
   const noShrink = T.poly ? (span <= 12 ? 'One octave at least: a four-note chord needs it' : '') : lk ? nn(cur) + ' holds a locked note: unlock it first' : lastScale ? nn(cur) + ' is the last scale note in the range: the range keeps at least one' : one ? 'The range is one note' : '';
   mk('−', noShrink || (T.poly ? `Remove the ${top ? 'top' : 'bottom'} row ${nn(cur)}: chord notes beyond it show as ghosts` : `Remove the ${top ? 'top' : 'bottom'} row ${nn(cur)}: notes on it fold into the range by octave`), !!noShrink, () => edge(top, false));
-  if (top) { const t = document.createElement('span'); t.className = 'en r'; t.textContent = `${T.name} range ${nn(S.lowNote)}–${nn(S.highNote)}`; el.appendChild(t); }
+  if (top) { const t = document.createElement('span'); t.className = 'en r'; t.textContent = `${T.name} range ${nn(S.lowNote)}–${nn(S.highNote)}` + (T.view ? ` · zoomed ${nn(viewLo())}–${nn(viewHi())}` : ''); el.appendChild(t); }
 }
 function degreeBadge(n) {
   const sc = SCALES[S.scale], pc = pcOf(n);
@@ -1905,7 +1947,7 @@ function importMidi(u8, name) {
   if (d) riffs.forEach(t => { if (t !== T) shiftTab(t, d); });
   S.root = k.root; S.scale = k.scale; $('scale').value = S.scale;
   const lo = Math.min(...placed.map(x => x.note)), hi = Math.max(...placed.map(x => x.note));
-  T.lowNote = lo; T.highNote = Math.min(hi, lo + MAX_SPAN);
+  T.lowNote = lo; T.highNote = Math.min(hi, lo + MAX_SPAN); T.view = null;
   T.rootNote = lo + ((S.root - lo) % 12 + 12) % 12;
   S.rate = 4; S.numSteps = N; $('rate').value = 4;
   const fresh = [0, 1, 2, 3].map(newPat);
@@ -1993,7 +2035,7 @@ if (h.includes('advanced')) S.adv = true;
   const g = settings(); g.degree = degreeOf(0);
   tabs[0].parts[0] = core.run('roll', tabs[0].parts[0], g, S.mutAmt);
   parts.forEach(rebase);
-  refreshPat();
+  refreshPat(); fitView();
   commitVersion();
 }
 })();
