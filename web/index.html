@@ -73,6 +73,7 @@ input.num{width:64px}
 .pal .pt{padding:4px 9px;border-radius:7px;border:1px solid var(--line);background:var(--panel2);color:var(--ink2);font-weight:700;font-size:12px;line-height:1.2}
 .pal .pt:hover{border-color:#4a5163;color:var(--ink)}
 .pal .pt.on{background:#ffffff0d;border-color:var(--trk);color:var(--trk);box-shadow:inset 0 0 0 1px var(--trk)}
+.pal .pt.empty{border-style:dashed;color:var(--ink3);opacity:.7}
 .pal .pt.locked{border-color:var(--state);box-shadow:inset 0 0 0 1px var(--state)}
 .pal .pt.locked.on{border-color:var(--trk)}
 .pal .pt i{font-style:normal;font-size:9px;color:var(--ink3);margin-left:3px}
@@ -516,8 +517,9 @@ const TRK_COLORS = ['#ff9f43', '#7aa2f7', '#c792ea', '#f78c6c', '#c3e88d', '#ff6
 const newRiff = (name, ch, color, rootNote) => ({ ...newTab(name, ch, false, true, rootNote, 24), color, arr: [0] });
 let riffs = [newRiff('Riff 1', 1, TRK_COLORS[0], 40)], curRiff = 0;
 const chordT = newTab('Chords', 2, true, false, 52, 19);
-let drumT = { ...newTab('Drums', 10, false, true, 36, 0), drums: true, color: DRUM_COLOR, arr: [2, 3, 0, 4] };
-drumT.parts = DPARTS.map((_, k) => newDrumPart(k)); drumT.locks = DPARTS.map(() => false);
+let drumT = { ...newTab('Drums', 10, false, true, 36, 0), drums: true, color: DRUM_COLOR, arr: [0] };
+// only the Groove at the start; the other parts are built from it when they are opened
+drumT.parts = DPARTS.map((_, k) => { const p = newDrumPart(k); if (k) DRUMS.forEach(([x]) => p.hits[x].forEach(h => { h.on = false; })); return p; }); drumT.locks = DPARTS.map(() => false);
 let tabs = [riffs[0], chordT, drumT];
 const allTracks = () => [...riffs, chordT, drumT];
 const tabLocks = () => T.drums ? T.locks : locks;
@@ -836,7 +838,7 @@ const selChord = () => chords.find(c => c.id === S.csel) || null;
 const chordBar = c => c ? Math.floor(c.start / 4) : -1;
 // the dice on the part shown (Riff), or a new rhythm for the selected chord (Chords)
 function apply(op) {
-  if (T.drums) { if (T.locks[S.cur]) return; S.seed = newSeed(); rollDrum(pat, S.cur); commitVersion(); return; }
+  if (T.drums) { if (T.locks[S.cur]) return; S.seed = newSeed(); if (S.cur === 0 || !hasNotes(T.parts[0])) rollDrum(pat, S.cur); else derivePart(T, S.cur); refreshPat(); commitVersion(); return; }
   if (!op) return;
   if (T.poly) { const c = selChord(); if (!c) return; if (c.lock) { say('This chord is locked: unlock it to change its rhythm', true); return; } S.seed = newSeed(); c.rhythm = pick(RHYTHM_NAMES.filter(r => r !== c.rhythm)); refreshPat(); commitVersion(); return; }
   if (locks[S.cur]) return;
@@ -851,15 +853,17 @@ function apply(op) {
   commitVersion();
 }
 function applyAll(op, keepSeed) {
-  if (T.drums) { S.seed = newSeed(); T.parts.forEach((p, k) => { if (!T.locks[k]) rollDrum(p, k); }); commitVersion(); return; }
+  // All: a new first part, and the parts already made are built again from it (empty ones stay empty)
+  if (T.drums) { S.seed = newSeed(); const made = T.parts.map(hasNotes); if (!T.locks[0]) rollDrum(T.parts[0], 0); T.parts.forEach((p, k) => { if (k && made[k] && !T.locks[k]) derivePart(T, k); }); refreshPat(); commitVersion(); return; }
   if (!op) return;
   if (!keepSeed) S.seed = newSeed();
   if (T.poly) { chords.forEach(c => { if (!c.lock) c.rhythm = pick(RHYTHM_NAMES.filter(r => r !== c.rhythm)); }); refreshPat(); commitVersion(); return; }
   parts.forEach(p => p.numSteps = S.numSteps);
   if (op === 'roll' && [0, 1, 2, 3].every(k => degreeOf(k) === core.partDegree(k, S.scale))) {
     const g = settings();
-    core.form(parts, lockMask(), g).forEach((p, k) => { if (!locks[k]) { setPart(k, p); src[k] = 'roll'; } });
-  } else parts.forEach((p, k) => { if (!locks[k]) { setPart(k, rollMono(k, op, p)); src[k] = 'roll'; } });
+    const empty = parts.reduce((m, p, k) => k && !hasNotes(p) ? m | (1 << k) : m, 0);
+    core.form(parts, lockMask() | empty, g).forEach((p, k) => { if (!locks[k]) { setPart(k, p); src[k] = 'roll'; } });
+  } else parts.forEach((p, k) => { if (!locks[k] && (k === 0 || hasNotes(p))) { setPart(k, rollMono(k, op, p)); src[k] = 'roll'; } });
   fixAllChordTones();
   parts.forEach((p, k) => { if (!locks[k]) rebase(p); });
   if (!locks.some(Boolean)) msg('');
@@ -1037,27 +1041,29 @@ function fitBar(p, tab) {
   if (shift !== undefined) { if (shift) p.steps.forEach(s => { if (s.on && !s.locked) s.note += 12 * shift; }); }
   else foldPattern(p, tab.lowNote, tab.highNote);
 }
-// Extension (Riff tab): an empty part that joins the arrangement is a copy of A moved to its bar's
-// chord degree (A′ as it is); C's last note goes to the root or the fifth; locks are not copied
-function extendPart(tab, k) {
-  if (tab.poly || tab.drums) return false;
-  const a = tab.parts[0], p = tab.parts[k];
-  if (k === 0 || hasNotes(p) || !hasNotes(a)) return false;
-  const q = clone(a);
-  delete q.base;
-  q.steps.forEach(s => { s.locked = false; });
-  if (k !== 1) {
-    const delta = ((degreeOf(k) - degreeOf(0)) % nScale() + nScale()) % nScale();
-    q.steps.forEach(s => { if (s.on) s.note = scaleStep(s.note, delta); });
-    fitBar(q, tab);
-    if (k === 3) {
-      const last = lastOnIdx(q), fifth = SCALES[S.scale].fifth;
-      if (last >= 0) q.steps[last].note = nearestOfPcs(q.steps[last].note, [S.root, fifth >= 0 ? (S.root + fifth) % 12 : S.root], tab.lowNote, tab.highNote);
-    }
+// New parts grow from the first one: a roll makes only A (Groove on drums); an empty part is built
+// from it when it is first opened or put in the form. Riffs: A′ a variation of A, B on the IV, C a
+// cadence to the root (the core's form rules; Similarity sets how close). Drums: the Groove's hats,
+// open hat, clap and kick, with the part's own shape (fill, crash, break, half-time).
+function derivePart(tab, k) {
+  if (tab.poly || k === 0) return false;
+  if (tab.drums) {
+    const g = tab.parts[0], p = tab.parts[k];
+    Object.assign(p, { hat: g.hat, open: g.open, clap: g.clap, kickFill: rnd(2), fill: pick([...Array(FILLS.length).keys()].filter(i => i !== p.fill)), fillOn: isFill(k) });
+    rebuildDrum(p, k);
+    return true;
   }
+  const s = settings(); s.seed = newSeed(); s.degree = core.partDegree(k, S.scale);
+  const q = core.part(k, tab.parts[k], tab.parts[0], s);
+  fitBar(q, tab);
   tab.parts[k] = q;
-  refreshPat();
   rebase(q);
+  return true;
+}
+function extendPart(tab, k) {
+  if (tab.poly || k === 0 || hasNotes(tab.parts[k]) || !hasNotes(tab.parts[0])) return false;
+  derivePart(tab, k);
+  refreshPat();
   return true;
 }
 
@@ -1452,11 +1458,17 @@ function render() {
   const Pl = $('pal'); Pl.innerHTML = '';
   const LK0 = tabLocks();
   PARTS.forEach((nm, k) => {
-    const b = document.createElement('button'); b.className = 'pt' + (k === S.cur ? ' on' : '') + (LK0[k] ? ' locked' : '');
+    const made = hasNotes((T.drums ? T.parts : parts)[k]);
+    const b = document.createElement('button'); b.className = 'pt' + (k === S.cur ? ' on' : '') + (LK0[k] ? ' locked' : '') + (made ? '' : ' empty');
     const bars = arr.map((p, i) => p === k ? i + 1 : 0).filter(Boolean);
     b.innerHTML = nm + (bars.length ? '<i>' + bars.join(' ') + '</i>' : '');
-    b.title = `${nm} · ${PART_HINT[k]}${LK0[k] ? ' · locked: the dice and All skip it' : ''} · ${bars.length ? 'in bar' + (bars.length > 1 ? 's ' : ' ') + bars.join(', ') : 'not in the form (▾ on a bar puts it there)'} · click to edit it in the roll`;
-    b.onclick = () => { if (k === S.cur && S.sel < 0) return; S.cur = k; S.sel = -1; stepIdx = 0; playPos = 0; refreshPat(); render(); };
+    b.title = `${nm} · ${PART_HINT[k]}${LK0[k] ? ' · locked: the dice and All skip it' : ''} · ${bars.length ? 'in bar' + (bars.length > 1 ? 's ' : ' ') + bars.join(', ') : 'not in the form (▾ on a bar puts it there)'} · ${made ? 'click to edit it in the roll' : `not made yet: click to build it from ${PARTS[0]}`}`;
+    b.onclick = () => {
+      if (k === S.cur && S.sel < 0 && made) return;
+      S.cur = k; S.sel = -1; if (!timer) { stepIdx = 0; playPos = 0; }
+      if (extendPart(T, k)) { if (!T.drums) fitView(); push(); return; }
+      refreshPat(); render();
+    };
     Pl.appendChild(b);
   });
   const set = $('tset'); set.innerHTML = '';

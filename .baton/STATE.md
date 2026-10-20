@@ -49,6 +49,7 @@ Who: home builds the app (CI) and the preview; raptor relays user feedback; the 
 - 2026-10-19 · Chords per bar (option 2): the chord lane stays one continuous lane over the form; the Chords tab shows bar numbers and their chords only, no part controls; the part selector A/A′/B/C lives on Riff and Beats · the user chose it over per-part chords (option 1) the same day
 - 2026-10-19 · Level 2 fixed height: the bar row and the chord lane keep the same size on every tab; the active level is shown by colour and outline only · the editor jumped ~30 px between Riff and Chords
 - 2026-10-19 · One "+" on level 2: the bar-row + adds a bar (on Chords with a copy of the previous bar's chords); the chord lane has no + of its own, a chord inside a bar comes from a double-click · two + on Chords were redundant
+- 2026-10-20 · New parts: a roll makes only the first part (A / Groove); the others are built from it once, on first click (riffs via core.part, drums from the Groove's choices); dice on them = build again from it; All rebuilds only parts already made · user's idea, "из A"
 
 ## Open issues
 - !  VST3 MIDI bypassed FL (user, 2026-10-18): hardware on the interface played on every FL port because the plugin also opened a system MIDI port directly; VST instruments followed FL's port. Fixed in 82eb984 (host only); 2026-10-18 the picker returns, exclusive host-or-device (see Decisions), awaiting the user's FL check with the Minitaur
