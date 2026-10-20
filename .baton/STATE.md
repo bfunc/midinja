@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-20 21:13 · opus-5.5@home#cfaa · a3342a0
+Updated: 2026-10-20 21:14 · opus-5.5@home#cfaa · 3bed897
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -29,7 +29,6 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 -    Not clicked through by hand: Start-on-root toggle, root marker at narrow widths (preview)
 
 ## Waiting for you
-- Older decisions that the 2026-10-20 redesign may have replaced (docs/decisions.md): "Tabs: 3 like Riffer", "Layout by levels" (song bar → form → tabs → roll with a right column), "Beats tab" (third tab on ch 10). Retire them, or keep them for the JUCE app? · since 2026-10-20
 - Chord part: the prototype's lane is built in the mockup (75125a6) and the app (4d7a1dd); the user tests both (bfunc.cc, latest zip) · since 2026-10-18
 - Start-on-root: per-bar override (click the marker)? · since 2026-10-17
 - Start-on-root: a middle setting "root on a strong beat"? · since 2026-10-17
