@@ -317,8 +317,11 @@ input.num{width:64px}
 .thead .iname{margin:0;font-size:12px;font-weight:800;color:var(--trk);white-space:nowrap;text-align:right}
 .thead .iname:empty{display:none}
 .thead .iname small{display:block;font-size:10px;font-weight:400;color:var(--ink3)}
-.advrow{display:flex;gap:22px;align-items:flex-start;padding:8px 14px 10px;border-bottom:1px solid var(--line);background:var(--panel)}
-.advrow>div{width:150px}
+.advrow{display:flex;flex-direction:row;flex-wrap:wrap;gap:8px 22px;align-items:flex-start;padding:8px 14px 6px;border-bottom:1px solid var(--line);background:var(--panel)} /* one strip under the dice row; wraps on narrow screens */
+.advrow>div{width:140px;flex:none}
+.advrow>.advTog{width:auto}.advrow .advTog .pill{margin-top:5px}
+.advrow>.advSeed{width:84px}
+@media (max-width:520px){.advrow{gap:8px 14px}.advrow>.advLen,.advrow>.advVel{width:calc(50% - 7px)}.advrow>#rptbox{width:118px}.advrow>.advSeed{width:70px}} /* phone: two rows */.advrow .advSeed .num{width:100%;margin-top:2px;padding:3px 6px;font-size:11px}
 .advrow h5{margin:0 0 2px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px;display:flex;justify-content:space-between;align-items:center}
 .hidden{display:none}
 .narrow .body{flex-direction:column}
@@ -383,11 +386,11 @@ body.dragging .drop{display:grid}
         </div>
       </div>
       <div class="advrow advbox advR">
-        <div><h5>Length</h5><div class="range" id="rgLen"></div><div class="rl"><span id="lLenLo"></span><span id="lLenHi"></span></div></div>
+        <div class="advLen"><h5>Length</h5><div class="range" id="rgLen"></div><div class="rl"><span id="lLenLo"></span><span id="lLenHi"></span></div></div>
         <div class="advVel"><h5>Velocity</h5><div class="range" id="rgVel"></div><div class="rl"><span id="lVelLo"></span><span id="lVelHi"></span></div></div>
         <div id="rptbox"><h5>Ratchets <span class="pill" id="rptpill">OFF</span></h5><div class="range" id="rgRep"></div><div class="rl"><span id="lRepLo"></span><span id="lRepHi"></span></div></div>
-        <div><h5>Start on root <span class="pill on" id="rootpill" title="Every bar begins with the root of its degree. Imported bars are left as they are">ON</span></h5></div>
-        <div><h5>Seed</h5><input class="num" id="seed" style="width:100%" title="The seed of the last roll. Type one and press Enter to roll the whole form from it"></div>
+        <div class="advTog"><h5>Start on root</h5><span class="pill on" id="rootpill" title="Every bar begins with the root of its degree. Imported bars are left as they are">ON</span></div>
+        <div class="advSeed"><h5>Seed</h5><input class="num" id="seed" title="The seed of the last roll. Type one and press Enter to roll the whole form from it"></div>
       </div>
       <div class="gridw">
         <div class="edge" id="edgeTop"></div>
@@ -1174,14 +1177,13 @@ function range(id, min, max, get, set, fmt) {
   draw();
   return draw;
 }
-const lenName = l => ({ 1: '1 step', 2: '2 steps', 4: '1 beat', 8: '2 beats' })[l] || l + ' steps';
 const drawers = [
   knob('kDensity', () => S.notes, v => S.notes = v, 1, 16, 1, v => Math.min(v, S.numSteps) + ' / ' + S.numSteps),
   knob('kSwing', () => S.swing, v => S.swing = v, 0, 1, 0.01, v => Math.round(v * 100) + '%'),
   knob('kSimilarity', () => S.similarity, v => S.similarity = v, 0, 1, 0.05, v => Math.round(v * 100) + '%'),
   knob('kColor', () => S.color, v => S.color = v, 0, 1, 0.05, v => colorLabel() + ' · ' + Math.round(v * 100) + '%'),
   knob('kSurprise', () => S.surprise, v => S.surprise = v, 0, 1, 0.05, v => Math.round(v * 100) + '%'),
-  range('rgLen', 1, 8, () => [S.lenMin, S.lenMax], ([a, b]) => { S.lenMin = a; S.lenMax = b; }, lenName),
+  range('rgLen', 1, MAX_LEN, () => [S.lenMin, S.lenMax], ([a, b]) => { S.lenMin = a; S.lenMax = b; }, lenValue),
   range('rgVel', 1, 127, () => [S.velMin, S.velMax], ([a, b]) => { S.velMin = a; S.velMax = b; }, v => v),
   range('rgRep', 1, 4, () => [S.repMin, S.repMax], ([a, b]) => { S.repMin = a; S.repMax = b; }, v => '×' + v),
 ];
