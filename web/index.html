@@ -1262,7 +1262,8 @@ function edgeBar(el, top, R) {
     const mk = (txt, title, dis, fn) => { const b = document.createElement('button'); b.className = 'eb'; b.textContent = txt; b.title = title; b.disabled = dis; b.onclick = fn; el.appendChild(b); };
     mk('+', `Show the row ${top ? 'above' : 'below'}: ${nn(cur + (top ? 1 : -1))} (zoomed in on the notes; the range is ${nn(S.lowNote)}–${nn(S.highNote)})`, false, () => edge(top, true));
     mk('−', has ? nn(cur) + ' has notes: the zoom keeps them' : `Hide the ${top ? 'top' : 'bottom'} row ${nn(cur)} (the range stays)`, has || R.length <= 1, () => edge(top, false));
-    if (top) { const t = document.createElement('span'); t.className = 'en r'; t.textContent = `${T.name} range ${nn(S.lowNote)}–${nn(S.highNote)} · zoomed ${nn(viewLo())}–${nn(viewHi())}`; el.appendChild(t); autoZoomBtn(el); }
+    if (top) autoZoomBtn(el); // next to + and −
+    if (top) { const t = document.createElement('span'); t.className = 'en r'; t.textContent = `${T.name} range ${nn(S.lowNote)}–${nn(S.highNote)} · zoomed ${nn(viewLo())}–${nn(viewHi())}`; el.appendChild(t); }
     return;
   }
   const canGrow = span < MAX_SPAN && nextRow(cur, top ? 1 : -1) !== cur;
@@ -1271,8 +1272,8 @@ function edgeBar(el, top, R) {
   mk('+', canGrow ? `Add a row ${top ? 'above' : 'below'}: ${nn(nextRow(cur, top ? 1 : -1))}` : 'The range is three octaves already', !canGrow, () => edge(top, true));
   const noShrink = T.poly ? (span <= 12 ? 'One octave at least: a four-note chord needs it' : '') : lk ? nn(cur) + ' holds a locked note: unlock it first' : lastScale ? nn(cur) + ' is the last scale note in the range: the range keeps at least one' : one ? 'The range is one note' : '';
   mk('−', noShrink || (T.poly ? `Remove the ${top ? 'top' : 'bottom'} row ${nn(cur)}: chord notes beyond it show as ghosts` : `Remove the ${top ? 'top' : 'bottom'} row ${nn(cur)}: notes on it fold into the range by octave`), !!noShrink, () => edge(top, false));
+  if (top && !T.poly) autoZoomBtn(el); // next to + and −
   if (top) { const t = document.createElement('span'); t.className = 'en r'; t.textContent = `${T.name} range ${nn(S.lowNote)}–${nn(S.highNote)}` + (T.view ? ` · zoomed ${nn(viewLo())}–${nn(viewHi())}` : ''); el.appendChild(t); }
-  if (top && !T.poly) autoZoomBtn(el);
 }
 function degreeBadge(n) {
   const sc = SCALES[S.scale], pc = pcOf(n);
