@@ -447,6 +447,7 @@ const newTab = (name, ch, poly, on, rootNote, span) => ({ name, ch, poly, on, ro
 // on step 1 of the bar after a fill.
 const DRUMS = [[49, 'Crash'], [50, 'High tom'], [47, 'Mid tom'], [45, 'Low tom'], [46, 'Open hat'], [42, 'Closed hat'], [39, 'Clap'], [38, 'Snare'], [36, 'Kick']];
 const DRUM_NAME = Object.fromEntries(DRUMS);
+const DRUM_SHORT = { 49: 'CR', 50: 'HT', 47: 'MT', 45: 'LT', 46: 'OH', 42: 'CH', 39: 'CP', 38: 'SN', 36: 'BD' }; // the roll's row labels; the tooltip keeps the full name
 const HATS = [
   { name: 'offbeat 8ths', f: (s, q) => s % q === q >> 1 },
   { name: '8ths', f: (s, q) => s % Math.max(1, q >> 1) === 0 },
@@ -1663,7 +1664,7 @@ function render() {
 
 // one row of the drum grid: hits toggle on click, Shift+click locks, right-click cycles the accent
 function drumRow(g, note, r, n, ph, rowH, b0) {
-  const k = document.createElement('div'); k.className = 'key drum' + (note === 36 ? ' root' : ''); k.style.height = rowH + 'px'; k.textContent = DRUM_NAME[note]; k.title = `${DRUM_NAME[note]} · GM note ${note} (${nn(note)})`; g.appendChild(k);
+  const k = document.createElement('div'); k.className = 'key drum' + (note === 36 ? ' root' : ''); k.style.height = rowH + 'px'; k.textContent = DRUM_SHORT[note]; k.title = `${DRUM_NAME[note]} · GM note ${note} (${nn(note)})`; g.appendChild(k);
   const row = pat.hits[note], L = fillLen(pat, S.cur), crash = note === 49 && autoCrash(b0);
   for (let s = 0; s < n; s++) {
     const c = document.createElement('div'); c.className = 'cell' + (s % 4 === 0 ? ' beat' : '') + (r % 2 ? ' alt' : '') + (s === ph ? ' ph' : '') + (L && s >= n - L ? ' fillz' : '');
