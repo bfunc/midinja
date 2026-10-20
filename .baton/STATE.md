@@ -40,7 +40,7 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 - C in scales without a fifth falls back to ii (Locrian ♭II); keep it? · since 2026-10-17
 
 ## In progress
-(none)
+- opus-5.5@raptor#af93: web mockup Duration %, ratchets up to 5, roll overlay modes instead of lanes, drum Kit tab (note per sound) · since 2026-10-20 22:28
 
 ## Next
 1. User reviews the redesigned mockup (tracks: 6 riffs + Drums, one-row controls, drum parts, chords hidden) on StackBlitz; then decide whether the JUCE app follows
