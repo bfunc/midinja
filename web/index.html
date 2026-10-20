@@ -600,7 +600,8 @@ const lockMask = () => locks.reduce((m, l, k) => m | (l ? 1 << k : 0), 0);
 const hasNotes = p => p.drum ? DRUMS.some(([x]) => p.hits[x].slice(0, p.numSteps).some(h => h.on)) : p.steps.slice(0, p.numSteps).some(s => s.on);
 const lastOnIdx = p => { for (let i = p.numSteps - 1; i >= 0; i--) if (p.steps[i].on) return i; return -1; };
 function setPart(k, p) { parts[k] = p; refreshPat(); }
-const shownBar = () => S.sel >= 0 && S.sel < arr.length ? S.sel : T && T.poly && selChord() ? Math.min(arr.length - 1, chordBar(selChord())) : arr.indexOf(S.cur); // Chords: the bar of the selected chord
+// during Play the bar shown is the bar playing (a part can sit in several bars: A A′ A B)
+const shownBar = () => S.sel >= 0 && S.sel < arr.length ? S.sel : timer && arr.length ? playingBar() : T && T.poly && selChord() ? Math.min(arr.length - 1, chordBar(selChord())) : arr.indexOf(S.cur); // Chords: the bar of the selected chord
 function refreshPat() { pat = T.poly ? chordPat(shownBar()) : T.drums ? T.parts[S.cur] : parts[S.cur]; }
 function selectPart(k) { S.cur = k; refreshPat(); render(); }
 function selectSlot(i) {
@@ -1436,7 +1437,7 @@ function render() {
   const TL = $('tracks'); TL.innerHTML = '<div class="lbl">Tracks</div>';
   const barNow = t => timer && t.arr.length ? Math.floor(Math.max(0, stepIdx - 1) / S.numSteps) % t.arr.length : -1;
   const mkTrack = (t, id) => {
-    const cur = id === 'd' ? !!T.drums : !T.drums && id === curRiff, pb = barNow(t);
+    const cur = id === 'd' ? !!T.drums : !T.drums && id === curRiff, pb = cur ? playingSlot() : barNow(t);
     const d = document.createElement('div');
     d.className = 'trk' + (cur ? ' cur' : '') + (t.on ? '' : ' off'); d.style.setProperty('--c', t.color);
     d.title = `${t.name} · channel ${t.ch} · ${t.arr.length} bar${t.arr.length === 1 ? '' : 's'}, loops on its own · click to show it`;
