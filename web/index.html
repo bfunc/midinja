@@ -406,7 +406,7 @@ input.num{width:64px}
 .advrow>div{width:140px;flex:none}
 .advrow>.advTog{width:auto}.advrow .advTog .pill{margin-top:5px}
 .advrow>.advSeed{width:84px}
-.advrow>.advRange{width:auto}.advrow>.advKnob{width:auto}.advKnob .kv{margin-top:2px}.advRange .rr{display:flex;align-items:center;gap:4px;margin-top:3px;font-size:11px;color:var(--ink2)}.advRange .rr b{min-width:30px;text-align:center;color:var(--ink);font-weight:600}.advRange .rr i{font-style:normal;color:var(--ink3);margin:0 2px 0 6px}
+.advrow>.advKnob{width:auto}.advKnob .kv{margin-top:2px}
 @media (max-width:520px){.advrow{gap:8px 14px}.advrow>.advLen{width:calc(50% - 7px)}.advrow>.advSeed{width:70px}} /* phone: two rows */.advrow .advSeed .num{width:100%;margin-top:2px;padding:3px 6px;font-size:11px}
 .advrow h5{margin:0 0 2px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px;display:flex;justify-content:space-between;align-items:center}
 .hidden{display:none}
@@ -431,6 +431,14 @@ body.dragging .drop{display:grid}
 .sci input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .sci .nm{color:var(--ink);white-space:nowrap}.sci .iv{color:var(--ink3);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sci .pr{color:var(--acc2);font-size:10px;white-space:nowrap}.sci .cu{color:var(--acc);font-size:10px}
+/* the dice range brackets on the key column (top of the High row, bottom of the Low row) */
+.drb{position:absolute;left:0;width:var(--kw,44px);height:10px;margin-top:-5px;z-index:7;cursor:ns-resize;touch-action:none}
+.drb:before{content:'';position:absolute;left:2px;right:2px;top:3.5px;height:3px;border-radius:2px;background:var(--acc);box-shadow:0 0 0 1px #0006}
+.drb:after{content:'';position:absolute;left:2px;width:3px;height:9px;border-radius:2px;background:var(--acc)}
+.drb.hi:after{top:3.5px}.drb.lo:after{bottom:3.5px}
+.drb:hover:before,.drb.drag:before{box-shadow:0 0 0 1px #0006,0 0 7px var(--acc)}
+.edgestrip .dre{position:absolute;top:1px;left:2px;width:calc(var(--kw,44px) - 4px);height:16px;padding:0 3px;border:1px solid var(--acc);border-radius:3px;background:#ff9f4318;color:var(--acc);font:600 9.5px/14px inherit;white-space:nowrap;overflow:hidden;cursor:pointer;pointer-events:auto;text-align:left}
+.edgestrip.dn .dre{top:auto;bottom:1px}
 </style></head>
 <body>
 <div class="drop" id="drop">Drop the .mid file here<small>up to 4 bars → A A′ B C · monophonic · quantised to 1/16 · into the riff shown</small></div>
@@ -491,7 +499,6 @@ body.dragging .drop{display:grid}
         <div class="advLen"><h5>Length</h5><div class="range" id="rgLen"></div><div class="rl"><span id="lLenLo"></span><span id="lLenHi"></span></div></div>
         <div class="advTog"><h5>Start on root</h5><span class="pill on" id="rootpill" title="Every bar begins with the root of its degree. Imported bars are left as they are">ON</span></div>
         <div class="advKnob" title="Surprise: how often a roll breaks the rules: off-beat hits pushed a step, notes swapped for another scale note. Default 15%. Ctrl+click resets"><h5>Surprise</h5><div class="kv"><div class="knob t" id="kSurprise"><i></i></div><b id="vSurprise"></b></div></div>
-        <div class="advRange" title="The notes the dice may use on this riff (the next roll). Changing it never moves the notes you have; the sound you pick sets it by octave"><h5>Dice range</h5><div class="rr" id="rrange"></div></div>
         <div class="advSeed"><h5>Seed</h5><input class="num" id="seed" title="The seed of the last roll. Type one and press Enter to roll the whole form from it"></div>
       </div>
       <div class="gridw">
@@ -518,7 +525,7 @@ body.dragging .drop{display:grid}
   <div class="hidden"><div class="hstrip" id="hstrip"></div><div class="lanebox" id="lane"></div><div id="cgen"></div><div id="advC"></div></div>
 </div></div>
 <div class="pop" id="pop"></div>
-<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>ghost: another riff at the same place in the form, in its colour (Ghosts turns them off)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · right-click a note = remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · ☰ next to Scale = which scales the list shows · + / − under the roll or Ctrl+wheel = zoom (row height), the wheel scrolls; Auto zoom (lit = on) fits the notes; the dice range is under Advanced and never moves your notes · ▲ / ▼ at the top or bottom of the roll = notes above or below the rows in view (faint: ghosts), a click scrolls to them · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Notes / Duration / Velocity / Ratchets above the roll: edit one value per note as bars, drag them (their dice ranges under Advanced) · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, the lock keeps it when you roll · 🔊 = sound on / off, ⚙ = volume, delay, reverb · each riff picks its sound in its header (Bass, Lead, Square, Keys); the drums play a built-in kit on the GM notes · note names follow the DAW in ⚙ (FL Studio: middle C = MIDI 60 = C5) · Surprise (under Advanced, default 15%) = how often a roll breaks the rules · Similarity (in Dice) = how close A′, B and C stay to A on their next roll; not on A · keys 1–4 = part · Space = dice (the part shown), Shift+Space = the small All next to the dice (all parts) · Play walks the whole form; ⟲ Loop with a bar selected repeats that bar · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
+<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>ghost: another riff at the same place in the form, in its colour (Ghosts turns them off)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · right-click a note = remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · ☰ next to Scale = which scales the list shows · + / − under the roll or Ctrl+wheel = zoom (row height), the wheel scrolls; Auto zoom (lit = on) fits the notes; the orange brackets on the keys = the dice range: drag them, the next roll stays inside, your notes never move · ▲ / ▼ at the top or bottom of the roll = notes above or below the rows in view (faint: ghosts), a click scrolls to them · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Notes / Duration / Velocity / Ratchets above the roll: edit one value per note as bars, drag them (their dice ranges under Advanced) · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, the lock keeps it when you roll · 🔊 = sound on / off, ⚙ = volume, delay, reverb · each riff picks its sound in its header (Bass, Lead, Square, Keys); the drums play a built-in kit on the GM notes · note names follow the DAW in ⚙ (FL Studio: middle C = MIDI 60 = C5) · Surprise (under Advanced, default 15%) = how often a roll breaks the rules · Similarity (in Dice) = how close A′, B and C stay to A on their next roll; not on A · keys 1–4 = part · Space = dice (the part shown), Shift+Space = the small All next to the dice (all parts) · Play walks the whole form; ⟲ Loop with a bar selected repeats that bar · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
 <script src="midinja-core.js"></script>
 
 <script>
@@ -1394,6 +1401,42 @@ function noteAtY(y, chromatic) {
   });
   return best;
 }
+// the dice range brackets: drag the top (High) or the bottom (Low) in the key column, by semitone rows; zoom,
+// scroll and Auto zoom never move them, and they never move notes (the next roll uses them). One undo step
+const placeBracket = (b, top) => { const [, hi] = viewSpan(T), z = zoomOf(T); b.style.top = ((hi - (top ? S.highNote : S.lowNote)) * z.rowH + (top ? 0 : z.rowH)) + 'px'; };
+function shadeRange() {
+  document.querySelectorAll('#grid .key[data-note]').forEach(k => k.classList.toggle('oor', +k.dataset.note < S.lowNote || +k.dataset.note > S.highNote));
+  document.querySelectorAll('#grid .cell[data-n]').forEach(c => c.classList.toggle('oor', +c.dataset.n < S.lowNote || +c.dataset.n > S.highNote));
+}
+function rangeBrackets(g) {
+  if (T.drums || T.poly) return;
+  for (const top of [true, false]) {
+    const b = document.createElement('div'); b.className = 'drb ' + (top ? 'hi' : 'lo');
+    b.title = (top ? 'Dice range top' : 'Dice range bottom') + ': drag to set where the dice may put notes (now ' + nn(top ? S.highNote : S.lowNote) + ')';
+    placeBracket(b, top); b.onpointerdown = e => dragRange(e, b, top); g.appendChild(b);
+  }
+}
+function dragRange(e, b, top) {
+  if (e.button !== 0) return;
+  e.preventDefault(); e.stopPropagation(); try { b.setPointerCapture(e.pointerId); } catch { /* a pointer the browser no longer tracks */ } b.classList.add('drag');
+  const vp = $('rollvp'), g = $('grid'), [lo, hi] = viewSpan(T), z = zoomOf(T), lo0 = S.lowNote, hi0 = S.highNote;
+  let lastY = e.clientY;
+  const apply = () => {
+    const k = g.getBoundingClientRect().height / g.offsetHeight || 1, rel = (lastY - g.getBoundingClientRect().top) / k;
+    const i = Math.round(rel / z.rowH); // the row line nearest the pointer
+    if (top) T.highNote = Math.max(S.lowNote + 1, Math.min(S.lowNote + MAX_SPAN, 127, hi, hi - i));
+    else T.lowNote = Math.min(S.highNote - 1, Math.max(S.highNote - MAX_SPAN, 0, lo, hi - i + 1));
+    placeBracket(b, top); shadeRange();
+    b.title = (top ? 'Dice range top' : 'Dice range bottom') + ': ' + nn(top ? S.highNote : S.lowNote);
+    if ($('rshow')) $('rshow').textContent = shownRange();
+  };
+  // near the top or bottom of the view the roll scrolls along
+  // (only once the pointer has moved towards that edge, so grabbing a bracket that sits at the edge does not scroll)
+  const y0 = e.clientY, tick = setInterval(() => { const r = vp.getBoundingClientRect(); const d = lastY < r.top + 14 && lastY < y0 - 6 ? -1 : lastY > r.bottom - 14 && lastY > y0 + 6 ? 1 : 0; if (d) { vp.scrollTop += d * z.rowH; apply(); } }, 60);
+  const move = ev => { lastY = ev.clientY; apply(); };
+  const up = () => { clearInterval(tick); b.removeEventListener('pointermove', move); b.removeEventListener('pointerup', up); b.removeEventListener('pointercancel', up); b.classList.remove('drag'); if (S.lowNote !== lo0 || S.highNote !== hi0) push(); else render(); };
+  b.addEventListener('pointermove', move); b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
+}
 // Auto zoom is a toggle: on, the view fits the notes; a click turns it on, or off (the view stays where it is)
 const autoZoomed = () => !T.drums && !T.poly && zoomOf(T).auto;
 // y (px from the top of the view, optional): the note there stays there (Ctrl+wheel); else the centre stays
@@ -1417,7 +1460,7 @@ function rollTools() {
     L.title = 'A click on an empty cell adds a note this long: the length of the last note added or resized. Drag right from an empty cell to draw a length, or drag the right edge of a note';
     st.appendChild(L);
   }
-  const t = document.createElement('span'); t.id = 'rshow'; t.title = 'The dice range is set under Advanced; the roll scrolls over all notes';
+  const t = document.createElement('span'); t.id = 'rshow'; t.title = 'The dice range is set by the orange brackets on the keys; the roll scrolls over all notes';
   st.appendChild(t);
   if (T.poly) return;
   // the toggles, flush right on the edit-mode row
@@ -1689,6 +1732,7 @@ function renderRoll() {
     }
   }
 
+  rangeBrackets(g);
   drawRiffGhosts(); // draws the edge strips too
   const pl = $('play'); pl.innerHTML = '<i></i>';
   for (let s = 0; s < n; s++) { const i = document.createElement('i'); if (s === ph) i.className = 'on'; pl.appendChild(i); }
@@ -1774,6 +1818,14 @@ function drawEdges() {
   for (const dir of ['up', 'dn']) {
     const keys = Object.keys(marks[dir]);
     const el = document.createElement('div'); el.className = 'edgestrip ' + dir;
+    // a dice range end out of view: pinned over the key column, a click scrolls to it
+    for (const [note, name] of [[S.highNote, 'top'], [S.lowNote, 'bottom']]) {
+      if (seen(note) || above(note) !== (dir === 'up')) continue;
+      const m = document.createElement('button'); m.className = 'dre'; m.textContent = 'dice ' + (dir === 'up' ? '▲ ' : '▼ ') + nn(note);
+      m.title = `Dice range ${name} (${nn(note)}) is out of view: click to scroll to it`;
+      m.onclick = ev => { ev.stopPropagation(); const z2 = zoomOf(T); z2.auto = false; z2.center = note; render(); };
+      el.appendChild(m);
+    }
     for (const st of keys) {
       const m = marks[dir][st], b = document.createElement('button');
       b.className = 'gnote' + (m.own ? '' : ' gh'); const c0 = col[st], c1 = col[Math.min(n - 1, +st + m.len - 1)]; if (!c0 || !c1) continue;
@@ -1875,7 +1927,7 @@ function render() {
     const vs = document.createElement('select'); vs.className = 'sel xs'; vs.title = 'The sound of this riff in the preview (MIDI out and the export are not affected)';
     vs.innerHTML = Object.entries(VOICES).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join(''); vs.value = voiceOf(T);
     vs.onchange = () => { T.voice = vs.value; voiceOctave(T); hear(T, T.rootNote, 100, 2); push(); }; set.appendChild(vs); fsel(vs, '🎹');
-    const rg = document.createElement('span'); rg.textContent = `${nn(S.lowNote)}–${nn(S.highNote)}`; rg.title = 'The dice range of this riff (set under Advanced, and by the sound picked); the roll itself shows every note and scrolls'; set.appendChild(rg); }
+    const rg = document.createElement('span'); rg.textContent = `${nn(S.lowNote)}–${nn(S.highNote)}`; rg.title = 'The dice range of this riff: drag the orange brackets on the keys (the sound picked sets it by octave); the roll itself shows every note and scrolls'; set.appendChild(rg); }
 
   // arrangement and palette
   const A = $('arr'); A.innerHTML = '';
@@ -1949,15 +2001,6 @@ function render() {
   document.querySelectorAll('#endseg button').forEach(b => b.classList.toggle('on', +b.dataset.e === S.ending));
   scaleList();
   document.querySelectorAll('select').forEach(fsync);
-  if (!T.drums && !T.poly) {
-    const rr = $('rrange'); rr.innerHTML = '';
-    const step = (lbl, k, d, dis) => { const b = document.createElement('button'); b.className = 'btn xs'; b.textContent = d > 0 ? '+' : '−'; b.disabled = dis; b.title = `${lbl} ${d > 0 ? 'up' : 'down'} a semitone (the next roll; your notes stay)`; b.onclick = () => { T[k] += d; push(); }; return b; };
-    const side = (lbl, k) => { const i = document.createElement('i'); i.textContent = lbl; rr.appendChild(i); const lo = k === 'lowNote';
-      rr.appendChild(step(lbl, k, -1, lo ? T.lowNote <= 0 || T.highNote - T.lowNote >= MAX_SPAN : T.highNote - T.lowNote <= 1));
-      const v = document.createElement('b'); v.textContent = nn(T[k]); rr.appendChild(v);
-      rr.appendChild(step(lbl, k, 1, lo ? T.highNote - T.lowNote <= 1 : T.highNote >= 127 || T.highNote - T.lowNote >= MAX_SPAN)); };
-    side('Low', 'lowNote'); side('High', 'highNote');
-  }
   $('rootpill').textContent = S.startOnRoot ? 'ON' : 'OFF'; $('rootpill').classList.toggle('on', S.startOnRoot);
   fitW();
 }
