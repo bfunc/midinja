@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-21 17:21 · opus-5.5@home#ea79 · 11299ce
+Updated: 2026-10-21 17:36 · opus-5.5@home#ea79 · (this commit)
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -24,6 +24,9 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 - 2026-10-20 · Layout: controls back in one row above the roll (no right column); new tabs/track design; chords hidden for now · user decision
 - 2026-10-20 · Web preview hosting: none (no bfunc.cc, no GitHub Pages); local server or StackBlitz only · user decision
 - 2026-10-13 · Builds: only on GitHub Actions · user keeps the laptop free of toolchains
+- 2026-10-21 · Look: b is the only style (no switch): Play and the dice + All sit in wells of the panel level with concave fillets; nothing else has a well (part chips A A′ B C are not tabs: orange outline only); one flat generator row; isometric SVG dice (web/dice.svg) that spins on a roll · user picked b, then «это не таб», «вычищай временные штуки»
+- 2026-10-21 · Alignment: one control height and one centre line per row (captions like BPM, Key, Dice, Rhythm, Ending sit above, out of the flow), checked by measuring centres · user
+- 2026-10-21 · Roll edges: + − beside the top and bottom key in the key column; the beat ruler flush under the grid, labels on their lines; Auto zoom is a toggle (lit at the note zoom, click = whole range / back), + − turn it off · user
 - 2026-10-21 · Play-time UI: during Play only the playhead and the playing bars update (the roll redraws when it follows a new part); nothing is locked except Import, which stops Play first · user: menus closed and clicks got lost during Play
 - 2026-10-21 · Similarity: sits next to the part chips; turning it rebuilds A′ (in the form, unlocked) at once with A′'s own seed (back to the same value = the same A′); dimmed with "affects A′" when there is no A′ · user approved
 - 2026-10-21 · Mutate: gone from the UI (button, %, tooltips); the core function stays · user approved
@@ -48,7 +51,6 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 -    Not clicked through by hand: Start-on-root toggle, root marker at narrow widths (preview)
 
 ## Waiting for you
-- Pick a look for the mockup: localhost:3000/?look=a (soft cards, inset part tab) · ?look=b (Riffer-like wells with concave fillets: part tab, dice group, Play) · ?look=c (b with round wells for the dice and Play); no ?look = the current flat style · since 2026-10-21
 - Chord part: the prototype's lane is built in the mockup (75125a6) and the app (4d7a1dd); the user tests both (local mockup, latest zip) · since 2026-10-18
 - Start-on-root: per-bar override (click the marker)? · since 2026-10-17
 - Start-on-root: a middle setting "root on a strong beat"? · since 2026-10-17

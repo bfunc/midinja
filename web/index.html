@@ -10,9 +10,12 @@ button,select,input{font:inherit;color:inherit}
 button{cursor:pointer}
 .plug{width:1216px;background:var(--bg);border-radius:12px;border:1px solid #000;box-shadow:0 20px 60px #000a;overflow:hidden;user-select:none}
 .row{display:flex;align-items:center;gap:12px;padding:9px 14px}
-.song{gap:8px;background:linear-gradient(#22262f,#1b1e25);border-bottom:1px solid #000;padding:7px 14px}
+.song{gap:8px;background:#272b35;padding:20px 14px 9px}
 .song .hist{gap:3px}
-.song .btn{padding:6px 9px}
+.song .btn{padding:0 9px}
+/* one control height and one centre line: captions (BPM, Key, Versions) sit above their control, out of the flow */
+.song .btn,.song .num,.song .fsel,.song .th,.song .pg{height:28px;display:inline-flex;align-items:center;justify-content:center}
+.song .ctl{position:relative}.song .ctl>small{position:absolute;bottom:100%;left:0;margin-bottom:3px}
 .logo{font-weight:800;font-size:18px;letter-spacing:.5px}.logo b{color:var(--acc)}
 .sp{flex:1}.vsep{width:1px;align-self:stretch;background:var(--line);margin:0 2px}
 .btn{padding:7px 10px;border-radius:7px;background:var(--panel2);border:1px solid var(--line);white-space:nowrap}
@@ -30,10 +33,9 @@ button{cursor:pointer}
 .seg.xs button{padding:3px 8px;font-size:11px}
 .seg button:disabled{opacity:.35;cursor:default}
 .gen{display:flex;align-items:center;gap:6px}
-.dice{width:38px;height:38px;border-radius:9px;border:0;background:var(--acc);color:#1a1206;font-size:31px;line-height:1;box-shadow:0 0 0 3px #ff9f4333;display:grid;place-items:center}
 .dice:active{transform:translateY(1px)}
 .dicegrp{display:flex;align-items:stretch;height:38px;border-radius:9px;overflow:hidden;box-shadow:0 0 0 3px #ff9f4333}
-.dicegrp .dice{position:relative;width:48px;border-radius:0;box-shadow:none;background:#ff9f4338;justify-items:start;align-items:start;padding:3px 0 0 5px}
+.dice{position:relative;width:48px;border:0;border-radius:0;background:#ff9f4338;display:grid;justify-items:start;align-items:start;padding:3px 0 0 5px}
 .dsvg{width:29px;height:29px;display:block;overflow:visible}
 .dsvg .dt{fill:#ffc58c}.dsvg .dl{fill:var(--acc)}.dsvg .dr{fill:#d9782a}.dsvg .dp{fill:#2a1a08}
 .dice[disabled] .dsvg{filter:grayscale(1);opacity:.6}
@@ -44,9 +46,7 @@ button{cursor:pointer}
 .diceall{width:36px;padding:0;border:0;border-left:1px solid #ff9f4366;border-radius:0;background:#ff9f4329;color:var(--acc);font-size:11px;font-weight:700;display:grid;place-items:center}
 .diceall:hover:not([disabled]){background:#ff9f4347}
 .diceall[disabled]{opacity:.35;cursor:default}
-.dice[disabled]{opacity:.35;cursor:default;box-shadow:none}
-.mutamt{display:inline-block;margin-left:5px;padding:0 5px;border-radius:999px;background:#ffffff14;color:var(--ink2);font-size:10px}
-.seg button.on .mutamt{background:#5ad1c733;color:var(--acc2)}
+.dice[disabled]{opacity:.35;cursor:default}
 .ctl{display:flex;flex-direction:column;gap:3px}
 .ctl small,.lbl{color:var(--ink3);font-size:10px;text-transform:uppercase;letter-spacing:.8px}
 .ctl small{white-space:nowrap}
@@ -136,8 +136,8 @@ input.num{width:64px}
 .pop h4{margin:0 0 6px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px}
 .pop .grp{padding:4px 0}
 .beats #what,.beats .knobs .kv{display:none}
-.endkv{flex-direction:column;align-items:flex-start;gap:3px}
-.beats .edge,.beats .gstrip{visibility:hidden} /* keep their space: the roll starts at the same height on every tab */
+.endkv{position:relative}.endkv>span{position:absolute;bottom:100%;left:0;margin-bottom:3px}
+.beats .gstrip{visibility:hidden} /* keep their space: the roll starts at the same height on every tab */
 .beats .advR{display:none}
 .beats .genrow .gen>.seg{display:none}
 .key.drum{font-size:10px;color:var(--ink2)}
@@ -157,7 +157,7 @@ input.num{width:64px}
 .pill{display:inline-block;padding:1px 7px;border-radius:999px;border:1px solid var(--line);background:#2a2e38;color:var(--ink3);font-size:9.5px;letter-spacing:.6px;cursor:pointer}
 .pill.on{color:var(--acc2);border-color:var(--acc2)}
 .gridw{flex:1;padding:8px 12px 10px;min-width:0}
-.cols{display:grid;grid-template-columns:44px repeat(var(--n),1fr)}
+.cols{display:grid;grid-template-columns:var(--kw,44px) repeat(var(--n),1fr)}
 .arr{flex:1;display:grid;gap:6px;min-width:0}
 .slot{display:flex;align-items:center;gap:6px;padding:3px 4px 3px 6px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink2);cursor:pointer;position:relative;min-width:0}
 .arrhint{color:var(--ink3);font-size:11px;padding:6px 2px}
@@ -264,7 +264,6 @@ input.num{width:64px}
 @media (pointer:coarse){.note .rh{width:18px;right:-9px}} /* a finger needs a wider edge */
 .note.draft{opacity:.7;pointer-events:none}
 .cell{touch-action:pan-y}
-.edge .en.dl{width:auto;padding:0 0 0 6px;color:var(--ink2)}
 .note.locked{outline:2px solid var(--lock);outline-offset:-1px}
 .note::after{content:'';position:absolute;top:0;bottom:0;right:0;width:calc(100% - var(--dur,100%));background:#15171cb8;border-radius:0 4px 4px 0;pointer-events:none} /* the tail after the duration: the note holds its place but is silent */
 .note.ghost::after,.note.chord::after,.note.drum::after{display:none}
@@ -275,13 +274,14 @@ input.num{width:64px}
 .rootmk{position:absolute;left:2px;top:50%;transform:translateY(-50%);font-size:9px;line-height:1;font-weight:800;color:#15171c;background:#fff;border-radius:3px;padding:1px 3px;z-index:3;pointer-events:none}
 .arcs{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:visible}
 .arcs path{fill:none;stroke:var(--acc2);stroke-width:1.5px;opacity:.9}
-.edge{display:flex;align-items:center;gap:3px;height:18px;margin:2px 0}
-.edge .en{width:44px;text-align:right;padding-right:5px;font-size:9.5px;color:var(--ink3);flex:none}
-.edge .en.r{width:auto;flex:1;text-align:right;padding-right:4px}
-.eb.az{width:auto;padding:0 7px;font-size:10px}
-.eb{width:20px;height:16px;line-height:1;padding:0;font-size:11px;border-radius:4px;background:var(--panel2);border:1px solid var(--line);color:var(--ink2);cursor:pointer}
-.eb:hover:not(:disabled){border-color:#4a5163}
-.eb:disabled{opacity:.3;cursor:default}
+.kz{display:flex;gap:2px;margin-right:auto;padding-left:3px}
+.kz button{width:13px;height:11px;padding:0;border-radius:3px;font-size:10px;line-height:9px;background:var(--panel2);border:1px solid var(--line);color:var(--ink2);cursor:pointer}
+.kz button:hover:not(:disabled){border-color:#4a5163;color:var(--ink)}
+.kz button:disabled{opacity:.3;cursor:default}
+.rtools{display:flex;align-items:center;gap:10px;margin-left:auto;font-size:10.5px;color:var(--ink3)}
+.rtools .on{background:var(--pick);color:var(--acc2);border-color:#5ad1c755}
+.rtools .btn{height:25px;display:inline-flex;align-items:center}
+.thead .btn,.thead .fsel{height:24px;display:inline-flex;align-items:center}
 .empty-hint{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink3);pointer-events:none}
 .play{height:4px;margin:4px 0 6px}
 .play i.on{background:var(--acc2);border-radius:2px;box-shadow:0 0 8px var(--acc2)}
@@ -295,7 +295,7 @@ input.num{width:64px}
 .adv-off .ovc[data-m=dur],.adv-off .ovc[data-m=vel],.adv-off .ovc[data-m=rep] .range,.adv-off .ovc[data-m=rep] span[id^=lRep]{display:none!important} /* the edit modes are always there; their dice ranges only in Advanced */
 .beats #ovseg [data-m=dur],.beats #ovseg [data-m=rep]{display:none}
 .roll.ovl .note{opacity:.18!important;pointer-events:none}
-.ovlay{position:absolute;top:0;bottom:0;left:44px;right:0;z-index:5;cursor:ns-resize;touch-action:none}
+.ovlay{position:absolute;top:0;bottom:0;left:var(--kw,44px);right:0;z-index:5;cursor:ns-resize;touch-action:none}
 .ovlay .ob{position:absolute;bottom:0;margin-left:2px;border-radius:4px 4px 1px 1px;background:var(--acc2);opacity:.85;pointer-events:none;min-height:3px}
 .ovlay .ob b{position:absolute;left:0;right:0;top:-15px;text-align:center;font-size:9.5px;font-weight:600;color:var(--ink);white-space:nowrap}
 .ovlay .ob.rep{background:var(--rpt)}
@@ -317,7 +317,8 @@ input.num{width:64px}
 .kit tr.foc td:first-child{color:var(--acc)}
 .key.drum{cursor:pointer}
 .key.drum em{font-style:normal;font-size:8.5px;color:var(--ink3);margin-left:3px}
-.steps div{text-align:center;color:var(--ink3);font-size:9.5px}
+.steps{height:15px}.steps div{position:relative;color:var(--ink3);font-size:9.5px}
+.steps div span{position:absolute;left:0;top:0;transform:translateX(-50%)} /* a label sits on its step line */
 .legend{display:flex;gap:14px;align-items:center;color:var(--ink2);font-size:11px;margin-top:4px;flex-wrap:wrap;line-height:1.5}
 .legend i{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
 .playb{width:34px;height:34px;border-radius:50%;border:0;background:var(--acc2);color:#15171c;font-size:14px;display:grid;place-items:center}
@@ -359,11 +360,11 @@ input.num{width:64px}
 .thead .tabset{margin-left:0}
 .formrow{display:flex;gap:6px;align-items:stretch;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--panel)}
 .formrow .arr{grid-auto-rows:34px}
-.ggrp{display:flex;flex-direction:column;gap:4px}.ggrp>small{color:var(--ink3);font-size:10px;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap}
+.ggrp{display:flex;position:relative;padding-left:14px}.ggrp>small{position:absolute;top:-17px;color:var(--ink3);font-size:10px;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap}
 .ggrp+.ggrp{border-left:1px solid var(--line);padding-left:14px}
 .simkv{padding-left:12px;border-left:1px solid var(--line)}.simkv.dimk{opacity:.4}
 .beats #gRhy,.beats #gNotes,.beats #simWrap,.poly #simWrap{display:none}
-.genrow{display:flex;align-items:flex-start;gap:14px;padding:8px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap;min-height:54px}
+.genrow{display:flex;align-items:center;gap:14px;padding:24px 14px 10px 4px;border-bottom:1px solid var(--line);flex-wrap:wrap;min-height:54px}
 .genrow .knobs{flex-wrap:nowrap;gap:12px}
 .thead .insp{display:flex;align-items:center;gap:6px}
 .thead .iname{margin:0;font-size:12px;font-weight:800;color:var(--trk);white-space:nowrap;text-align:right}
@@ -379,32 +380,15 @@ input.num{width:64px}
 .narrow .body{flex-direction:column}
 .narrow .tracks{width:auto;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line)}
 .narrow .thead,.narrow .genrow{flex-wrap:wrap}
+.narrow .song{row-gap:20px}.narrow .genrow{row-gap:26px}
 .drop{position:fixed;inset:12px;border:3px dashed var(--acc2);border-radius:14px;background:#0d0e11d9;display:none;place-items:center;z-index:50;color:var(--ink);font-size:18px;text-align:center;line-height:1.6}
 .drop small{display:block;color:var(--ink2);font-size:13px}
 body.dragging .drop{display:grid}
-/* ---- looks (?look=a|b|c): the same colours, other shapes. a: soft cards; b: Riffer-like wells with concave
-   fillets under the active part tab, the dice group and Play; c: b with round wells for the dice and Play */
+/* wells: Play and the dice + All sit in shapes of the level below, joined to the panel edge by concave fillets */
 .well{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:0}
 .well path{fill:var(--panel)}
-.lk-b .song,.lk-c .song,.lk-b .thead,.lk-c .thead,.lk-b .genrow,.lk-c .genrow{position:relative}
-.lk-b .song>*:not(.well),.lk-c .song>*:not(.well),.lk-b .thead>*:not(.well),.lk-c .thead>*:not(.well),.lk-b .genrow>*:not(.well),.lk-c .genrow>*:not(.well){position:relative;z-index:1}
-.lk-b .pal,.lk-c .pal{border-left:0}
-.lk-b .pal .pt.on,.lk-c .pal .pt.on{background:transparent;border-color:transparent;box-shadow:none}
-.lk-b .song,.lk-c .song{background:#272b35;border-bottom-color:transparent}
-.lk-a .body{padding:8px;gap:8px}
-.lk-a .tracks{border-radius:14px;border:1px solid var(--line)}
-.lk-a .ed{gap:8px}
-.lk-a .thead,.lk-a .genrow,.lk-a .formrow{border:1px solid var(--line);border-radius:14px}
-.lk-a .song{border-radius:0 0 16px 16px;margin:0 6px}
-.lk-a .pal{border-left:0}
-.lk-a .pal .pt{border-radius:10px}
-.lk-a .pal .pt.on{background:var(--bg);box-shadow:inset 0 2px 6px #000c,inset 0 0 0 1px var(--trk);transform:translateY(1px)}
-.lk-a .dicegrp{border-radius:12px}
-.lk-c .dicegrp{overflow:visible;box-shadow:none;border-radius:0;gap:6px;align-items:center}
-.lk-c .dicegrp .dice{width:46px;height:46px;border-radius:50%;padding:0;justify-items:center;align-items:center;box-shadow:0 0 0 3px #ff9f4333}
-.lk-c .dicegrp .dice .dsvg{width:28px;height:28px}
-.lk-c .dpart{right:-2px;bottom:-2px}
-.lk-c .diceall{height:26px;border-radius:13px;border-left:0}
+.song,.genrow{position:relative}
+.song>*:not(.well),.genrow>*:not(.well){position:relative;z-index:1}
 </style></head>
 <body>
 <div class="drop" id="drop">Drop the .mid file here<small>up to 4 bars → A A′ B C · monophonic · quantised to 1/16 · into the riff shown</small></div>
@@ -473,14 +457,13 @@ body.dragging .drop{display:grid}
           <div class="ovc" data-m="vel" title="The dice give each new note (and each drum hit) a velocity in this range">Dice <span id="lVelLo"></span><div class="range" id="rgVel"></div><span id="lVelHi"></span></div>
           <div class="ovc" data-m="rep" id="rptbox" title="Ratchets: a note split into 2–5 hits over its length. On: the dice ratchet some notes, with a count in this range">Dice <span class="pill" id="rptpill">OFF</span><span id="lRepLo"></span><div class="range" id="rgRep"></div><span id="lRepHi"></span></div>
           <span class="ovhint" id="ovhint"></span>
+          <div class="rtools" id="rtools"></div>
         </div>
-        <div class="edge" id="edgeTop"></div>
         <div class="gstrip" id="gtop"></div>
         <div class="roll cols" id="grid"></div>
-        <div class="gstrip" id="gbot"></div>
-        <div class="edge" id="edgeBot"></div>
-        <div class="cols play" id="play"></div>
         <div class="cols steps" id="stepn"></div>
+        <div class="gstrip" id="gbot"></div>
+        <div class="cols play" id="play"></div>
         <div class="msg" id="msg"></div>
       </div>
       <div class="kit" id="kit"></div>
@@ -490,7 +473,7 @@ body.dragging .drop{display:grid}
   <div class="hidden"><div class="hstrip" id="hstrip"></div><div class="lanebox" id="lane"></div><div id="cgen"></div><div id="advC"></div></div>
 </div></div>
 <div class="pop" id="pop"></div>
-<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>the other track (ghost)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · right-click a note = remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Notes / Duration / Velocity / Ratchets above the roll: edit one value per note as bars, drag them (their dice ranges under Advanced) · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, 🔒 keeps it when you roll · 🔊 = sound on / off, ⚙ = volume, delay, reverb · each riff picks its sound in its header (Bass, Lead, Square, Keys); the drums play a built-in kit on the GM notes · note names follow the DAW in ⚙ (FL Studio: middle C = MIDI 60 = C5) · keys 1–4 = part · Space = dice (the part shown), Shift+Space = the small All next to the dice (all parts) · Play walks the whole form; ⟲ Loop with a bar selected repeats that bar · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
+<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>the other track (ghost)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · right-click a note = remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · + / − beside the top and bottom key = one more / one less row; Auto zoom (lit = on) shows just the notes, a click turns it on or off · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Notes / Duration / Velocity / Ratchets above the roll: edit one value per note as bars, drag them (their dice ranges under Advanced) · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, 🔒 keeps it when you roll · 🔊 = sound on / off, ⚙ = volume, delay, reverb · each riff picks its sound in its header (Bass, Lead, Square, Keys); the drums play a built-in kit on the GM notes · note names follow the DAW in ⚙ (FL Studio: middle C = MIDI 60 = C5) · keys 1–4 = part · Space = dice (the part shown), Shift+Space = the small All next to the dice (all parts) · Play walks the whole form; ⟲ Loop with a bar selected repeats that bar · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
 <script src="midinja-core.js"></script>
 
 <script>
@@ -1409,40 +1392,42 @@ function edge(top, grow) {
   }
   push();
 }
-// Auto zoom: back to the zoom a roll gives (2 rows below the notes, 3 above); greyed out when the roll is there
-function autoZoomBtn(el) {
-  const f = fitOf(T), now = T.view ? [viewLo(), viewHi()] : null, same = JSON.stringify(f) === JSON.stringify(now);
-  const z = document.createElement('button'); z.className = 'eb az'; z.textContent = 'Auto zoom'; z.disabled = same;
-  z.title = same ? 'The roll is at the auto zoom: 2 rows below the lowest note, 3 above the highest' : 'Zoom back to the notes: 2 rows below the lowest, 3 above the highest (as after a roll)';
-  z.onclick = () => { fitView(); render(); };
-  el.appendChild(z);
-  const L = document.createElement('span'); L.className = 'en dl'; L.textContent = 'length: ' + lenValue(lastLen);
-  L.title = 'A click on an empty cell adds a note this long: the length of the last note added or resized. Drag right from an empty cell to draw a length, or drag the right edge of a note';
-  el.appendChild(L);
+// Auto zoom is a toggle: lit while the view is the zoom a roll gives (2 rows below the notes, 3 above);
+// + and − on the keys change the view and turn it off; a click turns it on (zooms back) or off (the whole range)
+const autoZoomed = () => !T.drums && !T.poly && T.view && JSON.stringify(fitOf(T)) === JSON.stringify([viewLo(), viewHi()]);
+function rollTools() {
+  const el = $('rtools'); el.innerHTML = '';
+  if (T.drums) return;
+  if (!T.poly) {
+    const on = autoZoomed(), z = document.createElement('button'); z.className = 'btn xs' + (on ? ' on' : ''); z.textContent = 'Auto zoom';
+    z.title = on ? 'Auto zoom is on: the roll shows the notes (2 rows below the lowest, 3 above the highest). Click for the whole range' : 'Auto zoom: show the notes (2 rows below the lowest, 3 above the highest), as after a roll. + and − on the keys turn it off';
+    z.onclick = () => { if (on) T.view = null; else fitView(); render(); };
+    el.appendChild(z);
+    const L = document.createElement('span'); L.textContent = 'length ' + lenValue(lastLen);
+    L.title = 'A click on an empty cell adds a note this long: the length of the last note added or resized. Drag right from an empty cell to draw a length, or drag the right edge of a note';
+    el.appendChild(L);
+  }
+  const t = document.createElement('span'); t.textContent = `range ${nn(S.lowNote)}–${nn(S.highNote)}` + (T.view ? ` · showing ${nn(viewLo())}–${nn(viewHi())}` : '');
+  t.title = 'The rows of the roll: + and − next to the top and bottom keys grow or shrink it (zoomed in: show or hide a row); − and + by the key move it an octave';
+  el.appendChild(t);
 }
-function edgeBar(el, top, R) {
-  el.innerHTML = '';
-  if (!R.length) return;
-  const cur = top ? R[0] : R[R.length - 1], span = S.highNote - S.lowNote, lk = lockedOn(cur), one = R.length <= 1, lastScale = inScale(cur) && scaleRows() <= 1;
+// + and − at the left of the top (or bottom) key: one more row, or one less
+function keyEdge(k, top, R) {
+  const cur = top ? R[0] : R[R.length - 1], span = S.highNote - S.lowNote;
+  const box = document.createElement('span'); box.className = 'kz';
+  const mk = (txt, title, dis, fn) => { const b = document.createElement('button'); b.textContent = txt; b.title = title; b.disabled = dis; b.onclick = e => { e.stopPropagation(); fn(); }; box.appendChild(b); };
   const hidden = T.view && (top ? cur < S.highNote : cur > S.lowNote); // zoomed in: rows of the range beyond this edge
   if (hidden) {
-    const lab = document.createElement('span'); lab.className = 'en'; lab.textContent = nn(cur); el.appendChild(lab);
     const has = parts.some(p => p.steps.slice(0, p.numSteps).some(s => s.on && s.note === cur));
-    const mk = (txt, title, dis, fn) => { const b = document.createElement('button'); b.className = 'eb'; b.textContent = txt; b.title = title; b.disabled = dis; b.onclick = fn; el.appendChild(b); };
-    mk('+', `Show the row ${top ? 'above' : 'below'}: ${nn(cur + (top ? 1 : -1))} (zoomed in on the notes; the range is ${nn(S.lowNote)}–${nn(S.highNote)})`, false, () => edge(top, true));
+    mk('+', `Show the row ${top ? 'above' : 'below'}: ${nn(cur + (top ? 1 : -1))} (zoomed in; the range is ${nn(S.lowNote)}–${nn(S.highNote)})`, false, () => edge(top, true));
     mk('−', has ? nn(cur) + ' has notes: the zoom keeps them' : `Hide the ${top ? 'top' : 'bottom'} row ${nn(cur)} (the range stays)`, has || R.length <= 1, () => edge(top, false));
-    if (top) autoZoomBtn(el); // next to + and −
-    if (top) { const t = document.createElement('span'); t.className = 'en r'; t.textContent = `${T.name} range ${nn(S.lowNote)}–${nn(S.highNote)} · zoomed ${nn(viewLo())}–${nn(viewHi())}`; el.appendChild(t); }
-    return;
+  } else {
+    const canGrow = span < MAX_SPAN && nextRow(cur, top ? 1 : -1) !== cur, lk = lockedOn(cur), lastScale = inScale(cur) && scaleRows() <= 1;
+    mk('+', canGrow ? `Add a row ${top ? 'above' : 'below'}: ${nn(nextRow(cur, top ? 1 : -1))}` : 'The range is three octaves already', !canGrow, () => edge(top, true));
+    const no = T.poly ? (span <= 12 ? 'One octave at least: a four-note chord needs it' : '') : lk ? nn(cur) + ' holds a locked note: unlock it first' : lastScale ? nn(cur) + ' is the last scale note in the range: the range keeps at least one' : R.length <= 1 ? 'One row at least' : '';
+    mk('−', no || (T.poly ? `Remove the ${top ? 'top' : 'bottom'} row ${nn(cur)}: chord notes beyond it show as ghosts` : `Remove the ${top ? 'top' : 'bottom'} row ${nn(cur)}: notes on it fold into the range by octave`), !!no, () => edge(top, false));
   }
-  const canGrow = span < MAX_SPAN && nextRow(cur, top ? 1 : -1) !== cur;
-  const lab = document.createElement('span'); lab.className = 'en'; lab.textContent = nn(cur); el.appendChild(lab);
-  const mk = (txt, title, dis, fn) => { const b = document.createElement('button'); b.className = 'eb'; b.textContent = txt; b.title = title; b.disabled = dis; b.onclick = fn; el.appendChild(b); };
-  mk('+', canGrow ? `Add a row ${top ? 'above' : 'below'}: ${nn(nextRow(cur, top ? 1 : -1))}` : 'The range is three octaves already', !canGrow, () => edge(top, true));
-  const noShrink = T.poly ? (span <= 12 ? 'One octave at least: a four-note chord needs it' : '') : lk ? nn(cur) + ' holds a locked note: unlock it first' : lastScale ? nn(cur) + ' is the last scale note in the range: the range keeps at least one' : one ? 'The range is one note' : '';
-  mk('−', noShrink || (T.poly ? `Remove the ${top ? 'top' : 'bottom'} row ${nn(cur)}: chord notes beyond it show as ghosts` : `Remove the ${top ? 'top' : 'bottom'} row ${nn(cur)}: notes on it fold into the range by octave`), !!noShrink, () => edge(top, false));
-  if (top && !T.poly) autoZoomBtn(el); // next to + and −
-  if (top) { const t = document.createElement('span'); t.className = 'en r'; t.textContent = `${T.name} range ${nn(S.lowNote)}–${nn(S.highNote)}` + (T.view ? ` · zoomed ${nn(viewLo())}–${nn(viewHi())}` : ''); el.appendChild(t); }
+  k.prepend(box);
 }
 function degreeBadge(n) {
   const sc = SCALES[S.scale], pc = pcOf(n);
@@ -1609,7 +1594,8 @@ function renderRoll() {
   const rowH = R.length ? Math.max(11, Math.min(30, Math.floor(300 / R.length))) : 30;
   const ph = shownPlayStep();
   const g = $('grid'); g.innerHTML = '';
-  if (!T.drums) { edgeBar($('edgeTop'), true, R); edgeBar($('edgeBot'), false, R); }
+  $('grid').parentElement.style.setProperty('--kw', T.drums ? '44px' : '70px');
+  rollTools();
   const chordPc = T.drums ? -1 : SCALES[S.scale].intervals[degreeOf(S.cur)];
   const chordName0 = T.drums ? '' : numeral(degreeOf(S.cur));
   const hits = T.poly && b0 >= 0 ? barHits(b0).map(h => ({ ...h, notes: voice(h.c), rootPc: (S.root + at(h.c.deg)) % 12 })) : [];
@@ -1624,6 +1610,8 @@ function renderRoll() {
     k.dataset.note = note;
     const bd = inS ? degreeBadge(note) : null;
     k.innerHTML = (bd && !T.poly ? `<em class="${bd[1]}">${bd[0]}</em>` : '') + nn(note);
+    if (r === 0) keyEdge(k, true, R);
+    if (r === R.length - 1 && R.length > 1) keyEdge(k, false, R);
     g.appendChild(k);
     for (let s = 0; s < n; s++) {
       const c = document.createElement('div');
@@ -1675,7 +1663,7 @@ function renderRoll() {
     const colW = 100 / n;
     for (const h of hits) {
       const up = h.notes.filter(x => x > S.highNote), dn = h.notes.filter(x => x < S.lowNote);
-      const style = `left:calc(44px + (100% - 44px) * ${h.s / n});width:calc((100% - 44px) * ${h.len / n} - 3px)`;
+      const style = `left:calc(var(--kw,44px) + (100% - var(--kw,44px)) * ${h.s / n});width:calc((100% - var(--kw,44px)) * ${h.len / n} - 3px)`;
       if (up.length) { const d = document.createElement('div'); d.className = 'gnote' + (h.c.id === S.csel ? ' sel' : ''); d.style.cssText = style; d.textContent = '▲ ' + up.map(nn).join(' '); d.title = 'Above the range: ' + up.map(nn).join(', '); gt.appendChild(d); }
       if (dn.length) { const d = document.createElement('div'); d.className = 'gnote' + (h.c.id === S.csel ? ' sel' : ''); d.style.cssText = style; d.textContent = '▼ ' + dn.map(nn).join(' '); d.title = 'Below the range: ' + dn.map(nn).join(', '); gb.appendChild(d); }
     }
@@ -1708,7 +1696,7 @@ function renderRoll() {
   g.classList.toggle('ovl', om !== 'notes');
   if (om !== 'notes' && R.length) { const o = document.createElement('div'); o.className = 'ovlay'; g.appendChild(o); ovDraw(o, om, rowH); ovDrag(o, om, rowH); }
   const sn = $('stepn'); sn.innerHTML = '<div></div>';
-  for (let s = 0; s < n; s++) { const d = document.createElement('div'); d.textContent = s % 4 === 0 ? s / 4 + 1 : '·'; sn.appendChild(d); }
+  for (let s = 0; s < n; s++) { const d = document.createElement('div'); d.innerHTML = `<span>${s % 4 === 0 ? s / 4 + 1 : '·'}</span>`; sn.appendChild(d); }
 
 }
 // during Play only the playhead and the bars playing change; nothing else is rebuilt, so open menus stay
@@ -1731,7 +1719,6 @@ function syncCur() {
   document.querySelectorAll('#pal .pt').forEach((b, k) => b.classList.toggle('on', k === S.cur));
   if (!T.poly) document.querySelectorAll('#arr .slot').forEach((el, i) => { el.classList.toggle('prim', i === S.sel); el.classList.toggle('ctx', i !== S.sel && arr[i] === S.cur); });
   renderRoll();
-  drawWells();
 }
 function render() {
   refreshPat();
@@ -2492,52 +2479,33 @@ function fitW() {
   document.body.style.padding = k < 1 ? '12px' : '20px';
 }
 addEventListener('resize', fitW);
-// ---- looks: ?look=a|b|c sets a class on the panel; b and c draw wells (SVG paths a JUCE Path can copy)
-const LOOK = (() => { try { const l = new URLSearchParams(location.search).get('look'); return l && 'abc'.includes(l) ? l : ''; } catch { return ''; } })();
-if (LOOK) plug.classList.add('lk-' + LOOK);
+// ---- wells: SVG paths (a JUCE Path can copy them) of the level below, around Play and the dice + All
 // a tab rising from an edge (up, in its own coordinates), with concave fillets f where it meets the edge
 function tabPath(L, R, H, rr, f) {
   rr = Math.min(rr, (R - L) / 2, H);
   return `M${L - f},0A${f},${f} 0 0 0 ${L},${-f}L${L},${-H + rr}A${rr},${rr} 0 0 1 ${L + rr},${-H}L${R - rr},${-H}A${rr},${rr} 0 0 1 ${R},${-H + rr}L${R},${-f}A${f},${f} 0 0 0 ${R + f},0Z`;
-}
-// a circle (centre cx, cy above the edge, radius r) bulging from the edge, joined by concave fillets f
-function circlePath(cx, cy, r, f) {
-  const d = Math.sqrt((r + f) ** 2 - (f + cy) ** 2), k = r / (r + f);
-  const tl = [cx - d * k, cy + (-f - cy) * k], tr = [cx + d * k, cy + (-f - cy) * k];
-  return `M${cx - d},0A${f},${f} 0 0 0 ${tl[0]},${tl[1]}A${r},${r} 0 ${tl[1] > cy ? 1 : 0} 1 ${tr[0]},${tr[1]}A${f},${f} 0 0 0 ${cx + d},0Z`;
 }
 // the box of el inside host, in the panel's own (unscaled) pixels
 function boxIn(el, host) {
   const k = plug.getBoundingClientRect().width / plug.offsetWidth || 1, a = el.getBoundingClientRect(), b = host.getBoundingClientRect();
   return { l: (a.left - b.left) / k, t: (a.top - b.top) / k, r: (a.right - b.left) / k, b: (a.bottom - b.top) / k };
 }
-// one well in host: from its bottom edge going up, or from its top edge going down; d(y0) gives the path
+// one well in host: from its bottom edge going up, or from its top edge going down; d(y0) gives the path,
+// none when the target sits too far from the edge (a wrapped row)
 function well(host, up, d) {
   let svg = host.querySelector(':scope > svg.well');
-  if (!d) { svg?.remove(); return; } // the target sits too far from the edge (a wrapped row): no well
+  if (!d) { svg?.remove(); return; }
   if (!svg) { svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('class', 'well'); host.prepend(svg); }
   const y0 = up ? host.clientHeight + 1 : -1;
   svg.innerHTML = `<path transform="translate(0 ${y0}) scale(1 ${up ? 1 : -1})" d="${d(y0)}"/>`;
 }
 function drawWells() {
-  if (LOOK !== 'b' && LOOK !== 'c') return;
-  const head = document.querySelector('.thead'), on = document.querySelector('#pal .pt.on');
-  if (on && on.offsetParent) { const b = boxIn(on, head); well(head, true, head.clientHeight - b.t > 50 ? null : y0 => tabPath(b.l - 3, b.r + 3, y0 - b.t + 4, 9, 9)); }
-  else head.querySelector(':scope > svg.well')?.remove();
   const song = document.querySelector('.song'), sb = boxIn($('pl'), song);
-  const gen = document.querySelector('.genrow'), gd = $('gDice'), dice = $('roll');
-  if (LOOK === 'b') {
-    well(song, true, song.clientHeight - sb.t > 60 ? null : y0 => tabPath(sb.l - 6, sb.r + 6, y0 - sb.t + 6, 14, 9));
-    if (gd.offsetParent) { const g = boxIn(gd, gen); well(gen, false, g.t > 30 ? null : y0 => tabPath(g.l - 8, g.r + 8, g.b + 7 - y0, 12, 10)); }
-    else gen.querySelector(':scope > svg.well')?.remove();
-  } else {
-    const cx = (sb.l + sb.r) / 2, cyB = (sb.t + sb.b) / 2;
-    well(song, true, song.clientHeight - cyB > 40 ? null : y0 => { const cy = cyB - y0, r = Math.max(23, -cy + 5); return circlePath(cx, cy, r, 9); });
-    if (dice.offsetParent) {
-      const g = boxIn(dice, gen), dcx = (g.l + g.r) / 2, dcy = (g.t + g.b) / 2, up = gen.clientHeight - dcy <= dcy + 1;
-      well(gen, up, Math.min(dcy, gen.clientHeight - dcy) > 45 ? null : y0 => { const dist = up ? y0 - dcy : dcy - y0, r = Math.max(30, dist + 6); return circlePath(dcx, -dist, r, 10); });
-    } else gen.querySelector(':scope > svg.well')?.remove();
-  }
+  well(song, true, song.clientHeight - sb.t > 60 ? null : y0 => tabPath(sb.l - 6, sb.r + 6, y0 - sb.t + 6, 14, 9));
+  const gen = document.querySelector('.genrow'), dg = document.querySelector('.dicegrp');
+  if (!dg.offsetParent) { well(gen, false, null); return; }
+  const g = boxIn(dg, gen);
+  well(gen, false, g.t > 40 ? null : y0 => tabPath(g.l - 6, g.r + 6, g.b + 6 - y0, 13, 9));
 }
 addEventListener('resize', () => requestAnimationFrame(drawWells));
 
