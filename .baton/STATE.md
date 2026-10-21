@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-21 17:36 · opus-5.5@home#ea79 · 7f02daa
+Updated: 2026-10-21 17:45 · opus-5.5@home#ea79 · (this commit)
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -24,7 +24,7 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 - 2026-10-20 · Layout: controls back in one row above the roll (no right column); new tabs/track design; chords hidden for now · user decision
 - 2026-10-20 · Web preview hosting: none (no bfunc.cc, no GitHub Pages); local server or StackBlitz only · user decision
 - 2026-10-13 · Builds: only on GitHub Actions · user keeps the laptop free of toolchains
-- 2026-10-21 · Look: b is the only style (no switch): Play and the dice + All sit in wells of the panel level with concave fillets; nothing else has a well (part chips A A′ B C are not tabs: orange outline only); one flat generator row; isometric SVG dice (web/dice.svg) that spins on a roll · user picked b, then «это не таб», «вычищай временные штуки»
+- 2026-10-21 · Look: plain panels, no wells or cutouts anywhere; the dice + All split button sits on the flat generator row; Play is a standalone teal disc (SVG play / stop, inner highlight, a glow that pulses on the beat while playing, none with reduced motion); isometric SVG dice (web/dice.svg) that spins on a roll · user: «это просто как-то криво, убирай закругления, сделай красивую кнопку Play и всё»
 - 2026-10-21 · Alignment: one control height and one centre line per row (captions like BPM, Key, Dice, Rhythm, Ending sit above, out of the flow), checked by measuring centres · user
 - 2026-10-21 · Roll edges: + − beside the top and bottom key in the key column; the beat ruler flush under the grid, labels on their lines; Auto zoom is a toggle (lit at the note zoom, click = whole range / back), + − turn it off · user
 - 2026-10-21 · Play-time UI: during Play only the playhead and the playing bars update (the roll redraws when it follows a new part); nothing is locked except Import, which stops Play first · user: menus closed and clicks got lost during Play
