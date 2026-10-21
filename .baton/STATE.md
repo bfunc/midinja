@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-21 13:14 · opus-5.5@home#ea79 · 63e8989
+Updated: 2026-10-21 17:15 · opus-5.5@home#ea79 · (this commit)
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -24,6 +24,13 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 - 2026-10-20 · Layout: controls back in one row above the roll (no right column); new tabs/track design; chords hidden for now · user decision
 - 2026-10-20 · Web preview hosting: none (no bfunc.cc, no GitHub Pages); local server or StackBlitz only · user decision
 - 2026-10-13 · Builds: only on GitHub Actions · user keeps the laptop free of toolchains
+- 2026-10-21 · Play-time UI: during Play only the playhead and the playing bars update (the roll redraws when it follows a new part); nothing is locked except Import, which stops Play first · user: menus closed and clicks got lost during Play
+- 2026-10-21 · Similarity: sits next to the part chips; turning it rebuilds A′ (in the form, unlocked) at once with A′'s own seed (back to the same value = the same A′); dimmed with "affects A′" when there is no A′ · user approved
+- 2026-10-21 · Mutate: gone from the UI (button, %, tooltips); the core function stays · user approved
+- 2026-10-21 · Generator row: groups with captions: Dice (dice + All, Rhythm/Notes) · Rhythm (Density, Swing, Ending) · Notes (Color, Surprise) · user approved
+- 2026-10-21 · Dropdowns: app-styled menus (dark, orange highlight, arrow keys, focus ring for the keyboard only) instead of native selects; the 🎹 icon only on the voice button; the model for the JUCE PopupMenu · user approved
+- 2026-10-21 · Voice octave: picking a voice moves the riff by whole octaves: Bass root MIDI 36–47, Keys 60–71, Lead/Square 72–83; KEY − / + still move it · user approved
+- 2026-10-21 · Note names + DAW: ⚙ DAW = FL Studio (default, C5 = 60) / Ableton, Logic (C3 = 60) / GM (C4 = 60), kept per browser; drums send GM notes for every DAW (no Ableton/Logic drum map confirmed in their docs); ⚙ "Test kit .mid" plays each drum once to check FPC · user approved
 - 2026-10-21 · Dice + all parts: one split button: the orange dice (rolls the part shown, a dark chip inside names it: A / A′ / B / C / drum short name) and a narrow orange-tinted "All" segment for every part (Shift+Space), 1px darker-orange divider, no white outline; the old "🎲 All" after Ending is gone · user: Dice and All looked alike, then the first attached version "looks bad"
 - 2026-10-21 · Play: always walks the whole form, also with a bar selected (selecting only shows the bar); ⟲ Loop next to Play repeats the selected bar (remembered per browser) · user decision
 - 2026-10-21 · Ending: Run (default) = the original Musician dice, bit-exact with the engine before Ending (mostly 4×1/16 in the last beat; parity test against golden hashes from 2b38b72) | Even = hits spread over the four beats; mockup switch in the generator row, JUCE UI later · user: «рифы стали плохими, сделай Run таким же алгоритмом как был», «мне важно чтобы рифы получались точно как было»
@@ -47,7 +54,7 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 - C in scales without a fifth falls back to ii (Locrian ♭II); keep it? · since 2026-10-17
 
 ## In progress
-(none)
+- opus-5.5@home#ea79 · mockup looks a/b/c (?look=, SVG dice, Riffer-like fillets) · since 2026-10-21 17:15
 
 ## Next
 1. User reviews the redesigned mockup (tracks: 6 riffs + Drums, one-row controls, drum parts, chords hidden) on StackBlitz; then decide whether the JUCE app follows
