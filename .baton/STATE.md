@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-21 09:01 · opus-5.5@raptor#af93 · 4c20e48
+Updated: 2026-10-21 09:12 · opus-5.5@raptor#af93 · c0336b3
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -19,7 +19,7 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 - 2026-10-20 · Note length: up to a whole bar (16 steps, never past the next note or the bar end); a click uses the last length, drag right from an empty cell to draw, drag a note's right edge to resize; right-click no longer cycles · user decision
 - 2026-10-20 · Duration: the percent of a note's own length that sounds (100% legato, low = pluck), applied in ticks (can be shorter than 1/16); the dice take it from a Duration range (default 50–100%); manual notes start at 100%; Length range stays in Advanced · user decision
 - 2026-10-20 · Ratchets: up to 5 hits that split the note's length; duration does not apply to a ratcheted note; drawn as separate hits · user decision
-- 2026-10-20 · Roll edit modes (Advanced): Notes · Duration · Velocity · Ratchets as bars over the dimmed roll, replacing the lanes under it; each mode's dice range sits in its header; Drums: Notes · Velocity only · user decision (overlay like Riffer)
+- 2026-10-21 · Roll edit modes: Notes · Duration · Velocity · Ratchets as bars over the dimmed roll, always shown above it (not behind Advanced); their dice ranges only in Advanced; Drums: Notes · Velocity only · user could not find Velocity under Advanced
 - 2026-10-20 · Drum kit: a Kit view on the Drums track sets the note each sound sends (default GM, duplicates warned); hits stay keyed by GM inside · user decision (note mapping only, no CC)
 - 2026-10-20 · Layout: controls back in one row above the roll (no right column); new tabs/track design; chords hidden for now · user decision
 - 2026-10-20 · Web preview hosting: none (no bfunc.cc, no GitHub Pages); local server or StackBlitz only · user decision
