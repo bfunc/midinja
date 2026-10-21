@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-21 18:48 · opus-5.5@home#ea79 · 16e76ef
+Updated: 2026-10-21 18:55 · opus-5.5@home#ea79 · (this commit)
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -57,6 +57,7 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 -    Not clicked through by hand: Start-on-root toggle, root marker at narrow widths (preview)
 
 ## Waiting for you
+- Part chips during Play: their boxes no longer move (measured 0 px), but the outlined chip still follows the part playing (the roll follows it too). Keep that, or keep the chip and roll on the part you picked and mark the playing part with a glow? · since 2026-10-21
 - Chord part: the prototype's lane is built in the mockup (75125a6) and the app (4d7a1dd); the user tests both (local mockup, latest zip) · since 2026-10-18
 - Start-on-root: per-bar override (click the marker)? · since 2026-10-17
 - Start-on-root: a middle setting "root on a strong beat"? · since 2026-10-17

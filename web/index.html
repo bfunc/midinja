@@ -88,13 +88,13 @@ input.num{width:64px}
 .tb .dot.on{background:var(--acc2);border-color:var(--acc2);box-shadow:0 0 6px var(--acc2)}
 .tb.off .dot{border-color:var(--ink3)}
 .pal{display:flex;align-items:center;gap:4px;padding-left:12px;border-left:1px solid var(--line);flex-wrap:wrap;row-gap:4px;min-width:0}
-.pal .pt{padding:4px 9px;border-radius:7px;border:1px solid var(--line);background:var(--panel2);color:var(--ink2);font-weight:700;font-size:12px;line-height:1.2;white-space:nowrap} /* a name never breaks: Groove 2, Crash-in, Fill 1 */
+.pal .pt{padding:4px 9px;min-width:44px;text-align:left;font-variant-numeric:tabular-nums;border-radius:7px;border:1px solid var(--line);background:var(--panel2);color:var(--ink2);font-weight:700;font-size:12px;line-height:1.2;white-space:nowrap} /* a name never breaks: Groove 2, Crash-in, Fill 1 */
 .pal .pt:hover{border-color:#4a5163;color:var(--ink)}
 .pal .pt.on{background:#ffffff0d;border-color:var(--trk);color:var(--trk);box-shadow:inset 0 0 0 1px var(--trk)}
 .pal .pt.empty{border-style:dashed;color:var(--ink3);opacity:.7}
 .pal .pt.locked{border-color:var(--state);box-shadow:inset 0 0 0 1px var(--state)}
 .pal .pt.locked.on{border-color:var(--trk)}
-.pal .pt i{font-style:normal;font-size:9px;color:var(--ink3);margin-left:3px}
+.pal .pt i{display:inline-block;min-width:4.2ch;font-style:normal;font-size:9px;color:var(--ink3);margin-left:3px;font-variant-numeric:tabular-nums}
 .pal .pt.on i{color:var(--trk)}
 .poly .pal{display:none}
 .tabset{margin-left:auto;display:flex;align-items:center;gap:6px;color:var(--ink2);font-size:11px}
@@ -722,6 +722,7 @@ function addRiff() {
   const chs = new Set([...riffs.map(r => r.ch), drumT.ch]); let ch = 1; while (chs.has(ch)) ch++;
   const r0 = riffs[0].rootNote, root = r0 + 12 <= 84 ? r0 + 12 : r0;
   const t = newRiff('Riff ' + n, ch, TRK_COLORS.find(c => !riffs.some(r => r.color === c)), root);
+  voiceOctave(t); // a new riff starts in its sound's octave (and its dice range moves with it)
   riffs.push(t);
   useTrack(riffs.length - 1);
   const g = settings(); g.seed = S.seed = newSeed(); g.degree = degreeOf(0);
@@ -1829,7 +1830,7 @@ function render() {
     const made = hasNotes((T.drums ? T.parts : parts)[k]);
     const b = document.createElement('button'); b.className = 'pt' + (k === S.cur ? ' on' : '') + (LK0[k] ? ' locked' : '') + (made ? '' : ' empty');
     const bars = arr.map((p, i) => p === k ? i + 1 : 0).filter(Boolean);
-    b.innerHTML = nm + (bars.length ? '<i>' + bars.join(' ') + '</i>' : '');
+    b.innerHTML = nm + '<i>' + bars.join('') + '</i>'; // the bar slot is always there, so a chip never changes size
     b.title = `${nm} · ${PART_HINT[k]} · ${partInfo(k)}${LK0[k] ? ' · locked: the dice and All skip it' : ''} · ${bars.length ? 'in bar' + (bars.length > 1 ? 's ' : ' ') + bars.join(', ') : 'not in the form (▾ on a bar puts it there)'} · ${made ? 'click to edit it in the roll' : `not made yet: click to build it from ${PARTS[0]}`}`;
     b.onclick = () => {
       if (k === S.cur && S.sel < 0 && made) return;
