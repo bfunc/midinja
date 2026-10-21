@@ -302,6 +302,8 @@ input.num{width:64px}
 .legend i{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
 .playb{width:34px;height:34px;border-radius:50%;border:0;background:var(--acc2);color:#15171c;font-size:14px;display:grid;place-items:center}
 .playb.on{background:var(--acc)}
+.btn.snd{margin-left:6px;font-size:13px;padding:0 7px}.btn.snd.off{opacity:.55}
+.sndl{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink2);margin:6px 0}.sndl span{width:52px}.sndl input{flex:1;accent-color:var(--acc2)}
 .grp{display:flex;align-items:center;gap:8px}
 .inert{opacity:.45;pointer-events:none}
 .mini .knob{width:24px;height:24px}.mini .knob i{width:16px;height:16px}
@@ -363,7 +365,7 @@ body.dragging .drop{display:grid}
   <div class="row song">
     <div class="logo">Midi<b>nja</b></div>
     <div class="grp">
-      <button class="playb" id="pl" title="Play / Stop: loops the arrangement, or only the selected bar (no sound in the preview)">▶</button>
+      <button class="playb" id="pl" title="Play / Stop: loops the arrangement, or only the selected bar">▶</button><button class="btn sm snd" id="snd" title="Sound on / off: the preview synth (⚙ for the volume and effects)">🔊</button>
       <div class="ctl"><small id="playinfo">BPM</small><input class="num" id="bpm" value="122" type="number" min="40" max="240"></div>
     </div>
     <div class="vsep"></div>
@@ -377,7 +379,7 @@ body.dragging .drop{display:grid}
     <button class="btn" id="exp" title="Save the arrangement as one .mid file: a track per tab that is on, each on its channel">⤓ Export</button>
     <div class="tog" id="adv" title="Riff: length, seed, start on root, and the edit modes over the roll (Duration, Velocity, Ratchets; Drums: Velocity). Also the undo buttons"><div class="sw"></div>Advanced</div>
     <button class="btn" id="help" data-pop title="Legend and keyboard shortcuts">?</button>
-    <button class="btn" id="gear" data-pop title="Set once: the preview synth and the MIDI out port">⚙</button>
+    <button class="btn" id="gear" data-pop title="The preview sound (volume, delay, reverb) and the MIDI out port">⚙</button>
   </div>
 
   <!-- the tracks on the left; the track shown on the right: header, form, generator, roll -->
@@ -439,12 +441,20 @@ body.dragging .drop{display:grid}
   <div class="hidden"><div class="hstrip" id="hstrip"></div><div class="lanebox" id="lane"></div><div id="cgen"></div><div id="advC"></div></div>
 </div></div>
 <div class="pop" id="pop"></div>
-<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>the other track (ghost)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Advanced: Duration / Velocity / Ratchets over the roll, drag the bars · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, 🔒 keeps it when you roll · keys 1–4 = part · Space = dice, Shift+Space = All · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
+<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>the other track (ghost)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Advanced: Duration / Velocity / Ratchets over the roll, drag the bars · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, 🔒 keeps it when you roll · 🔊 = sound on / off, ⚙ = volume, delay, reverb · each riff picks its sound in its header (Bass, Lead, Square, Keys); the drums play a built-in kit on the GM notes · keys 1–4 = part · Space = dice, Shift+Space = All · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
 <script src="midinja-core.js"></script>
 
 <script>
 (async () => {
 const core = await MidinjaCore();
+const { Synth, VOICES } = await import('./synth.js');
+const synth = new Synth();
+// the preview's sound: on/off and the mix, remembered in this browser only
+const snd = { on: true, vol: 0.8, delay: 1, reverb: 1 };
+try { Object.assign(snd, JSON.parse(localStorage.getItem('midinja.sound') || '{}')); } catch { /* no storage */ }
+const saveSnd = () => { try { localStorage.setItem('midinja.sound', JSON.stringify(snd)); } catch { /* no storage */ } };
+const applySnd = () => { synth.volume = snd.vol; synth.delayAmt = snd.delay; synth.reverbAmt = snd.reverb; if (synth.ctx) synth.setVolume(snd.on ? snd.vol : 0); };
+applySnd();
 // The core knows no duration, caps a length at 8 steps and ratchets at 4. After every call: a note the
 // call kept (same step, same length) keeps its duration, length and ratchets; a new note gets a duration
 // from the dice range, and a length or a ratchet count beyond the core's caps when the ranges ask for one.
@@ -1573,7 +1583,11 @@ function render() {
     const kb = document.createElement('button'); kb.className = 'btn xs' + (S.kit ? ' on' : ''); kb.textContent = S.kit ? '▦ Roll' : '🥁 Kit · ' + (kitIsGM() ? 'GM' : 'custom');
     kb.title = S.kit ? 'Back to the roll' : 'The note each drum sound sends (MIDI out and export): GM by default, set it for your drum machine';
     kb.onclick = () => { S.kit = !S.kit; S.kitFocus = null; render(); }; set.appendChild(kb);
-  } else { const rg = document.createElement('span'); rg.textContent = `${nn(S.lowNote)}–${nn(S.highNote)}`; rg.title = 'The rows of the roll: grow or shrink it with + and − at the top and bottom edges; − and + by the key move it an octave'; set.appendChild(rg); }
+  } else {
+    const vs = document.createElement('select'); vs.className = 'sel xs'; vs.title = 'The sound of this riff in the preview (MIDI out and the export are not affected)';
+    vs.innerHTML = Object.entries(VOICES).map(([k, v]) => `<option value="${k}">🎹 ${v.label}</option>`).join(''); vs.value = voiceOf(T);
+    vs.onchange = () => { T.voice = vs.value; hear(T, T.rootNote, 100, 2); render(); }; set.appendChild(vs);
+    const rg = document.createElement('span'); rg.textContent = `${nn(S.lowNote)}–${nn(S.highNote)}`; rg.title = 'The rows of the roll: grow or shrink it with + and − at the top and bottom edges; − and + by the key move it an octave'; set.appendChild(rg); }
 
   // arrangement and palette
   const A = $('arr'); A.innerHTML = '';
@@ -1675,6 +1689,7 @@ function render() {
         c.onpointerdown = e => {
           if (e.button !== 0 || (pat.steps[s].locked && !pat.steps[s].on)) return;
           const d = document.createElement('div'); d.className = 'note draft'; c.appendChild(d);
+          hear(T, note, 100, Math.min(lastLen, roomAt(s)));
           lenDrag(e, d, c, s, Math.min(lastLen, roomAt(s)), len => { pat.steps[s] = { on: true, note, length: len, dur: 100, velocity: 100, repeats: 1, locked: !inScale(note) }; }, true);
         };
       }
@@ -1786,8 +1801,8 @@ function drumRow(g, note, r, n, ph, rowH, b0) {
       c.appendChild(d);
     } else if (crash && s === 0) {
       const d = document.createElement('div'); d.className = 'note drum auto'; d.title = 'Crash after the fill of the bar before (automatic). Click to make it a hit of ' + PARTS[S.cur];
-      d.onclick = e => { e.stopPropagation(); h.on = true; h.velocity = DEF_VEL(1); push(); }; c.appendChild(d);
-    } else c.onclick = () => { if (h.locked) return; h.on = true; h.velocity = DEF_VEL(s % (n / 4) === 0 ? 0.95 : 0.7); push(); };
+      d.onclick = e => { e.stopPropagation(); h.on = true; h.velocity = DEF_VEL(1); hear(T, note, h.velocity); push(); }; c.appendChild(d);
+    } else c.onclick = () => { if (h.locked) return; h.on = true; h.velocity = DEF_VEL(s % (n / 4) === 0 ? 0.95 : 0.7); hear(T, note, h.velocity); push(); };
     g.appendChild(c);
   }
 }
@@ -1851,7 +1866,7 @@ function noteDown(e, s) {
     const note = noteAtY(ev.clientY, ev.altKey);
     if (note === null) return;
     moved = true;
-    if (note !== st.note) { st.note = note; render(); }
+    if (note !== st.note) { st.note = note; hear(T, note, st.velocity, st.length); render(); }
   };
   h.pointerup = ev => {
     if (ev.pointerId !== id) return;
@@ -1985,9 +2000,21 @@ function partPicker(anchor, i) {
   });
 }
 $('gear').onclick = () => openPop($('gear'), P => {
-  const h = document.createElement('h4'); h.textContent = 'Set once'; P.appendChild(h);
-  P.insertAdjacentHTML('beforeend', '<div class="grp inert" title="In the app only (off by default there)"><div class="tog"><div class="sw"></div>Synth</div><span class="btn sm">Saw</span></div><div class="grp inert" title="In the app only"><span class="lbl">MIDI Out</span><span class="btn sm">None</span></div><div class="dim" style="font-size:11px;max-width:220px">The preview has no sound: the synth and the MIDI port live in the app.</div>');
+  const h = document.createElement('h4'); h.textContent = 'Sound'; P.appendChild(h);
+  const sl = (k, label, max, tip) => `<label class="sndl" title="${tip}"><span>${label}</span><input type="range" min="0" max="${max}" step="0.05" value="${snd[k]}" data-k="${k}"></label>`;
+  P.insertAdjacentHTML('beforeend', `<div class="grp"><div class="tog${snd.on ? ' on' : ''}" id="sndTog"><div class="sw"></div>Sound</div></div>`
+    + sl('vol', 'Volume', 1.2, 'The master volume of the preview') + sl('delay', 'Delay', 1.5, 'How much of the dotted-8th delay (Lead, Square, Keys)') + sl('reverb', 'Reverb', 1.5, 'How much reverb')
+    + '<div class="grp inert" title="In the app only"><span class="lbl">MIDI Out</span><span class="btn sm">None</span></div><div class="dim" style="font-size:11px;max-width:230px">A simple browser synth to hear the riffs: each riff picks its sound in its header, the drums play a built-in kit on the GM notes. The app has its own synth and the MIDI port.</div>');
+  P.querySelector('#sndTog').onclick = e => { snd.on = !snd.on; e.currentTarget.classList.toggle('on', snd.on); soundChanged(); };
+  P.querySelectorAll('input[type=range]').forEach(r => { r.oninput = () => { snd[r.dataset.k] = +r.value; applySnd(); saveSnd(); }; });
 });
+function soundChanged() {
+  applySnd(); saveSnd();
+  if (!snd.on) synth.stopAll();
+  $('snd').textContent = snd.on ? '🔊' : '🔇'; $('snd').classList.toggle('off', !snd.on);
+}
+$('snd').onclick = () => { snd.on = !snd.on; synth.resume(); soundChanged(); };
+soundChanged();
 $('help').onclick = () => openPop($('help'), P => { const h = document.createElement('h4'); h.textContent = 'Legend and keys'; P.appendChild(h); P.appendChild($('legendT').content.cloneNode(true)); });
 
 // ---- controls ------------------------------------------------------------------------------
@@ -2051,31 +2078,77 @@ addEventListener('keydown', e => {
   if (e.key === 'Escape' && S.sel >= 0) selectSlot(S.sel);
 });
 
-// playhead (no sound)
-let timer = null, nextAt = 0, stepIdx = 0;
+// playback: the audio clock schedules each step a little ahead (so the timing holds when the page is busy);
+// the playhead follows the steps as they sound. Sound off still runs the clock, it only skips the notes.
+let timer = null, stepIdx = 0, aStep = 0, aNext = 0, aTimer = 0;
+const heard = []; // steps scheduled, not yet reached: { g, t }
 const cycleLen = () => playSeq().length * S.numSteps;
+const stepSec = () => 60 / (+$('bpm').value || 120) / S.rate;
+// a riff's sound: its own pick, else Bass for a low riff and Lead above
+const voiceOf = t => t.voice || (t.rootNote < 48 ? 'bass' : 'lead');
+// a note heard while editing (not during Play)
+function hear(t, note, vel, steps = 1) {
+  if (!snd.on || timer) return;
+  synth.resume();
+  if (t.drums) synth.drum(note, vel, synth.time); else synth.note(voiceOf(t), note, vel, synth.time, Math.max(0.25, steps * stepSec()));
+}
+// the part and the bar track t plays at step g: the track shown follows the bar picked, the others their forms
+function partAt(t, g) {
+  const n = S.numSteps;
+  if (t === T) { const seq = playSeq(), i = Math.floor((g % (seq.length * n)) / n); return { p: t.parts[seq[i]], b: S.sel >= 0 ? S.sel : i }; }
+  if (!t.arr.length) return null;
+  const b = Math.floor(g / n) % t.arr.length; return { p: t.parts[t.arr[b]], b };
+}
+function playStepAt(g, at) {
+  const s = g % S.numSteps, sec = stepSec();
+  [...riffs, drumT].forEach(t => {
+    if (!t.on) return;
+    const pb = partAt(t, g); if (!pb || !pb.p || s >= pb.p.numSteps) return;
+    const p = pb.p;
+    if (t.drums) {
+      DRUMS.forEach(([x]) => { const h = p.hits[x][s]; if (h.on) synth.drum(x, h.velocity, at); });
+      if (s === 0 && autoCrash(pb.b, t)) synth.drum(49, DEF_VEL(1), at);
+      return;
+    }
+    const st = p.steps[s]; if (!st.on) return;
+    const len = st.length * sec, reps = Math.max(1, st.repeats);
+    if (reps > 1) for (let r = 0; r < reps; r++) synth.note(voiceOf(t), st.note, st.velocity, at + r * len / reps, len / reps * 0.8);
+    else synth.note(voiceOf(t), st.note, st.velocity, at, Math.max(0.02, len * durOf(st) / 100));
+  });
+}
+function schedule() {
+  const ahead = document.hidden ? 1.5 : 0.12; // a hidden tab wakes the timer only once a second
+  while (aNext < synth.time + ahead) {
+    const at = aNext + (aStep % 2 ? S.swing * 0.5 * stepSec() : 0);
+    if (snd.on) playStepAt(aStep, at);
+    heard.push({ g: aStep, t: at });
+    aNext += stepSec(); aStep++;
+  }
+  aTimer = setTimeout(schedule, 25);
+}
 function tick() {
-  const now = performance.now();
-  if (nextAt && now - nextAt > 2000) nextAt = now; // back from a hidden tab: don't race through the missed steps
   let moved = false;
-  while (now >= nextAt) {
+  while (heard.length && heard[0].t <= synth.time) {
+    const { g } = heard.shift();
     moved = true;
-    const n = S.numSteps, len = cycleLen();
-    playPos = stepIdx % len;
-    playStep = playPos % n;
+    playPos = g % cycleLen(); playStep = playPos % S.numSteps; stepIdx = g + 1;
     if (S.sel < 0 && arr.length && playingPart() !== S.cur) { S.cur = playingPart(); refreshPat(); }
-    const stepMs = 60000 / (+$('bpm').value || 120) / S.rate;
-    const swing = (playStep % 2 === 0 ? 1 : -1) * S.swing * 0.5 * stepMs;
-    nextAt = (nextAt || now) + stepMs + swing;
-    stepIdx++;
   }
   if (moved) render();
   timer = requestAnimationFrame(tick);
 }
+function stopPlay() {
+  cancelAnimationFrame(timer); clearTimeout(aTimer); timer = null; heard.length = 0; synth.stopAll();
+  playStep = -1; $('pl').textContent = '▶'; $('pl').classList.remove('on'); render();
+}
 $('pl').onclick = () => {
-  if (timer) { cancelAnimationFrame(timer); timer = null; playStep = -1; $('pl').textContent = '▶'; $('pl').classList.remove('on'); render(); return; }
-  stepIdx = 0; playPos = 0; nextAt = 0; $('pl').textContent = '■'; $('pl').classList.add('on'); tick();
+  if (timer) { stopPlay(); return; }
+  synth.resume(); applySnd(); synth.setTempo(+$('bpm').value || 120);
+  stepIdx = 0; playPos = 0; aStep = 0; aNext = synth.time + 0.06; heard.length = 0;
+  $('pl').textContent = '■'; $('pl').classList.add('on');
+  schedule(); tick();
 };
+$('bpm').addEventListener('input', () => synth.setTempo(+$('bpm').value || 120));
 
 // ---- MIDI import / export -------------------------------------------------------------------
 function parseMidi(u8) {
