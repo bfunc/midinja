@@ -186,7 +186,9 @@ input.num{width:64px}
 .slot.locked .lk{opacity:1}
 .slot .x{border:0;background:transparent;color:var(--ink3);font-size:14px;line-height:1;padding:2px 5px;border-radius:4px}
 .slot .x:hover{color:var(--ink);background:#ffffff14}
-.slot .pp{position:absolute;left:8px;right:8px;bottom:-1px;height:2px;background:var(--acc2);display:none;box-shadow:0 0 6px var(--acc2)}
+.slot .pp{position:absolute;left:6px;right:6px;bottom:-1px;height:3px;border-radius:2px;background:var(--acc2);display:none;box-shadow:0 0 8px var(--acc2)}
+.slot.playing{box-shadow:inset 0 0 0 1px #5ad1c799,0 0 12px #5ad1c733} /* the bar playing: colour only, no size change */
+.slot.prim.playing{box-shadow:0 0 0 1px var(--prim) inset,0 0 12px #5ad1c766}
 .slot.playing .pp{display:block}
 .slot.prim .tt i{background:var(--prim)}
 .aadd{width:30px;height:30px;padding:0;display:grid;place-items:center;color:var(--acc);border-radius:7px;background:var(--panel2);border:1px solid var(--line);font-size:18px;line-height:1}
@@ -696,11 +698,13 @@ function useTab(i) { S.tab = i; T = tabs[i]; parts = tabs[0].parts; locks = tabs
 // show a riff (its index) or the drum track ('d')
 function useTrack(id) {
   if (id !== 'd') { curRiff = id; tabs[0] = riffs[id]; }
-  // during Play the tracks keep playing: only the view changes, and the roll follows the part playing
+  // during Play the tracks keep playing: only the view changes; the part shown is the track's first, and
+  // the bar strip shows what plays
   S.sel = -1;
-  if (!timer) { S.cur = (id === 'd' ? drumT : riffs[id]).arr[0] ?? 0; stepIdx = 0; playPos = 0; }
+  S.cur = (id === 'd' ? drumT : riffs[id]).arr[0] ?? 0;
+  if (!timer) { stepIdx = 0; playPos = 0; }
   useTab(id === 'd' ? 2 : 0);
-  if (timer) { playPos = Math.max(0, stepIdx - 1) % cycleLen(); S.cur = playingPart(); refreshPat(); }
+  if (timer) playPos = Math.max(0, stepIdx - 1) % cycleLen();
 }
 // the roll's view: one height (VP_H); zoom = the row height; the rows span a wide range and scroll. Auto
 // zoom fits the track's own notes (2 rows below, 3 above) into that height; + −, wheel and scroll turn it off
@@ -1757,7 +1761,7 @@ function drawEdges() {
   }
 }
 // during Play only the playhead and the bars playing change; nothing else is rebuilt, so open menus stay
-// open and clicks land. When the roll follows the playing part, the roll and the part marks update.
+// open and clicks land. The part chips and the roll stay on the chosen part; the bar strip shows what plays.
 const barNowOf = t => timer && t.arr.length ? Math.floor(Math.max(0, stepIdx - 1) / S.numSteps) % t.arr.length : -1;
 function markPlay() {
   const ph = shownPlayStep(), ps = playingSlot();
@@ -1770,12 +1774,6 @@ function markPlay() {
     const pb = (id === 'd' ? !!T.drums : !T.drums && +id === curRiff) ? ps : barNowOf(t);
     d.querySelectorAll('.tbars i').forEach((el, b) => el.classList.toggle('p', b === pb));
   });
-}
-function syncCur() {
-  renderDice();
-  document.querySelectorAll('#pal .pt').forEach((b, k) => b.classList.toggle('on', k === S.cur));
-  if (!T.poly) document.querySelectorAll('#arr .slot').forEach((el, i) => { el.classList.toggle('prim', i === S.sel); el.classList.toggle('ctx', i !== S.sel && arr[i] === S.cur); });
-  renderRoll();
 }
 function render() {
   refreshPat();
@@ -2381,15 +2379,14 @@ function schedule() {
   aTimer = setTimeout(schedule, 25);
 }
 function tick() {
-  let moved = false, partMoved = false;
+  let moved = false;
   while (heard.length && heard[0].t <= synth.time) {
     const { g } = heard.shift();
     moved = true;
     playPos = g % cycleLen(); playStep = playPos % S.numSteps; stepIdx = g + 1;
-    if (S.sel < 0 && arr.length && playingPart() !== S.cur) { S.cur = playingPart(); refreshPat(); partMoved = true; }
   }
-  if (partMoved) syncCur();
-  else if (moved && ghostBar() !== ghostAt) drawRiffGhosts();
+  // the part chips and the roll stay on the part chosen; the bar strip below is the play indicator
+  if (moved && ghostBar() !== ghostAt) drawRiffGhosts();
   if (moved) markPlay();
   timer = requestAnimationFrame(tick);
 }

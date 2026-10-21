@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-21 18:55 · opus-5.5@home#ea79 · 4cc1fee
+Updated: 2026-10-21 19:07 · opus-5.5@home#ea79 · (this commit)
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -32,6 +32,7 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 - 2026-10-21 · Ghost notes: a riff's roll shows the other unmuted riffs faintly in their colour, the part each plays at the same place in the form (looping when shorter; during Play what sounds), not clickable, outside the zoom not drawn; "Ghosts" toggle next to Auto zoom, on by default, kept per browser · user (like FL Studio)
 - 2026-10-21 · Animations: reduced-motion ignored for the Play pulse and dice spin, by user choice · Home has Windows animation effects off and the user wants to see both
 - 2026-10-21 · Play-time UI: during Play only the playhead and the playing bars update (the roll redraws when it follows a new part); nothing is locked except Import, which stops Play first · user: menus closed and clicks got lost during Play
+- 2026-10-21 · Play: chips = edit choice, static; bar strip = play indicator · the part chips (A A′ B C) are the part to edit and the part a new bar gets: they and the roll change only on a click or keys 1–4, never with playback; the bar strip highlights the bar playing (with Loop + a selected bar it stays there) · user: «эти не должны двигаться — это выбор того какой будет новая часть, а вот нижние бары должны — это индикатор бара»
 - 2026-10-21 · Surprise in Advanced, default 15% · rarely tuned; keeps the liked riffs
 - 2026-10-21 · KEY root row: only the row of KEY's exact note and octave is orange in the roll; other octaves of the root keep the "1" badge in normal colour, so KEY always reads like its row in every DAW naming · user: KEY E4 vs the orange E5 row
 - 2026-10-21 · Similarity: a roll-time setting in the Dice group (no live rebuild); applies when A′, B or C is rolled or built from A: A′ as before, B keeps more of A's rhythm when high (less when low), C keeps A's rhythm 15 % → 60 % → 95 % over 0 → 0.65 → 1; dimmed on A; at the default 0.65 the engine is bit-exact with before · user approved (knob unclear, live rebuild stuttered)
@@ -57,7 +58,6 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 -    Not clicked through by hand: Start-on-root toggle, root marker at narrow widths (preview)
 
 ## Waiting for you
-- Part chips during Play: their boxes no longer move (measured 0 px), but the outlined chip still follows the part playing (the roll follows it too). Keep that, or keep the chip and roll on the part you picked and mark the playing part with a glow? · since 2026-10-21
 - Chord part: the prototype's lane is built in the mockup (75125a6) and the app (4d7a1dd); the user tests both (local mockup, latest zip) · since 2026-10-18
 - Start-on-root: per-bar override (click the marker)? · since 2026-10-17
 - Start-on-root: a middle setting "root on a strong beat"? · since 2026-10-17
