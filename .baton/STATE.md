@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-21 19:07 · opus-5.5@home#ea79 · 64d609a
+Updated: 2026-10-21 19:20 · opus-5.5@home#ea79 · (this commit)
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -32,6 +32,8 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 - 2026-10-21 · Ghost notes: a riff's roll shows the other unmuted riffs faintly in their colour, the part each plays at the same place in the form (looping when shorter; during Play what sounds), not clickable, outside the zoom not drawn; "Ghosts" toggle next to Auto zoom, on by default, kept per browser · user (like FL Studio)
 - 2026-10-21 · Animations: reduced-motion ignored for the Play pulse and dice spin, by user choice · Home has Windows animation effects off and the user wants to see both
 - 2026-10-21 · Play-time UI: during Play only the playhead and the playing bars update (the roll redraws when it follows a new part); nothing is locked except Import, which stops Play first · user: menus closed and clicks got lost during Play
+- 2026-10-21 · Scale library: ☰ next to Scale opens "Scales" (grouped, a checkbox each, ↗ pairs marked, intervals); the Scale list shows only the checked ones (the current one always), kept per browser; default set = Major, Natural Minor, Dorian, Phrygian, Lydian, Mixolydian, Harmonic Minor, Phrygian Dominant, Minor & Major Pentatonic, Blues (the user can change it) · user
+- 2026-10-21 · Lock glyph: one SVG lock (closed / open) for notes, drum hits, bar strip and Lock buttons; on notes dark, 58 % of the row (7–16 px), in the sounding part, clear of the length handle; rows under 8 px show only the 2 px outline · user: the emoji was tiny and orange on orange
 - 2026-10-21 · Play: chips = edit choice, static; bar strip = play indicator · the part chips (A A′ B C) are the part to edit and the part a new bar gets: they and the roll change only on a click or keys 1–4, never with playback; the bar strip highlights the bar playing (with Loop + a selected bar it stays there) · user: «эти не должны двигаться — это выбор того какой будет новая часть, а вот нижние бары должны — это индикатор бара»
 - 2026-10-21 · Surprise in Advanced, default 15% · rarely tuned; keeps the liked riffs
 - 2026-10-21 · KEY root row: only the row of KEY's exact note and octave is orange in the roll; other octaves of the root keep the "1" badge in normal colour, so KEY always reads like its row in every DAW naming · user: KEY E4 vs the orange E5 row
@@ -72,4 +74,4 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 3. Tag v0.2.0 after the user's FL confirmation
 4. Generation: augmented-second pairs resolve into tonic/fifth (♭6–7–1, 3–♭2–1, ♭3–♯4–5); colour notes on strong beats
 5. AU later
-6. JUCE app: port the note length rework, the Ending switch (engine has GenSettings.ending, default Run; JUCE state/UI not yet, so the app always rolls Run), Surprise moved into Advanced like the mockup (fixed 1/16 grid, notes up to a bar, drag to draw/resize, last-used length) and Duration / ratchets up to 5 / edit modes / drum kit after the user approves them in the mockup; the core then needs duration and the caps raised (kMaxLength 8 → 16, kMaxRepeats 4 → 5), which the mockup works around in JS (afterCore)
+6. JUCE app: port the note length rework, the Ending switch (engine has GenSettings.ending, default Run; JUCE state/UI not yet, so the app always rolls Run), Surprise moved into Advanced like the mockup, the scale library (☰ Scales) and the SVG lock glyph (fixed 1/16 grid, notes up to a bar, drag to draw/resize, last-used length) and Duration / ratchets up to 5 / edit modes / drum kit after the user approves them in the mockup; the core then needs duration and the caps raised (kMaxLength 8 → 16, kMaxRepeats 4 → 5), which the mockup works around in JS (afterCore)
