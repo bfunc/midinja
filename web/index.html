@@ -33,10 +33,15 @@ button{cursor:pointer}
 .dice{width:38px;height:38px;border-radius:9px;border:0;background:var(--acc);color:#1a1206;font-size:31px;line-height:1;box-shadow:0 0 0 3px #ff9f4333;display:grid;place-items:center}
 .dice:active{transform:translateY(1px)}
 .dicegrp{display:flex;align-items:stretch;height:38px;border-radius:9px;overflow:hidden;box-shadow:0 0 0 3px #ff9f4333}
-.dicegrp .dice{position:relative;width:48px;border-radius:0;box-shadow:none;font-size:27px;justify-items:start;align-items:start;padding:3px 0 0 4px}
+.dicegrp .dice{position:relative;width:48px;border-radius:0;box-shadow:none;background:#ff9f4338;justify-items:start;align-items:start;padding:3px 0 0 5px}
+.dsvg{width:29px;height:29px;display:block;overflow:visible}
+.dsvg .dt{fill:#ffc58c}.dsvg .dl{fill:var(--acc)}.dsvg .dr{fill:#d9782a}.dsvg .dp{fill:#2a1a08}
+.dice[disabled] .dsvg{filter:grayscale(1);opacity:.6}
+.dsvg.spin{animation:dspin .45s cubic-bezier(.3,.7,.4,1)}
+@keyframes dspin{0%{transform:rotate(0) scale(1)}45%{transform:rotate(200deg) scale(.82)}100%{transform:rotate(360deg) scale(1)}}
 .dicegrp button:focus{outline:none}.dicegrp button:focus-visible{outline:2px solid var(--acc);outline-offset:-3px}.dicegrp .dice:focus-visible{outline-color:#1a1206}
-.dpart{position:absolute;right:3px;bottom:3px;padding:1px 3px;border-radius:4px;background:#1a1206;color:#ffd8ad;font-size:10px;font-weight:700;line-height:1.1;font-family:inherit;pointer-events:none}
-.diceall{width:36px;padding:0;border:0;border-left:1px solid #b5651d;border-radius:0;background:#ff9f4329;color:var(--acc);font-size:11px;font-weight:700;display:grid;place-items:center}
+.dpart{position:absolute;right:3px;bottom:3px;padding:1px 3px;border-radius:4px;background:var(--acc);color:#1a1206;font-size:10px;font-weight:700;line-height:1.1;font-family:inherit;pointer-events:none}
+.diceall{width:36px;padding:0;border:0;border-left:1px solid #ff9f4366;border-radius:0;background:#ff9f4329;color:var(--acc);font-size:11px;font-weight:700;display:grid;place-items:center}
 .diceall:hover:not([disabled]){background:#ff9f4347}
 .diceall[disabled]{opacity:.35;cursor:default}
 .dice[disabled]{opacity:.35;cursor:default;box-shadow:none}
@@ -377,6 +382,29 @@ input.num{width:64px}
 .drop{position:fixed;inset:12px;border:3px dashed var(--acc2);border-radius:14px;background:#0d0e11d9;display:none;place-items:center;z-index:50;color:var(--ink);font-size:18px;text-align:center;line-height:1.6}
 .drop small{display:block;color:var(--ink2);font-size:13px}
 body.dragging .drop{display:grid}
+/* ---- looks (?look=a|b|c): the same colours, other shapes. a: soft cards; b: Riffer-like wells with concave
+   fillets under the active part tab, the dice group and Play; c: b with round wells for the dice and Play */
+.well{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:0}
+.well path{fill:var(--panel)}
+.lk-b .song,.lk-c .song,.lk-b .thead,.lk-c .thead,.lk-b .genrow,.lk-c .genrow{position:relative}
+.lk-b .song>*:not(.well),.lk-c .song>*:not(.well),.lk-b .thead>*:not(.well),.lk-c .thead>*:not(.well),.lk-b .genrow>*:not(.well),.lk-c .genrow>*:not(.well){position:relative;z-index:1}
+.lk-b .pal,.lk-c .pal{border-left:0}
+.lk-b .pal .pt.on,.lk-c .pal .pt.on{background:transparent;border-color:transparent;box-shadow:none}
+.lk-b .song,.lk-c .song{background:#272b35;border-bottom-color:transparent}
+.lk-a .body{padding:8px;gap:8px}
+.lk-a .tracks{border-radius:14px;border:1px solid var(--line)}
+.lk-a .ed{gap:8px}
+.lk-a .thead,.lk-a .genrow,.lk-a .formrow{border:1px solid var(--line);border-radius:14px}
+.lk-a .song{border-radius:0 0 16px 16px;margin:0 6px}
+.lk-a .pal{border-left:0}
+.lk-a .pal .pt{border-radius:10px}
+.lk-a .pal .pt.on{background:var(--bg);box-shadow:inset 0 2px 6px #000c,inset 0 0 0 1px var(--trk);transform:translateY(1px)}
+.lk-a .dicegrp{border-radius:12px}
+.lk-c .dicegrp{overflow:visible;box-shadow:none;border-radius:0;gap:6px;align-items:center}
+.lk-c .dicegrp .dice{width:46px;height:46px;border-radius:50%;padding:0;justify-items:center;align-items:center;box-shadow:0 0 0 3px #ff9f4333}
+.lk-c .dicegrp .dice .dsvg{width:28px;height:28px}
+.lk-c .dpart{right:-2px;bottom:-2px}
+.lk-c .diceall{height:26px;border-radius:13px;border-left:0}
 </style></head>
 <body>
 <div class="drop" id="drop">Drop the .mid file here<small>up to 4 bars → A A′ B C · monophonic · quantised to 1/16 · into the riff shown</small></div>
@@ -417,7 +445,7 @@ body.dragging .drop{display:grid}
       <div class="formrow"><div class="arr" id="arr"></div><div class="addcol" id="radd"></div></div>
       <div class="genrow">
         <div class="ggrp" id="gDice"><small>Dice</small><div class="gen" id="riffGen">
-          <div class="dicegrp"><button class="dice" id="roll" title="Roll the part shown (Space)">⚄<span class="dpart" id="rollPart">A</span></button><button class="diceall" id="rollAll" title="The same for all four parts: A, then A′ B C from it (Shift+Space). Locked parts stay"><span id="rollAllLbl">All</span></button></div>
+          <div class="dicegrp"><button class="dice" id="roll" title="Roll the part shown (Space)"><svg class="dsvg" viewBox="0 0 32 32" aria-hidden="true"><path class="dt" d="M16 3 28 10 16 17 4 10Z"/><path class="dl" d="M4 10 16 17V30L4 23Z"/><path class="dr" d="M16 17 28 10V23L16 30Z"/><g class="dp"><ellipse transform="matrix(12 -7 12 7 4 10)" cx=".5" cy=".5" rx=".12" ry=".12"/><g transform="matrix(12 7 0 13 4 10)"><ellipse cx=".28" cy=".3" rx=".1" ry=".1"/><ellipse cx=".72" cy=".7" rx=".1" ry=".1"/></g><g transform="matrix(12 -7 0 13 16 17)"><ellipse cx=".25" cy=".27" rx=".1" ry=".1"/><ellipse cx=".5" cy=".5" rx=".1" ry=".1"/><ellipse cx=".75" cy=".73" rx=".1" ry=".1"/></g></g></svg><span class="dpart" id="rollPart">A</span></button><button class="diceall" id="rollAll" title="The same for all four parts: A, then A′ B C from it (Shift+Space). Locked parts stay"><span id="rollAllLbl">All</span></button></div>
           <div class="seg small" id="what" title="What the dice change: Rhythm, Notes, or both (a new riff)">
             <button data-w="rhythm" title="New rhythm (keeps the pitches unless Notes is on too)">♩ Rhythm</button>
             <button data-w="notes" title="New pitches (keeps the rhythm unless Rhythm is on too)">♪ Notes</button>
@@ -962,7 +990,9 @@ function rollMono(k, op, p) {
 const selChord = () => chords.find(c => c.id === S.csel) || null;
 const chordBar = c => c ? Math.floor(c.start / 4) : -1;
 // the dice on the part shown (Riff), or a new rhythm for the selected chord (Chords)
+function spinDice() { const d = document.querySelector('#roll .dsvg'); if (!d) return; d.classList.remove('spin'); void d.getBoundingClientRect(); d.classList.add('spin'); }
 function apply(op) {
+  spinDice();
   if (T.drums) { if (T.locks[S.cur]) return; S.seed = newSeed(); if (S.cur === 0 || !hasNotes(T.parts[0])) rollDrum(pat, S.cur); else derivePart(T, S.cur); refreshPat(); commitVersion(); return; }
   if (!op) return;
   if (T.poly) { const c = selChord(); if (!c) return; if (c.lock) { say('This chord is locked: unlock it to change its rhythm', true); return; } S.seed = newSeed(); c.rhythm = pick(RHYTHM_NAMES.filter(r => r !== c.rhythm)); refreshPat(); commitVersion(); return; }
@@ -978,6 +1008,7 @@ function apply(op) {
   commitVersion();
 }
 function applyAll(op, keepSeed) {
+  spinDice();
   // All: a new first part, and the parts already made are built again from it (empty ones stay empty)
   if (T.drums) { S.seed = newSeed(); const made = T.parts.map(hasNotes); if (!T.locks[0]) rollDrum(T.parts[0], 0); T.parts.forEach((p, k) => { if (k && made[k] && !T.locks[k]) derivePart(T, k); }); refreshPat(); commitVersion(); return; }
   if (!op) return;
@@ -1700,6 +1731,7 @@ function syncCur() {
   document.querySelectorAll('#pal .pt').forEach((b, k) => b.classList.toggle('on', k === S.cur));
   if (!T.poly) document.querySelectorAll('#arr .slot').forEach((el, i) => { el.classList.toggle('prim', i === S.sel); el.classList.toggle('ctx', i !== S.sel && arr[i] === S.cur); });
   renderRoll();
+  drawWells();
 }
 function render() {
   refreshPat();
@@ -1847,6 +1879,7 @@ function render() {
   document.querySelectorAll('select').forEach(fsync);
   $('rootpill').textContent = S.startOnRoot ? 'ON' : 'OFF'; $('rootpill').classList.toggle('on', S.startOnRoot);
   fitW();
+  drawWells();
 }
 
 // the kit: one row per sound, the note it sends; two sounds on one note would merge, so they show red
@@ -2459,6 +2492,55 @@ function fitW() {
   document.body.style.padding = k < 1 ? '12px' : '20px';
 }
 addEventListener('resize', fitW);
+// ---- looks: ?look=a|b|c sets a class on the panel; b and c draw wells (SVG paths a JUCE Path can copy)
+const LOOK = (() => { try { const l = new URLSearchParams(location.search).get('look'); return l && 'abc'.includes(l) ? l : ''; } catch { return ''; } })();
+if (LOOK) plug.classList.add('lk-' + LOOK);
+// a tab rising from an edge (up, in its own coordinates), with concave fillets f where it meets the edge
+function tabPath(L, R, H, rr, f) {
+  rr = Math.min(rr, (R - L) / 2, H);
+  return `M${L - f},0A${f},${f} 0 0 0 ${L},${-f}L${L},${-H + rr}A${rr},${rr} 0 0 1 ${L + rr},${-H}L${R - rr},${-H}A${rr},${rr} 0 0 1 ${R},${-H + rr}L${R},${-f}A${f},${f} 0 0 0 ${R + f},0Z`;
+}
+// a circle (centre cx, cy above the edge, radius r) bulging from the edge, joined by concave fillets f
+function circlePath(cx, cy, r, f) {
+  const d = Math.sqrt((r + f) ** 2 - (f + cy) ** 2), k = r / (r + f);
+  const tl = [cx - d * k, cy + (-f - cy) * k], tr = [cx + d * k, cy + (-f - cy) * k];
+  return `M${cx - d},0A${f},${f} 0 0 0 ${tl[0]},${tl[1]}A${r},${r} 0 ${tl[1] > cy ? 1 : 0} 1 ${tr[0]},${tr[1]}A${f},${f} 0 0 0 ${cx + d},0Z`;
+}
+// the box of el inside host, in the panel's own (unscaled) pixels
+function boxIn(el, host) {
+  const k = plug.getBoundingClientRect().width / plug.offsetWidth || 1, a = el.getBoundingClientRect(), b = host.getBoundingClientRect();
+  return { l: (a.left - b.left) / k, t: (a.top - b.top) / k, r: (a.right - b.left) / k, b: (a.bottom - b.top) / k };
+}
+// one well in host: from its bottom edge going up, or from its top edge going down; d(y0) gives the path
+function well(host, up, d) {
+  let svg = host.querySelector(':scope > svg.well');
+  if (!d) { svg?.remove(); return; } // the target sits too far from the edge (a wrapped row): no well
+  if (!svg) { svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('class', 'well'); host.prepend(svg); }
+  const y0 = up ? host.clientHeight + 1 : -1;
+  svg.innerHTML = `<path transform="translate(0 ${y0}) scale(1 ${up ? 1 : -1})" d="${d(y0)}"/>`;
+}
+function drawWells() {
+  if (LOOK !== 'b' && LOOK !== 'c') return;
+  const head = document.querySelector('.thead'), on = document.querySelector('#pal .pt.on');
+  if (on && on.offsetParent) { const b = boxIn(on, head); well(head, true, head.clientHeight - b.t > 50 ? null : y0 => tabPath(b.l - 3, b.r + 3, y0 - b.t + 4, 9, 9)); }
+  else head.querySelector(':scope > svg.well')?.remove();
+  const song = document.querySelector('.song'), sb = boxIn($('pl'), song);
+  const gen = document.querySelector('.genrow'), gd = $('gDice'), dice = $('roll');
+  if (LOOK === 'b') {
+    well(song, true, song.clientHeight - sb.t > 60 ? null : y0 => tabPath(sb.l - 6, sb.r + 6, y0 - sb.t + 6, 14, 9));
+    if (gd.offsetParent) { const g = boxIn(gd, gen); well(gen, false, g.t > 30 ? null : y0 => tabPath(g.l - 8, g.r + 8, g.b + 7 - y0, 12, 10)); }
+    else gen.querySelector(':scope > svg.well')?.remove();
+  } else {
+    const cx = (sb.l + sb.r) / 2, cyB = (sb.t + sb.b) / 2;
+    well(song, true, song.clientHeight - cyB > 40 ? null : y0 => { const cy = cyB - y0, r = Math.max(23, -cy + 5); return circlePath(cx, cy, r, 9); });
+    if (dice.offsetParent) {
+      const g = boxIn(dice, gen), dcx = (g.l + g.r) / 2, dcy = (g.t + g.b) / 2, up = gen.clientHeight - dcy <= dcy + 1;
+      well(gen, up, Math.min(dcy, gen.clientHeight - dcy) > 45 ? null : y0 => { const dist = up ? y0 - dcy : dcy - y0, r = Math.max(30, dist + 6); return circlePath(dcx, -dist, r, 10); });
+    } else gen.querySelector(':scope > svg.well')?.remove();
+  }
+}
+addEventListener('resize', () => requestAnimationFrame(drawWells));
+
 
 // a new riff: one bar A on the Riff tab, its chord (i, a whole bar) in the lane
 const h = location.hash;

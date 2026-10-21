@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Midinja dice: an isometric cube in the accent orange; the same paths as the mockup's #roll icon -->
+  <path fill="#ffc58c" d="M16 3 28 10 16 17 4 10Z"/>
+  <path fill="#ff9f43" d="M4 10 16 17V30L4 23Z"/>
+  <path fill="#d9782a" d="M16 17 28 10V23L16 30Z"/>
+  <g fill="#2a1a08">
+    <ellipse transform="matrix(12 -7 12 7 4 10)" cx=".5" cy=".5" rx=".12" ry=".12"/>
+    <g transform="matrix(12 7 0 13 4 10)"><ellipse cx=".28" cy=".3" rx=".1" ry=".1"/><ellipse cx=".72" cy=".7" rx=".1" ry=".1"/></g>
+    <g transform="matrix(12 -7 0 13 16 17)"><ellipse cx=".25" cy=".27" rx=".1" ry=".1"/><ellipse cx=".5" cy=".5" rx=".1" ry=".1"/><ellipse cx=".75" cy=".73" rx=".1" ry=".1"/></g>
+  </g>
+</svg>

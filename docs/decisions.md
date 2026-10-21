@@ -5,7 +5,7 @@ Moved here from `.baton/STATE.md` to keep STATE short. Still accepted unless a n
 - 2026-10-16 · Modes: Musician only, no Infinity; Random stays in the engine for JUCE · user decision
 - 2026-10-17 · Chord roots: each bar starts on its chord root (A, A′ = I; B = IV; C = V), imports untouched · user decision
 - 2026-10-17 · Start-on-root toggle: stays under Advanced (not the main screen); the grid shows a root marker on step 1 of each bar that the rule holds · user decision after discussion
-- 2026-10-17 · Mutate amounts: 15 / 33 / 50 %, default 15 · user corrected this several times; final
+- 2026-10-17 · Mutate amounts: 15 / 33 / 50 %, default 15 · user; the Mutate UI was removed on 2026-10-21 (see STATE), the core keeps the function
 - 2026-10-17 · Versions: dice, import, Rhythm, Notes and Mutate each create a new version; manual edits change the current one; undo is separate · user decision, confirmed again 2026-10-17
 - 2026-10-17 · UI: the JUCE app (Standalone and VST3) follows web/index.html, layout and behaviour, colours unchanged · approved by the user ("Use web html reference to build. It is approved")
 - 2026-10-17 · Plugin sound: built-in preview synth with an on/off toggle, and the VST3 also sends MIDI to the host · user decision

@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-21 17:15 · opus-5.5@home#ea79 · 817c208
+Updated: 2026-10-21 17:21 · opus-5.5@home#ea79 · (this commit)
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -48,13 +48,14 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 -    Not clicked through by hand: Start-on-root toggle, root marker at narrow widths (preview)
 
 ## Waiting for you
+- Pick a look for the mockup: localhost:3000/?look=a (soft cards, inset part tab) · ?look=b (Riffer-like wells with concave fillets: part tab, dice group, Play) · ?look=c (b with round wells for the dice and Play); no ?look = the current flat style · since 2026-10-21
 - Chord part: the prototype's lane is built in the mockup (75125a6) and the app (4d7a1dd); the user tests both (local mockup, latest zip) · since 2026-10-18
 - Start-on-root: per-bar override (click the marker)? · since 2026-10-17
 - Start-on-root: a middle setting "root on a strong beat"? · since 2026-10-17
 - C in scales without a fifth falls back to ii (Locrian ♭II); keep it? · since 2026-10-17
 
 ## In progress
-- opus-5.5@home#ea79 · mockup looks a/b/c (?look=, SVG dice, Riffer-like fillets) · since 2026-10-21 17:15
+(none)
 
 ## Next
 1. User reviews the redesigned mockup (tracks: 6 riffs + Drums, one-row controls, drum parts, chords hidden) on StackBlitz; then decide whether the JUCE app follows
