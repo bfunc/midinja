@@ -532,7 +532,7 @@ body.dragging .drop{display:grid}
   <div class="hidden"><div class="hstrip" id="hstrip"></div><div class="lanebox" id="lane"></div><div id="cgen"></div><div id="advC"></div></div>
 </div></div>
 <div class="pop" id="pop"></div>
-<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>ghost: another riff at the same place in the form, in its colour (Ghosts turns them off)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · right-click a note = remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · ☰ next to Scale = which scales the list shows · + / − under the roll or Ctrl+wheel = zoom (row height), the wheel scrolls; Auto zoom (lit = on): shows the dice range with a row above and below; the orange block on the keys = the dice range: drag its top or bottom edge, or drag it to move (inside the rows in view; zoom out for a wider range); the next roll stays inside, your notes never move · ▲ / ▼ at the top or bottom of the roll = notes above or below the rows in view (faint: ghosts), a click scrolls to them · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Notes / Duration / Velocity / Ratchets above the roll: edit one value per note as bars, drag them (their dice ranges under Advanced) · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, the lock keeps it when you roll · 🔊 = sound on / off, ⚙ = volume, delay, reverb · each riff picks its sound in its header (Bass, Lead, Square, Keys); the drums play a built-in kit on the GM notes · note names follow the DAW in ⚙ (FL Studio: middle C = MIDI 60 = C5) · Surprise (under Advanced, default 15%) = how often a roll breaks the rules · Similarity (in Dice) = how close A′, B and C stay to A on their next roll; not on A · keys 1–4 = part · Space = dice (the part shown), Shift+Space = the small All next to the dice (all parts) · Play walks the whole form; ⟲ Loop with a bar selected repeats that bar · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
+<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>ghost: another riff at the same place in the form, in its colour (Ghosts turns them off)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · right-click a note = remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · ☰ next to Scale = which scales the list shows · + / − under the roll or Ctrl+wheel = zoom (row height), the wheel scrolls; Auto zoom (lit = on): shows the notes (2 rows below, 3 above); the orange block on the keys = the dice range: drag its top or bottom edge, or drag it to move (inside the rows in view; zoom out for a wider range); the next roll stays inside, your notes never move · ▲ / ▼ at the top or bottom of the roll = notes above or below the rows in view (faint: ghosts), a click scrolls to them · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Notes / Duration / Velocity / Ratchets above the roll: edit one value per note as bars, drag them (their dice ranges under Advanced) · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, the lock keeps it when you roll · 🔊 = sound on / off, ⚙ = volume, delay, reverb · each riff picks its sound in its header (Bass, Lead, Square, Keys); the drums play a built-in kit on the GM notes · note names follow the DAW in ⚙ (FL Studio: middle C = MIDI 60 = C5) · Surprise (under Advanced, default 15%) = how often a roll breaks the rules · Similarity (in Dice) = how close A′, B and C stay to A on their next roll; not on A · keys 1–4 = part · Space = dice (the part shown), Shift+Space = the small All next to the dice (all parts) · Play walks the whole form; ⟲ Loop with a bar selected repeats that bar · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
 <script src="midinja-core.js"></script>
 
 <script>
@@ -704,7 +704,10 @@ function drumThumb(el, p) {
 // and loops it on its own, so a 3-bar riff over 4 bars of drums is a polyrhythm. tabs[0] is the
 // riff shown (or the last one shown), tabs[1] the hidden chord lane, tabs[2] the drum track.
 const TRK_COLORS = ['#ff9f43', '#7aa2f7', '#c792ea', '#f78c6c', '#c3e88d', '#ff6b9a'], DRUM_COLOR = '#d9dde6', MAX_RIFFS = 6;
-const newRiff = (name, ch, color, rootNote) => ({ ...newTab(name, ch, false, true, rootNote, 30), color, arr: [0] }); // a new riff spans two and a half octaves from its root
+// a riff's default dice range: about 1.5 octaves around its root, a fourth below to an octave and a third above
+const RANGE_BELOW = 5, RANGE_ABOVE = 13;
+const defaultRange = t => { t.lowNote = Math.max(0, t.rootNote - RANGE_BELOW); t.highNote = Math.min(127, t.rootNote + RANGE_ABOVE); return t; };
+const newRiff = (name, ch, color, rootNote) => defaultRange({ ...newTab(name, ch, false, true, rootNote, 30), color, arr: [0] });
 let riffs = [newRiff('Riff 1', 1, TRK_COLORS[0], 40)], curRiff = 0;
 const chordT = newTab('Chords', 2, true, false, 52, 19);
 let drumT = { ...newTab('Drums', 10, false, true, 36, 0), drums: true, color: DRUM_COLOR, arr: [0] };
@@ -750,10 +753,11 @@ const notesOf = t => t.parts.flatMap(p => p.steps.slice(0, p.numSteps).filter(s 
 const zoomOf = t => (t.zoom = t.zoom || { auto: true, rowH: 18, center: (t.lowNote + t.highNote) / 2 });
 // the rows: C1–C8 (GM names), wider when a note or the dice range lies outside
 function viewSpan(t) { const ns = notesOf(t); return [Math.max(0, Math.min(24, t.lowNote - 1, ...ns)), Math.min(127, Math.max(108, t.highNote + 1, ...ns))]; } // a row beyond each end of the dice range, for Auto zoom's air
-// Auto zoom: the dice range with one row of air above High and below Low (notes outside it are not fitted; the
-// ▲ / ▼ labels mark them); a big range shows what fits around its centre (knobs pinned), a tiny one at 36 px rows
+// Auto zoom: the track's notes, 2 rows below the lowest and 3 above the highest (no notes: the dice range ±1);
+// a range wider than that is clipped by the view
 function autoFit(t) {
-  const z = zoomOf(t), lo = t.lowNote - 1, hi = t.highNote + 1;
+  const z = zoomOf(t), ns = notesOf(t);
+  const lo = ns.length ? Math.min(...ns) - 2 : t.lowNote - 1, hi = ns.length ? Math.max(...ns) + 3 : t.highNote + 1;
   z.rowH = Math.max(ROW_MIN, Math.min(ROW_MAX, VP_IN / (hi - lo + 1)));
   z.center = (lo + hi) / 2;
 }
@@ -1273,6 +1277,7 @@ function voiceOctave(t) {
   while (t.rootNote + d < lo) d += 12;
   while (t.rootNote + d > lo + 11) d -= 12;
   if (d && t.lowNote + d >= 0 && t.highNote + d <= 127) shiftTab(t, d);
+  defaultRange(t); // and the default dice range around the new root
 }
 function extendPart(tab, k) {
   if (tab.poly || k === 0 || hasNotes(tab.parts[k]) || !hasNotes(tab.parts[0])) return false;
@@ -1491,7 +1496,7 @@ function rollTools() {
   if (T.poly) return;
   // the toggles, flush right on the edit-mode row
   const on = autoZoomed(), z = document.createElement('button'); z.className = 'btn xs' + (on ? ' on' : ''); z.textContent = 'Auto zoom';
-  z.title = on ? 'Auto zoom is on: shows the dice range with a row above and below. + −, Ctrl+wheel or scrolling turn it off' : 'Auto zoom: shows the dice range with a row above and below';
+  z.title = on ? 'Auto zoom is on: shows the notes (2 rows below, 3 above). + −, Ctrl+wheel or scrolling turn it off' : 'Auto zoom: shows the notes (2 rows below, 3 above)';
   z.onclick = () => { zoomOf(T).auto = !on; render(); };
   el.appendChild(z);
   const others = riffs.filter(r => r !== T && r.on && r.arr.length).length;
