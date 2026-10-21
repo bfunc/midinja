@@ -440,8 +440,6 @@ body.dragging .drop{display:grid}
 /* the caps: a 22 x 4.5 px bar on the row line (the grab area is 10 px tall) */
 .drk{position:absolute;left:calc(var(--sx,16px) - 11px);width:22px;height:10px;margin-top:-5px;z-index:8;cursor:ns-resize;touch-action:none;color:var(--acc);font-size:7px;line-height:10px;text-align:center}
 .drk:before{content:'';position:absolute;left:0;right:0;top:2.75px;height:4.5px;border-radius:2px;background:var(--acc);box-shadow:0 0 0 1px #1a1206}
-.drk.pin:before{background:#1a1206;border:1px dashed var(--acc);box-shadow:none;top:1px;height:8px}
-.drk.pin{z-index:9}
 .drk:hover:before,.drk.drag:before{box-shadow:0 0 0 1px #1a1206,0 0 8px var(--acc)}
 </style></head>
 <body>
@@ -746,7 +744,7 @@ const VP_H = 336, EDGE = 18, VP_IN = VP_H - 2 * EDGE, MAX_ROWS = 63, ROW_MIN = V
 const notesOf = t => t.parts.flatMap(p => p.steps.slice(0, p.numSteps).filter(s => s.on).map(s => s.note));
 const zoomOf = t => (t.zoom = t.zoom || { auto: true, rowH: 18, center: (t.lowNote + t.highNote) / 2 });
 // the rows: C1–C8 (GM names), wider when a note or the dice range lies outside
-function viewSpan(t) { const ns = notesOf(t); return [Math.min(24, t.lowNote, ...ns), Math.max(108, t.highNote, ...ns)]; }
+function viewSpan(t) { const ns = notesOf(t); return [Math.max(0, Math.min(24, t.lowNote - 1, ...ns)), Math.min(127, Math.max(108, t.highNote + 1, ...ns))]; } // a row beyond each end of the dice range, for Auto zoom's air
 // Auto zoom: the dice range with one row of air above High and below Low (notes outside it are not fitted; the
 // ▲ / ▼ labels mark them); a big range shows what fits around its centre (knobs pinned), a tiny one at 36 px rows
 function autoFit(t) {
@@ -1409,22 +1407,14 @@ function noteAtY(y, chromatic) {
 // the dice range brackets: drag the top (High) or the bottom (Low) in the key column, by semitone rows; zoom,
 // scroll and Auto zoom never move them, and they never move notes (the next roll uses them). One undo step
 const rowTopOf = note => { const [, hi] = viewSpan(T); return (hi - note) * zoomOf(T).rowH; };
-// a knob whose end is out of view sits pinned at that edge of the visible rows (hollow, an arrow inside); the
-// bar covers only the visible part of the range
+// the slider: the bar from the top of the High row to the bottom of the Low row, a cap on each line; an end out
+// of view is simply scrolled away like the rows (Auto zoom keeps both in view)
 function placeSlider() {
   const t = document.querySelector('#grid .drt'), kh = document.querySelector('#grid .drk.hi'), kl = document.querySelector('#grid .drk.lo');
   if (!t) return;
-  const vp = $('rollvp'), top = vp.scrollTop + 7, bot = vp.scrollTop + vp.clientHeight - 7;
   const y1 = rowTopOf(S.highNote), y2 = rowTopOf(S.lowNote) + zoomOf(T).rowH;
-  let c1 = Math.max(top, Math.min(bot, y1)), c2 = Math.max(top, Math.min(bot, y2));
-  if ((c1 !== y1 || c2 !== y2) && c2 - c1 < 15) { if (c2 >= bot) c1 = c2 - 15; else c2 = c1 + 15; } // pinned knobs at one edge sit one above the other, never on top
-  t.style.top = Math.max(vp.scrollTop, y1) + 'px'; t.style.height = Math.max(0, Math.min(vp.scrollTop + vp.clientHeight, y2) - Math.max(vp.scrollTop, y1)) + 'px';
-  const pin = (k, y, c, name, note) => {
-    const off = y < top ? 'above' : y > bot ? 'below' : '';
-    k.style.top = c + 'px'; k.classList.toggle('pin', !!off); k.innerHTML = off ? `<span style="position:relative">${off === 'above' ? '▲' : '▼'}</span>` : '';
-    k.title = `Dice range ${name}: ${nn(note)}${off ? ' (' + off + ' the view)' : ''}, drag`;
-  };
-  pin(kh, y1, c1, 'top', S.highNote); pin(kl, y2, c2, 'bottom', S.lowNote);
+  t.style.top = y1 + 'px'; t.style.height = (y2 - y1) + 'px'; kh.style.top = y1 + 'px'; kl.style.top = y2 + 'px';
+  kh.title = `Dice range top: ${nn(S.highNote)}, drag`; kl.title = `Dice range bottom: ${nn(S.lowNote)}, drag`;
   // the slider sits in the middle of the free part of the key column, left of the labels and badges
   const g = $('grid'), keys = g.querySelectorAll('.key'); let free = Infinity;
   const k = g.getBoundingClientRect().width / g.offsetWidth || 1, gl = g.getBoundingClientRect().left;
