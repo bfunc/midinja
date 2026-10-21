@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-21 12:48 · opus-5.5@home#ea79 · 4c4c096
+Updated: 2026-10-21 13:03 · opus-5.5@home#ea79 · (this commit)
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -12,11 +12,11 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 - 2026-10-20 · Tracks: up to 6 riffs + 1 drum track, each its own length 1–4 bars, looping independently (polyrhythm like 3 vs 4 is fine); riffs keep parts A/A′/B/C · user decision
 - 2026-10-20 · Drums: own parts independent of the riffs (groove, fills, crash-in, break, bridge…), a fill every 2 bars by default · user decision
 - 2026-10-20 · Drum fills: Fill 1 / Fill 2 always end with their fill; no Fill on/off button · user: the toggle was confusing
-- 2026-10-20 · Bar highlight: picking a part gives every bar using it the same soft outline, none looks selected; the strong style is only for a clicked bar (the one Play loops); an unused part lights no bar · user decision
+- 2026-10-20 · Bar highlight: picking a part gives every bar using it the same soft outline, none looks selected; the strong style is only for a clicked bar (shown in the roll; Play loops it only with ⟲ Loop); an unused part lights no bar · user decision
 - 2026-10-20 · Track header: no "Bar N · part" label or detail line; the part's details (chord degree, notes; drums: what the dice picked) live in the tooltips of its button and bars; Lock / Unlock stay · user agreed after review
 - 2026-10-20 · Riff range: a new riff spans 2½ octaves (30 rows) from its root, e.g. E2–A#4; + still grows it to 3 octaves · user decision
 - 2026-10-20 · Grid: fixed 1/16, Rate removed from the UI (the engine's rate stays, fixed at 1/16; older state with another rate loads as 16 steps) · user decision
-- 2026-10-20 · Note length: up to a whole bar (16 steps, never past the next note or the bar end); a click uses the last length, drag right from an empty cell to draw, drag a note's right edge to resize; right-click no longer cycles · user decision
+- 2026-10-20 · Note length: up to a whole bar (16 steps, never past the next note or the bar end); a click uses the last length, drag right from an empty cell to draw, drag a note's right edge to resize; right-click on a note removes it (undoable), on an empty cell does nothing · user decision
 - 2026-10-20 · Duration: the percent of a note's own length that sounds (100% legato, low = pluck), applied in ticks (can be shorter than 1/16); the dice take it from a Duration range (default 50–100%); manual notes start at 100%; Length range stays in Advanced · user decision
 - 2026-10-20 · Ratchets: up to 5 hits that split the note's length; duration does not apply to a ratcheted note; drawn as separate hits · user decision
 - 2026-10-21 · Roll edit modes: Notes · Duration · Velocity · Ratchets as bars over the dimmed roll, always shown above it (not behind Advanced); their dice ranges only in Advanced; Drums: Notes · Velocity only · user could not find Velocity under Advanced
@@ -24,6 +24,7 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 - 2026-10-20 · Layout: controls back in one row above the roll (no right column); new tabs/track design; chords hidden for now · user decision
 - 2026-10-20 · Web preview hosting: none (no bfunc.cc, no GitHub Pages); local server or StackBlitz only · user decision
 - 2026-10-13 · Builds: only on GitHub Actions · user keeps the laptop free of toolchains
+- 2026-10-21 · Play: always walks the whole form, also with a bar selected (selecting only shows the bar); ⟲ Loop next to Play repeats the selected bar (remembered per browser) · user decision
 - 2026-10-21 · Ending: Run (default) = the original Musician dice, bit-exact with the engine before Ending (mostly 4×1/16 in the last beat; parity test against golden hashes from 2b38b72) | Even = hits spread over the four beats; mockup switch in the generator row, JUCE UI later · user: «рифы стали плохими, сделай Run таким же алгоритмом как был», «мне важно чтобы рифы получались точно как было»
 - 2026-10-21 · Preview sound: the mockup plays through a browser synth (web/synth.js, ported from bfunc.cc deep-house-midi-generator): 🔊 on/off, ⚙ volume/delay/reverb, a sound per riff (Bass/Lead/Square/Keys), a GM drum kit, notes heard while editing · user decision
 - 2026-10-17 · Release: rolling "latest" pre-release from CI; a tagged release only after the user confirms it works in FL · user said "Defaults ok"

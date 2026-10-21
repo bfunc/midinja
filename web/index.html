@@ -304,6 +304,7 @@ input.num{width:64px}
 .legend i{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
 .playb{width:34px;height:34px;border-radius:50%;border:0;background:var(--acc2);color:#15171c;font-size:14px;display:grid;place-items:center}
 .playb.on{background:var(--acc)}
+.btn.loopb{margin-left:6px;padding:0 8px}.btn.loopb.on{background:var(--pick);color:var(--acc2);font-weight:700}
 .btn.snd{margin-left:6px;font-size:13px;padding:0 7px}.btn.snd.off{opacity:.55}
 .sndl{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink2);margin:6px 0}.sndl span{width:52px}.sndl input{flex:1;accent-color:var(--acc2)}
 .grp{display:flex;align-items:center;gap:8px}
@@ -367,7 +368,7 @@ body.dragging .drop{display:grid}
   <div class="row song">
     <div class="logo">Midi<b>nja</b></div>
     <div class="grp">
-      <button class="playb" id="pl" title="Play / Stop: loops the arrangement, or only the selected bar">▶</button><button class="btn sm snd" id="snd" title="Sound on / off: the preview synth (⚙ for the volume and effects)">🔊</button>
+      <button class="playb" id="pl" title="Play / Stop: plays the whole form, also with a bar selected (Loop plays only that bar)">▶</button><button class="btn sm loopb" id="loop" title="Loop: with a bar selected, Play repeats only that bar. Off: Play walks the whole form">⟲ Loop</button><button class="btn sm snd" id="snd" title="Sound on / off: the preview synth (⚙ for the volume and effects)">🔊</button>
       <div class="ctl"><small id="playinfo">BPM</small><input class="num" id="bpm" value="122" type="number" min="40" max="240"></div>
     </div>
     <div class="vsep"></div>
@@ -444,7 +445,7 @@ body.dragging .drop{display:grid}
   <div class="hidden"><div class="hstrip" id="hstrip"></div><div class="lanebox" id="lane"></div><div id="cgen"></div><div id="advC"></div></div>
 </div></div>
 <div class="pop" id="pop"></div>
-<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>the other track (ghost)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Notes / Duration / Velocity / Ratchets above the roll: edit one value per note as bars, drag them (their dice ranges under Advanced) · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, 🔒 keeps it when you roll · 🔊 = sound on / off, ⚙ = volume, delay, reverb · each riff picks its sound in its header (Bass, Lead, Square, Keys); the drums play a built-in kit on the GM notes · keys 1–4 = part · Space = dice, Shift+Space = All · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
+<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>the other track (ghost)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · right-click a note = remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Notes / Duration / Velocity / Ratchets above the roll: edit one value per note as bars, drag them (their dice ranges under Advanced) · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, 🔒 keeps it when you roll · 🔊 = sound on / off, ⚙ = volume, delay, reverb · each riff picks its sound in its header (Bass, Lead, Square, Keys); the drums play a built-in kit on the GM notes · keys 1–4 = part · Space = dice, Shift+Space = All · Play walks the whole form; ⟲ Loop with a bar selected repeats that bar · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
 <script src="midinja-core.js"></script>
 
 <script>
@@ -517,7 +518,7 @@ const S = {
   mode: 1, root: 4, scale: 2, numSteps: 16, rate: 4, notes: 10, swing: 0.18,
   lenMin: 1, lenMax: 2, velMin: 70, velMax: 120, durMin: 50, durMax: 100, ovl: 'notes', kit: false, kitFocus: null,
   repeatsOn: false, repMin: 2, repMax: 3, repChance: 0.25, color: 0.4, surprise: 0.15, similarity: 0.65,
-  seed: 4821, adv: false, doRhythm: true, doNotes: true, mutate: false, mutAmt: 0.15, startOnRoot: true, ending: 1,
+  seed: 4821, adv: false, doRhythm: true, doNotes: true, mutate: false, mutAmt: 0.15, startOnRoot: true, ending: 1, loop: false,
   cur: 0, sel: -1, tab: 0, csel: null,
 };
 const MAX_BARS = 4, MAX_SPAN = 36, MAX_LEN = 16; // MAX_LEN: a note holds a whole bar at most (16 sixteenths)
@@ -703,7 +704,8 @@ function selectPart(k) { S.cur = k; refreshPat(); render(); }
 function selectSlot(i) {
   S.sel = S.sel === i ? -1 : i; if (S.sel >= 0) S.cur = arr[i];
   if (T.poly && S.sel >= 0) { const c = firstChordIn(i) || chordAtBeat(i * 4); if (c) S.csel = c.id; }
-  stepIdx = 0; playPos = 0; refreshPat(); render();
+  if (S.loop) { stepIdx = 0; playPos = 0; }
+  refreshPat(); render();
 }
 // Chords tab: the chords of bar b go to every other bar of the same part; locked chords there stay
 function copyBarChords(b) {
@@ -1396,11 +1398,13 @@ function ghostHits() {
   return hits.map(h => ({ s: h.s, len: h.len, notes: h.notes.map(x => x + 12 * best).filter(x => x >= S.lowNote && x <= S.highNote) }));
 }
 let playStep = -1, playPos = 0;
-const playSeq = () => S.sel >= 0 && S.sel < arr.length ? [arr[S.sel]] : arr.length ? arr : [S.cur];
+// Loop on with a bar selected: Play repeats that bar; otherwise it walks the whole form
+const looping = () => S.loop && S.sel >= 0 && S.sel < arr.length;
+const playSeq = () => looping() ? [arr[S.sel]] : arr.length ? arr : [S.cur];
 const playingBar = () => Math.floor(playPos / S.numSteps) % playSeq().length;
 const playingPart = () => playSeq()[playingBar()];
-const playingSlot = () => !timer || !arr.length ? -1 : S.sel >= 0 ? S.sel : playingBar();
-const shownPlayStep = () => timer && (T.poly ? playingSlot() === shownBar() : playingPart() === S.cur) ? playStep : -1;
+const playingSlot = () => !timer || !arr.length ? -1 : looping() ? S.sel : playingBar();
+const shownPlayStep = () => timer && (T.poly || S.sel >= 0 ? playingSlot() === shownBar() : playingPart() === S.cur) ? playStep : -1;
 function thumb(el, ps, w, h) {
   el.innerHTML = '';
   const tot = ps.reduce((a, p) => a + p.numSteps, 0);
@@ -1682,6 +1686,7 @@ function render() {
         if (st.locked) { const l = document.createElement('span'); l.className = 'lockic'; l.textContent = '🔒'; d.appendChild(l); }
         if (s === 0 && S.startOnRoot && pc === chordPc) { const m = document.createElement('span'); m.className = 'rootmk'; m.textContent = chordName0; d.appendChild(m); d.title = `Start on chord root: step 1 of ${PARTS[S.cur]} is held on its bar's chord root (${chordName0}); the dice keep it. Turn off under Advanced`; }
         d.onpointerdown = e => noteDown(e, s);
+        d.oncontextmenu = e => { e.preventDefault(); e.stopPropagation(); pat.steps[s] = { ...pat.steps[s], on: false, locked: false }; push(pat); };
         const rh = document.createElement('i'); rh.className = 'rh'; rh.title = 'Drag to make the note longer or shorter (up to a bar, or the next note)';
         rh.onpointerdown = e => lenDrag(e, d, c, s, st.length, len => { st.length = len; });
         d.appendChild(rh);
@@ -1763,6 +1768,7 @@ function render() {
   $('hPrev').disabled = histEnd <= PER_PAGE; $('hNext').disabled = histEnd >= versions.length;
   $('undo').disabled = ui <= 0; $('redo').disabled = ui >= undoStack.length - 1;
   $('rptpill').textContent = S.repeatsOn ? 'ON' : 'OFF'; $('rptpill').classList.toggle('on', S.repeatsOn); $('rptbox').classList.toggle('offbox', !S.repeatsOn);
+  $('loop').classList.toggle('on', !!S.loop);
   document.querySelectorAll('#endseg button').forEach(b => b.classList.toggle('on', +b.dataset.e === S.ending));
   $('rootpill').textContent = S.startOnRoot ? 'ON' : 'OFF'; $('rootpill').classList.toggle('on', S.startOnRoot);
   fitW();
@@ -2017,6 +2023,9 @@ function soundChanged() {
   if (!snd.on) synth.stopAll();
   $('snd').textContent = snd.on ? '🔊' : '🔇'; $('snd').classList.toggle('off', !snd.on);
 }
+try { S.loop = localStorage.getItem('midinja.loop') === '1'; } catch { /* no storage */ }
+$('loop').onclick = () => { S.loop = !S.loop; try { localStorage.setItem('midinja.loop', S.loop ? '1' : '0'); } catch { /* no storage */ } render(); };
+$('grid').addEventListener('contextmenu', e => { if (!T.drums) e.preventDefault(); });
 $('snd').onclick = () => { snd.on = !snd.on; synth.resume(); soundChanged(); };
 soundChanged();
 $('help').onclick = () => openPop($('help'), P => { const h = document.createElement('h4'); h.textContent = 'Legend and keys'; P.appendChild(h); P.appendChild($('legendT').content.cloneNode(true)); });
@@ -2100,7 +2109,7 @@ function hear(t, note, vel, steps = 1) {
 // the part and the bar track t plays at step g: the track shown follows the bar picked, the others their forms
 function partAt(t, g) {
   const n = S.numSteps;
-  if (t === T) { const seq = playSeq(), i = Math.floor((g % (seq.length * n)) / n); return { p: t.parts[seq[i]], b: S.sel >= 0 ? S.sel : i }; }
+  if (t === T) { const seq = playSeq(), i = Math.floor((g % (seq.length * n)) / n); return { p: t.parts[seq[i]], b: looping() ? S.sel : i }; }
   if (!t.arr.length) return null;
   const b = Math.floor(g / n) % t.arr.length; return { p: t.parts[t.arr[b]], b };
 }
