@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-21 10:35 · opus-5.5@home#ea79 · 3bf3140
+Updated: 2026-10-21 12:48 · opus-5.5@home#ea79 · (this commit)
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -24,7 +24,7 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 - 2026-10-20 · Layout: controls back in one row above the roll (no right column); new tabs/track design; chords hidden for now · user decision
 - 2026-10-20 · Web preview hosting: none (no bfunc.cc, no GitHub Pages); local server or StackBlitz only · user decision
 - 2026-10-13 · Builds: only on GitHub Actions · user keeps the laptop free of toolchains
-- 2026-10-21 · Ending: Musician rhythm setting Even (default: hits spread over the four beats, the pinned step 1 counts for beat 1) | Run (the last beat gets 3 or 4 hits, seeded, ending on its last steps, so the bar runs into the next); mockup switch in the generator row, JUCE UI later · user: the 4×1/16 tail was a bug, but they like it on purpose with some 3-note variety
+- 2026-10-21 · Ending: Run (default) = the original Musician dice, bit-exact with the engine before Ending (mostly 4×1/16 in the last beat; parity test against golden hashes from 2b38b72) | Even = hits spread over the four beats; mockup switch in the generator row, JUCE UI later · user: «рифы стали плохими, сделай Run таким же алгоритмом как был», «мне важно чтобы рифы получались точно как было»
 - 2026-10-21 · Preview sound: the mockup plays through a browser synth (web/synth.js, ported from bfunc.cc deep-house-midi-generator): 🔊 on/off, ⚙ volume/delay/reverb, a sound per riff (Bass/Lead/Square/Keys), a GM drum kit, notes heard while editing · user decision
 - 2026-10-17 · Release: rolling "latest" pre-release from CI; a tagged release only after the user confirms it works in FL · user said "Defaults ok"
 - 2026-10-18 · New UI features go to the web mockup first (served on Home at localhost), into the JUCE app only after the user approves the mockup · user: "continue to ui tasks, for this only web maket"
@@ -53,4 +53,4 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 3. Tag v0.2.0 after the user's FL confirmation
 4. Generation: augmented-second pairs resolve into tonic/fifth (♭6–7–1, 3–♭2–1, ♭3–♯4–5); colour notes on strong beats
 5. AU later
-6. JUCE app: port the note length rework, the Ending switch (engine already has GenSettings.ending; JUCE state/UI not yet) (fixed 1/16 grid, notes up to a bar, drag to draw/resize, last-used length) and Duration / ratchets up to 5 / edit modes / drum kit after the user approves them in the mockup; the core then needs duration and the caps raised (kMaxLength 8 → 16, kMaxRepeats 4 → 5), which the mockup works around in JS (afterCore)
+6. JUCE app: port the note length rework, the Ending switch (engine has GenSettings.ending, default Run; JUCE state/UI not yet, so the app always rolls Run) (fixed 1/16 grid, notes up to a bar, drag to draw/resize, last-used length) and Duration / ratchets up to 5 / edit modes / drum kit after the user approves them in the mockup; the core then needs duration and the caps raised (kMaxLength 8 → 16, kMaxRepeats 4 → 5), which the mockup works around in JS (afterCore)

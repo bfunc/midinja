@@ -256,7 +256,123 @@ void randomPitches (Pattern& p, const std::vector<int>& positions, const Ctx& c,
     }
 }
 
-// Musician rhythm: a motif cell repeated as A A' A B (B changes one hit), fitted to the count.
+// Ending Run: the original fit (perCell from the free count, missing hits topped up from B on,
+// the start pin not counted), which mostly ends the bar in a run of 1/16. Kept byte for byte with
+// the same rng draws, so a seed gives the same riff as before Even existed.
+std::vector<int> musicianPositionsRun (Rng& rng, const Ctx& c, const std::vector<int>& freeSteps, int target)
+{
+    if (target <= 0 || freeSteps.empty())
+        return {};
+    const int n = c.n, cell = musicianCellLength (n), cells = std::max (1, n / cell);
+    std::vector<char> isFree ((size_t) n, 0);
+    for (int f : freeSteps)
+        isFree[(size_t) f] = 1;
+    auto cellOf = [&] (int s) { return std::min (s / cell, cells - 1); };
+
+    const int perCell = std::clamp ((int) std::lround ((double) target / cells), 1, cell);
+    std::vector<int> offs;
+    {
+        std::vector<int> all;
+        for (int o = 0; o < cell; ++o)
+            all.push_back (o);
+        // The cell's first step is the most likely hit.
+        while ((int) offs.size() < perCell)
+        {
+            double total = 0.0;
+            for (int o : all)
+                total += o == 0 ? 4.0 : posWeight (o);
+            double r = rng.unit() * total;
+            size_t pick = 0;
+            for (size_t k = 0; k < all.size(); ++k)
+            {
+                r -= all[k] == 0 ? 4.0 : posWeight (all[k]);
+                pick = k;
+                if (r <= 0.0)
+                    break;
+            }
+            offs.push_back (all[pick]);
+            all.erase (all.begin() + (long) pick);
+        }
+    }
+
+    std::vector<char> chosen ((size_t) n, 0);
+    for (int k = 0; k < cells; ++k)
+    {
+        auto o2 = offs;
+        if (k == cells - 1 && cells > 1 && cell > 1 && (int) o2.size() < cell)
+        {
+            // B: one hit moves somewhere new.
+            std::vector<int> unused;
+            for (int o = 1; o < cell; ++o)
+                if (std::find (o2.begin(), o2.end(), o) == o2.end())
+                    unused.push_back (o);
+            std::vector<int> movable;
+            for (size_t j = 0; j < o2.size(); ++j)
+                if (o2[j] != 0)
+                    movable.push_back ((int) j);
+            if (! unused.empty() && ! movable.empty())
+                o2[(size_t) movable[(size_t) rng.range (0, (int) movable.size() - 1)]] = unused[(size_t) rng.range (0, (int) unused.size() - 1)];
+        }
+        for (int o : o2)
+        {
+            int s = k * cell + o;
+            if (o != 0 && rng.unit() < c.g.surprise * 0.5f)
+                s += rng.unit() < 0.5f ? -1 : 1; // a surprise push or drag
+            if (s >= 0 && s < n && isFree[(size_t) s])
+                chosen[(size_t) s] = 1;
+        }
+    }
+
+    // Fit to the count, changing A' and B first so the motif stays.
+    std::vector<int> order;
+    order.push_back (cells - 1);
+    for (int k = 1; k < cells - 1; ++k)
+        order.push_back (k);
+    if (cells > 1)
+        order.push_back (0);
+    if (cells == 1)
+        order = { 0 };
+
+    auto count = [&] { int t = 0; for (char x : chosen) t += x; return t; };
+    for (int k : order)
+    {
+        while (count() > target)
+        {
+            std::vector<int> cand;
+            for (int s = 0; s < n; ++s)
+                if (chosen[(size_t) s] && cellOf (s) == k && s % cell != 0)
+                    cand.push_back (s);
+            if (cand.empty())
+                break;
+            chosen[(size_t) cand[(size_t) rng.range (0, (int) cand.size() - 1)]] = 0;
+        }
+    }
+    while (count() > target) // only cell starts are left
+        for (int s = n - 1; s >= 0 && count() > target; --s)
+            if (chosen[(size_t) s])
+                chosen[(size_t) s] = 0;
+
+    for (int k : order)
+    {
+        if (count() >= target)
+            break;
+        std::vector<int> cand;
+        for (int s = 0; s < n; ++s)
+            if (isFree[(size_t) s] && ! chosen[(size_t) s] && cellOf (s) == k)
+                cand.push_back (s);
+        const int need = target - count();
+        for (int s : pickPositions (rng, cand, need))
+            chosen[(size_t) s] = 1;
+    }
+
+    std::vector<int> out;
+    for (int s = 0; s < n; ++s)
+        if (chosen[(size_t) s])
+            out.push_back (s);
+    return out;
+}
+
+// Ending Even: a motif cell repeated as A A' A B (B changes one hit), fitted to the count.
 std::vector<int> musicianPositions (Rng& rng, const Ctx& c, const std::vector<int>& freeSteps, int target, const std::vector<char>& held)
 {
     if (target <= 0 || freeSteps.empty())
@@ -344,42 +460,12 @@ std::vector<int> musicianPositions (Rng& rng, const Ctx& c, const std::vector<in
     };
     auto count = [&] { int t = 0; for (char x : chosen) t += x; return t; };
 
-    // Run: the last beat gets 3 or 4 hits, ending on its last steps, so the bar runs into the next.
-    std::vector<char> fixed ((size_t) n, 0);
-    const int last = cells - 1;
-    const bool run = c.g.ending == kEndRun && cells > 1;
-    if (run)
-    {
-        const int want = perCell <= 1 || rng.unit() < 0.5f ? 3 : 4;
-        std::vector<int> fs;
-        int heldHere = 0;
-        for (int s = 0; s < n; ++s)
-            if (cellOf (s) == last)
-            {
-                chosen[(size_t) s] = 0;
-                heldHere += held[(size_t) s];
-                if (isFree[(size_t) s])
-                    fs.push_back (s);
-            }
-        int need = std::clamp (std::min (want, (int) fs.size() + heldHere) - heldHere, 0, std::min (target, (int) fs.size()));
-        std::vector<int> pick;
-        for (int j = 0; j < 2 && need > 0 && ! fs.empty(); ++j, --need)
-        {
-            pick.push_back (fs.back());
-            fs.pop_back();
-        }
-        for (int s : pickPositions (rng, fs, need))
-            pick.push_back (s);
-        for (int s : pick)
-            chosen[(size_t) s] = fixed[(size_t) s] = 1;
-    }
-    auto open = [&] (int k) { return ! (run && k == last); };
 
     // Removes one hit from cell k (not its first step), or returns false.
     auto takeFrom = [&] (int k) {
         std::vector<int> cand;
         for (int s = 0; s < n; ++s)
-            if (chosen[(size_t) s] && ! fixed[(size_t) s] && cellOf (s) == k && s % cell != 0)
+            if (chosen[(size_t) s] && cellOf (s) == k && s % cell != 0)
                 cand.push_back (s);
         if (cand.empty())
             return false;
@@ -393,12 +479,12 @@ std::vector<int> musicianPositions (Rng& rng, const Ctx& c, const std::vector<in
                 cand.push_back (s);
         return cand;
     };
-    // The open cell with the most (or fewest) hits that passes ok; -1 when none.
+    // The cell with the most (or fewest) hits that passes ok; -1 when none.
     auto pickCell = [&] (bool most, auto ok) {
         int best = -1, bestHits = 0;
         for (int k = 0; k < cells; ++k)
         {
-            if (! open (k) || ! ok (k))
+            if (! ok (k))
                 continue;
             const int h = hitsIn (k);
             if (best < 0 || (most ? h > bestHits : h < bestHits) || (h == bestHits && rank[(size_t) k] < rank[(size_t) best]))
@@ -408,7 +494,7 @@ std::vector<int> musicianPositions (Rng& rng, const Ctx& c, const std::vector<in
     };
     auto canTake = [&] (int k) {
         for (int s = 0; s < n; ++s)
-            if (chosen[(size_t) s] && ! fixed[(size_t) s] && cellOf (s) == k && s % cell != 0)
+            if (chosen[(size_t) s] && cellOf (s) == k && s % cell != 0)
                 return true;
         return false;
     };
@@ -422,7 +508,7 @@ std::vector<int> musicianPositions (Rng& rng, const Ctx& c, const std::vector<in
     }
     while (count() > target) // only cell starts are left
         for (int s = n - 1; s >= 0 && count() > target; --s)
-            if (chosen[(size_t) s] && ! fixed[(size_t) s])
+            if (chosen[(size_t) s])
                 chosen[(size_t) s] = 0;
 
     while (count() < target)
@@ -434,18 +520,17 @@ std::vector<int> musicianPositions (Rng& rng, const Ctx& c, const std::vector<in
             chosen[(size_t) s] = 1;
     }
 
-    // Even: no beat holds two hits more than another while that one has room.
-    if (! run)
-        for (int guard = 0; guard < n * 2; ++guard)
-        {
-            const int lo = pickCell (false, hasRoom);
-            const int hi = pickCell (true, canTake);
-            if (lo < 0 || hi < 0 || hitsIn (hi) - hitsIn (lo) < 2)
-                break;
-            takeFrom (hi);
-            for (int s : pickPositions (rng, roomIn (lo), 1))
-                chosen[(size_t) s] = 1;
-        }
+    // No beat holds two hits more than another while that one has room.
+    for (int guard = 0; guard < n * 2; ++guard)
+    {
+        const int lo = pickCell (false, hasRoom);
+        const int hi = pickCell (true, canTake);
+        if (lo < 0 || hi < 0 || hitsIn (hi) - hitsIn (lo) < 2)
+            break;
+        takeFrom (hi);
+        for (int s : pickPositions (rng, roomIn (lo), 1))
+            chosen[(size_t) s] = 1;
+    }
 
     std::vector<int> out;
     for (int s = 0; s < n; ++s)
@@ -570,6 +655,8 @@ std::vector<int> positionsFor (Rng& rng, const Ctx& c, const Pattern& p, const s
 {
     if (c.g.mode != kMusician)
         return pickPositions (rng, free, count);
+    if (c.g.ending == kEndRun)
+        return musicianPositionsRun (rng, c, free, count);
     std::vector<char> held ((size_t) c.n, 0);
     for (int s = 0; s < c.n; ++s)
         held[(size_t) s] = p.steps[(size_t) s].on ? 1 : 0;

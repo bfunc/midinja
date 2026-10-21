@@ -5,6 +5,8 @@
 #include "Engine.h"
 #include "MidiFileWriter.h"
 #include "Scales.h"
+#include "RunParityCases.h"
+#include "RunParityGolden.h"
 
 #include <algorithm>
 #include <array>
@@ -1027,20 +1029,23 @@ static void testEnding()
             h[(size_t) s / 4] += p.steps[(size_t) s].on ? 1 : 0;
         return h;
     };
-    int evenFullLast = 0, runThree = 0, runFour = 0;
+    // Run is the default.
+    CHECK (GenSettings {}.ending == kEndRun);
+    int evenFullLast = 0;
     for (int root = 0; root < 2; ++root)
         for (int notes = 4; notes <= 14; ++notes)
             for (uint32_t seed = 1; seed <= 60; ++seed)
             {
                 GenSettings g;
                 g.mode = kMusician;
+                g.ending = kEndEven;
                 g.seed = seed;
                 g.notes = notes;
                 g.startOnRoot = root == 1;
                 Pattern p;
                 p.numSteps = 16;
                 generate (p, g);
-                auto h = beats (p);
+                const auto h = beats (p);
                 // Even: the last beat is full only when every other beat holds at least 3.
                 if (h[3] == 4)
                 {
@@ -1048,24 +1053,36 @@ static void testEnding()
                     CHECK (h[0] >= 3 && h[1] >= 3 && h[2] >= 3);
                 }
                 CHECK (*std::max_element (h.begin(), h.end()) - *std::min_element (h.begin(), h.end()) <= 1);
-
-                g.ending = kEndRun;
-                Pattern r;
-                r.numSteps = 16;
-                generate (r, g);
-                h = beats (r);
-                CHECK (h[3] >= 3);
-                CHECK (r.steps[15].on);
-                runThree += h[3] == 3;
-                runFour += h[3] == 4;
-                Pattern r2;
-                r2.numSteps = 16;
-                generate (r2, g);
-                for (int s = 0; s < 16; ++s)
-                    CHECK (r.steps[(size_t) s].on == r2.steps[(size_t) s].on && r.steps[(size_t) s].note == r2.steps[(size_t) s].note);
             }
-    CHECK (runThree > 0 && runFour > 0);
-    std::printf ("ending: even full last beat %d, run 3/4 = %d/%d\n", evenFullLast, runThree, runFour);
+    // Run at the default density: mostly a run of four 1/16 in the last beat.
+    int run4 = 0, run3 = 0;
+    for (uint32_t seed = 1; seed <= 60; ++seed)
+    {
+        GenSettings g;
+        g.mode = kMusician;
+        g.seed = seed;
+        Pattern p;
+        p.numSteps = 16;
+        generate (p, g);
+        const auto h = beats (p);
+        run4 += h[3] == 4;
+        run3 += h[3] == 3;
+    }
+    CHECK (run4 >= 45);
+    std::printf ("ending: even full last beat %d; run at 10/16: last beat 4 = %d, 3 = %d of 60\n", evenFullLast, run4, run3);
+}
+
+// Run gives exactly the riffs of the engine before Ending existed (golden hashes from 2b38b72).
+static void testRunParity()
+{
+    const auto h = runparity::hashes();
+    const size_t golden = sizeof (kRunParityGolden) / sizeof (kRunParityGolden[0]);
+    CHECK (h.size() == golden);
+    int diffs = 0;
+    for (size_t i = 0; i < std::min (h.size(), golden); ++i)
+        diffs += h[i] != kRunParityGolden[i];
+    CHECK (diffs == 0);
+    std::printf ("run parity: %zu riffs compared, %d diffs\n", h.size(), diffs);
 }
 
 int main (int argc, char** argv)
@@ -1083,6 +1100,7 @@ int main (int argc, char** argv)
     testForm();
     testStartOnRoot();
     testEnding();
+    testRunParity();
     testDetectKey();
     testDocument();
     testChordsPerBar();

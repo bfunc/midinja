@@ -59,7 +59,7 @@ struct GenSettings
     float similarity = 0.65f; // Form: how close A' stays to A, 0 = distant relative .. 1 = near A
     int degree = 0;           // the scale degree the chord tones are built on (0 = I; B uses IV, C uses V)
     bool startOnRoot = true;  // every bar starts with the root of its chord on step 1 (a locked step wins)
-    int ending = 0;           // Musician: kEndEven spreads the hits over the beats, kEndRun puts 3-4 in the last beat
+    int ending = 1;           // Musician: kEndRun = the original fit (mostly a 1/16 run in the last beat), kEndEven spreads the hits
 };
 
 enum Ending { kEndEven = 0, kEndRun = 1 };
