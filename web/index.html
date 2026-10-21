@@ -246,10 +246,12 @@ input.num{width:64px}
 /* the status row under the ruler: zoom + − at the left (under the keys), the info at the right; one height */
 .srow{display:flex;align-items:center;justify-content:space-between;height:20px;padding-right:var(--sbw,0)}
 .zb{display:flex;gap:2px;align-items:center;padding-left:3px}
-.edgestrip{position:absolute;left:var(--kw,44px);right:var(--sbw,0);height:10px;z-index:6;pointer-events:none}
-.edgestrip.up{top:0}.edgestrip.dn{bottom:0}
-.edgestrip .em{position:absolute;top:0;height:10px;padding:0;border:0;border-radius:2px;background:var(--c);color:#15171c;font-size:7px;line-height:10px;text-align:center;opacity:.9;cursor:pointer;pointer-events:auto}
-.edgestrip .em.gh{opacity:.35}.edgestrip .em:hover{opacity:1}
+.rollbox.edged{padding:18px 0} /* a row above and below the rows for the notes out of view (never over a note) */
+.edgestrip{position:absolute;left:0;right:0;height:18px;z-index:6;pointer-events:none}
+.edgestrip.up{top:0;border-bottom:1px solid var(--line)}.edgestrip.dn{bottom:0;border-top:1px solid var(--line)}
+.edgestrip .gnote{top:1px;margin-left:1px;cursor:pointer;pointer-events:auto;border-color:var(--c);background:color-mix(in srgb,var(--c) 9%,transparent);font-family:inherit;text-align:left}
+.edgestrip.dn .gnote{top:auto;bottom:1px}
+.edgestrip .gnote.gh{opacity:.45}.edgestrip .gnote:hover{color:var(--ink);background:color-mix(in srgb,var(--c) 22%,transparent)}
 .zb button{width:16px;height:14px;padding:0;border-radius:4px;font-size:11px;line-height:12px;background:var(--panel2);border:1px solid var(--line2);color:var(--ink2);cursor:pointer}
 .zb button:hover:not(:disabled){border-color:#5a6275;color:var(--ink)}.zb button:disabled{opacity:.3;cursor:default}
 .beats .zb{visibility:hidden}
@@ -702,7 +704,7 @@ function useTrack(id) {
 }
 // the roll's view: one height (VP_H); zoom = the row height; the rows span a wide range and scroll. Auto
 // zoom fits the track's own notes (2 rows below, 3 above) into that height; + −, wheel and scroll turn it off
-const VP_H = 336, ROW_MIN = 4, ROW_MAX = 36; // short rows still show every note; their labels compact (.dense)
+const VP_H = 336, EDGE = 18, VP_IN = VP_H - 2 * EDGE, ROW_MIN = 4, ROW_MAX = 36; // riffs: rows in VP_IN between two edge strips; short rows compact (.dense)
 const notesOf = t => t.parts.flatMap(p => p.steps.slice(0, p.numSteps).filter(s => s.on).map(s => s.note));
 const zoomOf = t => (t.zoom = t.zoom || { auto: true, rowH: 18, center: (t.lowNote + t.highNote) / 2 });
 // the rows: C1–C8 (GM names), wider when a note or the dice range lies outside
@@ -710,7 +712,7 @@ function viewSpan(t) { const ns = notesOf(t); return [Math.min(24, t.lowNote, ..
 function autoFit(t) {
   const z = zoomOf(t), ns = notesOf(t);
   const lo = (ns.length ? Math.min(...ns) : t.lowNote) - 2, hi = (ns.length ? Math.max(...ns) : t.highNote) + 3;
-  z.rowH = Math.max(ROW_MIN, Math.min(ROW_MAX, Math.floor(VP_H / (hi - lo + 1))));
+  z.rowH = Math.max(ROW_MIN, Math.min(ROW_MAX, Math.floor(VP_IN / (hi - lo + 1))));
   z.center = (lo + hi) / 2;
 }
 function fitView(t = T) { if (!t.drums && !t.poly) { zoomOf(t).auto = true; } }
@@ -1381,7 +1383,7 @@ const autoZoomed = () => !T.drums && !T.poly && zoomOf(T).auto;
 function zoomBy(f, y) {
   const z = zoomOf(T), h0 = z.rowH; z.auto = false;
   z.rowH = Math.max(ROW_MIN, Math.min(ROW_MAX, Math.round(z.rowH * f)));
-  if (y != null && z.rowH !== h0) { const at = z.center - (y - VP_H / 2) / h0; z.center = at + (y - VP_H / 2) / z.rowH; }
+  if (y != null && z.rowH !== h0) { const at = z.center - (y - VP_IN / 2) / h0; z.center = at + (y - VP_IN / 2) / z.rowH; }
   render();
 }
 function shownRange() {
@@ -1680,8 +1682,9 @@ function renderRoll() {
   // the scroll: Auto zoom centres the notes; otherwise the note at the centre stays there
   const vp = $('rollvp'), box = $('rollbox'), z = zoomOf(T);
   g.classList.toggle('dense', !T.drums && rowH < 10);
-  vp.style.height = VP_H + 'px';
-  if (!T.drums) { const [, hi] = viewSpan(T); vpProg = performance.now(); vp.scrollTop = Math.max(0, (hi - z.center + 0.5) * rowH - VP_H / 2); } else vp.scrollTop = 0;
+  vp.style.height = (T.drums ? VP_H : VP_IN) + 'px';
+  box.classList.toggle('edged', !T.drums && !T.poly);
+  if (!T.drums) { const [, hi] = viewSpan(T); vpProg = performance.now(); vp.scrollTop = Math.max(0, (hi - z.center + 0.5) * rowH - VP_IN / 2); } else vp.scrollTop = 0;
   $('grid').parentElement.parentElement.parentElement.style.setProperty('--sbw', (vp.offsetWidth - vp.clientWidth) + 'px');
   ZB.children[0].disabled = z.rowH >= ROW_MAX; ZB.children[1].disabled = z.rowH <= ROW_MIN;
   if ($('rshow')) $('rshow').textContent = T.drums ? '' : shownRange();
@@ -1743,16 +1746,17 @@ function drawEdges() {
   for (let st = 0; st < n; st++) { const x = pat.steps[st]; if (x.on) add(st, x.note, true, T.color, ''); }
   for (const g of ghostList()) add(g.s, g.note, false, g.color, g.name);
   for (const dir of ['up', 'dn']) {
-    const keys = Object.keys(marks[dir]); if (!keys.length) continue;
+    const keys = Object.keys(marks[dir]);
     const el = document.createElement('div'); el.className = 'edgestrip ' + dir;
+    const cols = document.createElement('div'); cols.style.cssText = 'position:absolute;top:0;bottom:0;left:var(--kw,44px);right:var(--sbw,0)'; el.appendChild(cols);
     for (const st of keys) {
       const m = marks[dir][st], b = document.createElement('button');
-      b.className = 'em' + (m.own ? '' : ' gh'); b.style.left = `calc(${st / n * 100}% + 1px)`; b.style.width = `calc(${100 / n}% - 2px)`; b.style.setProperty('--c', m.color);
+      b.className = 'gnote' + (m.own ? '' : ' gh'); b.style.left = `${st / n * 100}%`; b.style.width = `calc(${100 / n}% - 2px)`; b.style.setProperty('--c', m.color);
       const names = [...new Set(m.notes)].sort((a, c) => dir === 'up' ? a - c : c - a);
       b.title = `${m.own ? '' : 'Ghost: '}${names.map(nn).join(', ')} ${dir === 'up' ? 'above' : 'below'} the rows in view${m.own ? '' : ' (' + [...new Set(m.who)].join(', ') + ')'} · click to scroll to ${names.length > 1 ? 'them' : 'it'}`;
-      b.textContent = dir === 'up' ? '▲' : '▼';
-      b.onclick = e => { e.stopPropagation(); const z2 = zoomOf(T); z2.auto = false; z2.center = names[0] + (dir === 'up' ? -1 : 1) * Math.max(0, VP_H / 2 / z2.rowH - 3); render(); };
-      el.appendChild(b);
+      b.textContent = (dir === 'up' ? '▲ ' : '▼ ') + names.map(nn).join(' ');
+      b.onclick = e => { e.stopPropagation(); const z2 = zoomOf(T); z2.auto = false; z2.center = names[0] + (dir === 'up' ? -1 : 1) * Math.max(0, VP_IN / 2 / z2.rowH - 2); render(); };
+      cols.appendChild(b);
     }
     box.appendChild(el);
   }
@@ -2263,7 +2267,7 @@ let vpProg = 0;
 $('rollvp').addEventListener('scroll', () => {
   if (T.drums || performance.now() - vpProg < 120) return;
   const vp = $('rollvp'), z = zoomOf(T), [, hi] = viewSpan(T);
-  z.auto = false; z.center = hi + 0.5 - (vp.scrollTop + VP_H / 2) / z.rowH;
+  z.auto = false; z.center = hi + 0.5 - (vp.scrollTop + VP_IN / 2) / z.rowH;
   const az = [...document.querySelectorAll('#rtools .btn')].find(b => b.textContent === 'Auto zoom'); if (az) az.classList.remove('on');
   if ($('rshow')) $('rshow').textContent = shownRange();
   drawEdges();
