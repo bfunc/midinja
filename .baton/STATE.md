@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-21 17:45 · opus-5.5@home#ea79 · 090c24f
+Updated: 2026-10-21 17:48 · opus-5.5@home#ea79 · b0b1941
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -27,6 +27,8 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 - 2026-10-21 · Look: plain panels, no wells or cutouts anywhere; the dice + All split button sits on the flat generator row; Play is a standalone teal disc (SVG play / stop, inner highlight, a glow that pulses on the beat while playing, none with reduced motion); isometric SVG dice (web/dice.svg) that spins on a roll · user: «это просто как-то криво, убирай закругления, сделай красивую кнопку Play и всё»
 - 2026-10-21 · Alignment: one control height and one centre line per row (captions like BPM, Key, Dice, Rhythm, Ending sit above, out of the flow), checked by measuring centres · user
 - 2026-10-21 · Roll edges: + − beside the top and bottom key in the key column; the beat ruler flush under the grid, labels on their lines; Auto zoom is a toggle (lit at the note zoom, click = whole range / back), + − turn it off · user
+- 2026-10-21 · Ghost notes: a riff's roll shows the other unmuted riffs faintly in their colour, the part each plays at the same place in the form (looping when shorter; during Play what sounds), not clickable, outside the zoom not drawn; "Ghosts" toggle next to Auto zoom, on by default, kept per browser · user (like FL Studio)
+- 2026-10-21 · Animations: reduced-motion ignored for the Play pulse and dice spin, by user choice · Home has Windows animation effects off and the user wants to see both
 - 2026-10-21 · Play-time UI: during Play only the playhead and the playing bars update (the roll redraws when it follows a new part); nothing is locked except Import, which stops Play first · user: menus closed and clicks got lost during Play
 - 2026-10-21 · Similarity: sits next to the part chips; turning it rebuilds A′ (in the form, unlocked) at once with A′'s own seed (back to the same value = the same A′); dimmed with "affects A′" when there is no A′ · user approved
 - 2026-10-21 · Mutate: gone from the UI (button, %, tooltips); the core function stays · user approved
