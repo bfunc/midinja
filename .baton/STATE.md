@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-21 18:43 · opus-5.5@home#ea79 · 826253c
+Updated: 2026-10-21 18:48 · opus-5.5@home#ea79 · (this commit)
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -32,6 +32,8 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 - 2026-10-21 · Ghost notes: a riff's roll shows the other unmuted riffs faintly in their colour, the part each plays at the same place in the form (looping when shorter; during Play what sounds), not clickable, outside the zoom not drawn; "Ghosts" toggle next to Auto zoom, on by default, kept per browser · user (like FL Studio)
 - 2026-10-21 · Animations: reduced-motion ignored for the Play pulse and dice spin, by user choice · Home has Windows animation effects off and the user wants to see both
 - 2026-10-21 · Play-time UI: during Play only the playhead and the playing bars update (the roll redraws when it follows a new part); nothing is locked except Import, which stops Play first · user: menus closed and clicks got lost during Play
+- 2026-10-21 · Surprise in Advanced, default 15% · rarely tuned; keeps the liked riffs
+- 2026-10-21 · KEY root row: only the row of KEY's exact note and octave is orange in the roll; other octaves of the root keep the "1" badge in normal colour, so KEY always reads like its row in every DAW naming · user: KEY E4 vs the orange E5 row
 - 2026-10-21 · Similarity: a roll-time setting in the Dice group (no live rebuild); applies when A′, B or C is rolled or built from A: A′ as before, B keeps more of A's rhythm when high (less when low), C keeps A's rhythm 15 % → 60 % → 95 % over 0 → 0.65 → 1; dimmed on A; at the default 0.65 the engine is bit-exact with before · user approved (knob unclear, live rebuild stuttered)
 - 2026-10-21 · Mutate: gone from the UI (button, %, tooltips); the core function stays · user approved
 - 2026-10-21 · Generator row: groups with captions: Dice (dice + All, Rhythm/Notes) · Rhythm (Density, Swing, Ending) · Notes (Color, Surprise) · user approved
@@ -69,4 +71,4 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 3. Tag v0.2.0 after the user's FL confirmation
 4. Generation: augmented-second pairs resolve into tonic/fifth (♭6–7–1, 3–♭2–1, ♭3–♯4–5); colour notes on strong beats
 5. AU later
-6. JUCE app: port the note length rework, the Ending switch (engine has GenSettings.ending, default Run; JUCE state/UI not yet, so the app always rolls Run) (fixed 1/16 grid, notes up to a bar, drag to draw/resize, last-used length) and Duration / ratchets up to 5 / edit modes / drum kit after the user approves them in the mockup; the core then needs duration and the caps raised (kMaxLength 8 → 16, kMaxRepeats 4 → 5), which the mockup works around in JS (afterCore)
+6. JUCE app: port the note length rework, the Ending switch (engine has GenSettings.ending, default Run; JUCE state/UI not yet, so the app always rolls Run), Surprise moved into Advanced like the mockup (fixed 1/16 grid, notes up to a bar, drag to draw/resize, last-used length) and Duration / ratchets up to 5 / edit modes / drum kit after the user approves them in the mockup; the core then needs duration and the caps raised (kMaxLength 8 → 16, kMaxRepeats 4 → 5), which the mockup works around in JS (afterCore)
