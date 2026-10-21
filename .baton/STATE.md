@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-21 20:49 · opus-5.5@home#ea79 · 5a264d9
+Updated: 2026-10-21 21:01 · opus-5.5@home#ea79 · (this commit)
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -24,7 +24,7 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 - 2026-10-20 · Layout: controls back in one row above the roll (no right column); new tabs/track design; chords hidden for now · user decision
 - 2026-10-20 · Web preview hosting: none (no bfunc.cc, no GitHub Pages); local server or StackBlitz only · user decision
 - 2026-10-13 · Builds: only on GitHub Actions · user keeps the laptop free of toolchains
-- 2026-10-21 · Look: plain panels, no wells or cutouts anywhere; the dice + All split button sits on the flat generator row; Play is a standalone teal disc (SVG play / stop, inner highlight, a glow that pulses on the beat while playing, none with reduced motion); isometric SVG dice (web/dice.svg) that spins on a roll · user: «это просто как-то криво, убирай закругления, сделай красивую кнопку Play и всё»
+- 2026-10-21 · Look: plain panels, no wells or cutouts anywhere; the dice + All split button sits on the flat generator row; Play is a standalone 32 px teal disc (SVG play triangle 14 px with its centroid on the disc centre, stop square 12 px centred, inner highlight, a glow that pulses on the beat while playing, none with reduced motion); isometric SVG dice (web/dice.svg) that spins on a roll · user: «это просто как-то криво, убирай закругления, сделай красивую кнопку Play и всё»
 - 2026-10-21 · Alignment: one control height and one centre line per row (captions like BPM, Key, Dice, Rhythm, Ending sit above, out of the flow), checked by measuring centres · user
 - 2026-10-21 · Roll view: one fixed height (336 px); zoom = row height 4.76–36 px (at most 63 rows, one octave less than before) via − + (34 × 27 px, status row under the ruler, left; ×1.25 per click) or Ctrl+wheel (the info at the row's right) or Ctrl+wheel (anchored on the note under the cursor); the rows (C1–C8 GM, wider if needed) scroll; Auto zoom (toggle) fits the dice range ±1 row; + −, Ctrl+wheel or scroll turn it off; view controls never edit notes · user: «pianoroll всегда fix size, только zoom меняется»
 - 2026-10-21 · Out-of-view notes: like the old Chords ghost rows: an 18 px row above and below the scrolling rows (the roll stays 336 px; rows never sit under it) with a dashed label per step placed exactly over or under the note (its start and length), "▲ C8" / "▼ F#2 B3", in the track colour, ghosts of other riffs fainter; a click scrolls to the note (zoom stays, Auto zoom off) · user: «у нас раньше был ещё 1 ряд…», then «выглядит как баг», «сделай как раньше»
