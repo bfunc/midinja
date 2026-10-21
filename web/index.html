@@ -246,15 +246,15 @@ input.num{width:64px}
 .rollbox{position:relative;border:1px solid var(--line);border-radius:6px;overflow:hidden}
 .rollvp{height:336px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
 /* the status row under the ruler: zoom + − at the left (under the keys), the info at the right; one height */
-.srow{display:flex;align-items:center;justify-content:space-between;height:20px;padding-right:var(--sbw,0)}
-.zb{display:flex;gap:2px;align-items:center;padding-left:3px}
+.srow{display:flex;align-items:center;justify-content:space-between;height:32px;padding-right:var(--sbw,0)}
+.zb{display:flex;gap:4px;align-items:center;padding-left:2px}
 .rollbox.edged{padding:18px 0} /* a row above and below the rows for the notes out of view (never over a note) */
 .edgestrip{position:absolute;left:0;right:0;height:18px;z-index:6;pointer-events:none}
 .edgestrip.up{top:0;border-bottom:1px solid var(--line)}.edgestrip.dn{bottom:0;border-top:1px solid var(--line)}
 .edgestrip .gnote{top:1px;cursor:pointer;pointer-events:auto;border-color:var(--c);background:color-mix(in srgb,var(--c) 9%,transparent);font-family:inherit;text-align:left}
 .edgestrip.dn .gnote{top:auto;bottom:1px}
 .edgestrip .gnote.gh{opacity:.45}.edgestrip .gnote:hover{color:var(--ink);background:color-mix(in srgb,var(--c) 22%,transparent)}
-.zb button{width:16px;height:14px;padding:0;border-radius:4px;font-size:11px;line-height:12px;background:var(--panel2);border:1px solid var(--line2);color:var(--ink2);cursor:pointer}
+.zb button{width:34px;height:27px;padding:0;border-radius:6px;font-size:14px;font-weight:600;line-height:25px;letter-spacing:-1px;background:var(--panel2);border:1px solid var(--line2);color:var(--ink2);cursor:pointer}
 .zb button:hover:not(:disabled){border-color:#5a6275;color:var(--ink)}.zb button:disabled{opacity:.3;cursor:default}
 .beats .zb{visibility:hidden}
 .key.oor{color:#3f4552}
@@ -433,13 +433,16 @@ body.dragging .drop{display:grid}
 .sci .pr{color:var(--acc2);font-size:10px;white-space:nowrap}.sci .cu{color:var(--acc);font-size:10px}
 /* the dice range slider at the left of the keys: an orange bar from the top of the High row to the bottom of
    the Low row, a round knob at each end; the bar's middle moves the whole range */
-.drt{position:absolute;left:3px;width:9px;z-index:7;cursor:grab;touch-action:none}
+.drt{position:absolute;left:calc(var(--sx,16px) - 4.5px);width:9px;z-index:7;cursor:grab;touch-action:none}
 .drt:before{content:'';position:absolute;left:3px;top:0;bottom:0;width:3px;border-radius:2px;background:var(--acc)}
 .drt:hover:before,.drt.drag:before{box-shadow:0 0 6px var(--acc)}
 .drt.drag{cursor:grabbing}
-.drk{position:absolute;left:1px;width:13px;height:13px;margin-top:-6.5px;border-radius:50%;background:var(--acc);border:2px solid #1a1206;box-shadow:0 0 0 1px #ff9f4366;z-index:8;cursor:ns-resize;touch-action:none}
-.drk.pin{background:#1a1206;border-color:var(--acc);color:var(--acc);font-size:7px;line-height:9px;text-align:center} /* the end lies beyond the view: hollow, with an arrow */
-.drk:hover,.drk.drag{box-shadow:0 0 0 1px #ff9f43aa,0 0 9px var(--acc)}
+/* the caps: a 22 x 4.5 px bar on the row line (the grab area is 10 px tall) */
+.drk{position:absolute;left:calc(var(--sx,16px) - 11px);width:22px;height:10px;margin-top:-5px;z-index:8;cursor:ns-resize;touch-action:none;color:var(--acc);font-size:7px;line-height:10px;text-align:center}
+.drk:before{content:'';position:absolute;left:0;right:0;top:2.75px;height:4.5px;border-radius:2px;background:var(--acc);box-shadow:0 0 0 1px #1a1206}
+.drk.pin:before{background:#1a1206;border:1px dashed var(--acc);box-shadow:none;top:1px;height:8px}
+.drk.pin{z-index:9}
+.drk:hover:before,.drk.drag:before{box-shadow:0 0 0 1px #1a1206,0 0 8px var(--acc)}
 </style></head>
 <body>
 <div class="drop" id="drop">Drop the .mid file here<small>up to 4 bars → A A′ B C · monophonic · quantised to 1/16 · into the riff shown</small></div>
@@ -514,7 +517,7 @@ body.dragging .drop{display:grid}
         <div class="gstrip" id="gtop"></div>
         <div class="rollbox" id="rollbox"><div class="rollvp" id="rollvp"><div class="roll cols" id="grid"></div></div></div>
         <div class="cols steps" id="stepn"></div>
-        <div class="srow"><div class="zb" id="zb"><button id="zIn" title="Zoom in: taller rows, fewer notes in view (or Ctrl+wheel over the roll; notes stay as they are)">+</button><button id="zOut" title="Zoom out: shorter rows, more notes in view (or Ctrl+wheel over the roll; notes stay as they are)">−</button></div><div class="rstat" id="rstat"></div></div>
+        <div class="srow"><div class="zb" id="zb"><button id="zOut2">−−</button><button id="zOut">−</button><button id="zIn">+</button><button id="zIn2">++</button></div><div class="rstat" id="rstat"></div></div>
         <div class="gstrip" id="gbot"></div>
         <div class="cols play" id="play"></div>
         <div class="msg" id="msg"></div>
@@ -1418,10 +1421,15 @@ function placeSlider() {
   t.style.top = Math.max(vp.scrollTop, y1) + 'px'; t.style.height = Math.max(0, Math.min(vp.scrollTop + vp.clientHeight, y2) - Math.max(vp.scrollTop, y1)) + 'px';
   const pin = (k, y, c, name, note) => {
     const off = y < top ? 'above' : y > bot ? 'below' : '';
-    k.style.top = c + 'px'; k.classList.toggle('pin', !!off); k.textContent = off ? (off === 'above' ? '▲' : '▼') : '';
+    k.style.top = c + 'px'; k.classList.toggle('pin', !!off); k.innerHTML = off ? `<span style="position:relative">${off === 'above' ? '▲' : '▼'}</span>` : '';
     k.title = `Dice range ${name}: ${nn(note)}${off ? ' (' + off + ' the view)' : ''}, drag`;
   };
   pin(kh, y1, c1, 'top', S.highNote); pin(kl, y2, c2, 'bottom', S.lowNote);
+  // the slider sits in the middle of the free part of the key column, left of the labels and badges
+  const g = $('grid'), keys = g.querySelectorAll('.key'); let free = Infinity;
+  const k = g.getBoundingClientRect().width / g.offsetWidth || 1, gl = g.getBoundingClientRect().left;
+  keys.forEach(kk => { const r = document.createRange(); r.selectNodeContents(kk); const x = (r.getBoundingClientRect().left - gl) / k; if (x > 0 && x < free) free = x; });
+  g.style.setProperty('--sx', (isFinite(free) ? Math.max(12, Math.min(free / 2, 35)) : 16) + 'px');
   t.title = `Dice range ${nn(S.lowNote)}–${nn(S.highNote)}: drag the bar to move it all, the knobs to change its ends`;
 }
 function shadeRange() {
@@ -1464,7 +1472,7 @@ const autoZoomed = () => !T.drums && !T.poly && zoomOf(T).auto;
 // y (px from the top of the view, optional): the note there stays there (Ctrl+wheel); else the centre stays
 function zoomBy(f, y) {
   const z = zoomOf(T), h0 = z.rowH; z.auto = false;
-  z.rowH = Math.max(ROW_MIN, Math.min(ROW_MAX, z.rowH * f < ROW_MIN + 0.5 ? ROW_MIN : Math.round(z.rowH * f)));
+  const v = z.rowH * f; z.rowH = Math.max(ROW_MIN, Math.min(ROW_MAX, v < ROW_MIN + 0.5 ? ROW_MIN : v > ROW_MAX - 0.5 ? ROW_MAX : Math.round(v)));
   if (y != null && z.rowH !== h0) { const at = z.center - (y - VP_IN / 2) / h0; z.center = at + (y - VP_IN / 2) / z.rowH; }
   render();
 }
@@ -1773,9 +1781,13 @@ function renderRoll() {
   box.classList.toggle('edged', !T.drums && !T.poly);
   if (!T.drums) { const [, hi] = viewSpan(T); vp.scrollTop = Math.max(0, (hi - z.center + 0.5) * rowH - VP_IN / 2); vpProg = vp.scrollTop; } else vp.scrollTop = 0;
   $('grid').closest('.gridw').style.setProperty('--sbw', (vp.offsetWidth - vp.clientWidth) + 'px');
-  ZB.children[0].disabled = z.rowH >= ROW_MAX; ZB.children[1].disabled = z.rowH <= ROW_MIN + 0.01;
-  ZB.children[0].title = z.rowH >= ROW_MAX ? 'Zoomed in all the way' : 'Zoom in: taller rows, fewer notes in view (or Ctrl+wheel over the roll; notes stay as they are)';
-  ZB.children[1].title = z.rowH <= ROW_MIN + 0.01 ? `Zoomed out all the way: ${MAX_ROWS} rows fit (more would be unreadable); ▲ / ▼ above and below mark notes out of view` : 'Zoom out: shorter rows, more notes in view (or Ctrl+wheel over the roll; notes stay as they are)';
+  { const inMax = z.rowH >= ROW_MAX - 0.01, outMax = z.rowH <= ROW_MIN + 0.01, rows = Math.round(VP_IN / z.rowH);
+    const tip = (b, dis, t) => { $(b).disabled = dis; $(b).title = t; };
+    const outT = `Zoomed out all the way: ${MAX_ROWS} rows fit (more would be unreadable); ▲ / ▼ above and below mark notes out of view`;
+    tip('zIn', inMax, inMax ? 'Zoomed in all the way' : 'Zoom in a little: taller rows (or Ctrl+wheel over the roll; notes stay as they are)');
+    tip('zIn2', inMax, inMax ? 'Zoomed in all the way' : `Zoom in by an octave: about 12 rows fewer (now ${rows})`);
+    tip('zOut', outMax, outMax ? outT : 'Zoom out a little: shorter rows (or Ctrl+wheel over the roll; notes stay as they are)');
+    tip('zOut2', outMax, outMax ? outT : `Zoom out by an octave: about 12 rows more (now ${rows})`); }
   if ($('rshow')) $('rshow').textContent = T.drums ? '' : shownRange();
   drawEdges(); // after the scroll is set
   box.querySelectorAll(':scope > .ovlay').forEach(o => o.remove());
@@ -2338,6 +2350,10 @@ $('grid').addEventListener('contextmenu', e => { if (!T.drums) e.preventDefault(
 const ZB = $('zb');
 $('zIn').onclick = () => zoomBy(1.25);
 $('zOut').onclick = () => zoomBy(0.8);
+// −− / ++: about an octave of rows at a time
+const zoomRows = d => { const z = zoomOf(T), rows = Math.round(VP_IN / z.rowH); z.auto = false; z.rowH = Math.max(ROW_MIN, Math.min(ROW_MAX, VP_IN / Math.max(1, rows + d))); render(); }; // exact row counts, not whole-pixel rows
+$('zIn2').onclick = () => zoomRows(-12);
+$('zOut2').onclick = () => zoomRows(12);
 $('rollvp').addEventListener('wheel', e => {
   if (!e.ctrlKey || T.drums) return; // the plain wheel scrolls
   e.preventDefault();
