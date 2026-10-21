@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-21 13:03 · opus-5.5@home#ea79 · 6e50145
+Updated: 2026-10-21 13:10 · opus-5.5@home#ea79 · (this commit)
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -24,6 +24,7 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 - 2026-10-20 · Layout: controls back in one row above the roll (no right column); new tabs/track design; chords hidden for now · user decision
 - 2026-10-20 · Web preview hosting: none (no bfunc.cc, no GitHub Pages); local server or StackBlitz only · user decision
 - 2026-10-13 · Builds: only on GitHub Actions · user keeps the laptop free of toolchains
+- 2026-10-21 · Dice + all parts: the big orange dice rolls the part shown and carries its name (A / A′ / B / C, drum short name); the all-parts roll is a small muted button flush to its right labelled "A A′ B C" (drums: G G2 Cr F1 F2 Br Bd), Shift+Space; the old "🎲 All" after Ending is gone · user: Dice and All looked and acted alike
 - 2026-10-21 · Play: always walks the whole form, also with a bar selected (selecting only shows the bar); ⟲ Loop next to Play repeats the selected bar (remembered per browser) · user decision
 - 2026-10-21 · Ending: Run (default) = the original Musician dice, bit-exact with the engine before Ending (mostly 4×1/16 in the last beat; parity test against golden hashes from 2b38b72) | Even = hits spread over the four beats; mockup switch in the generator row, JUCE UI later · user: «рифы стали плохими, сделай Run таким же алгоритмом как был», «мне важно чтобы рифы получались точно как было»
 - 2026-10-21 · Preview sound: the mockup plays through a browser synth (web/synth.js, ported from bfunc.cc deep-house-midi-generator): 🔊 on/off, ⚙ volume/delay/reverb, a sound per riff (Bass/Lead/Square/Keys), a GM drum kit, notes heard while editing · user decision
