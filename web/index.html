@@ -433,14 +433,15 @@ body.dragging .drop{display:grid}
 .sci .pr{color:var(--acc2);font-size:10px;white-space:nowrap}.sci .cu{color:var(--acc);font-size:10px}
 /* the dice range slider at the left of the keys: an orange bar from the top of the High row to the bottom of
    the Low row, a round knob at each end; the bar's middle moves the whole range */
-.drt{position:absolute;left:calc(var(--sx,16px) - 4.5px);width:9px;z-index:7;cursor:grab;touch-action:none}
-.drt:before{content:'';position:absolute;left:3px;top:0;bottom:0;width:3px;border-radius:2px;background:var(--acc)}
-.drt:hover:before,.drt.drag:before{box-shadow:0 0 6px var(--acc)}
-.drt.drag{cursor:grabbing}
-/* the caps: a 22 x 4.5 px bar on the row line (the grab area is 10 px tall) */
-.drk{position:absolute;left:calc(var(--sx,16px) - 11px);width:22px;height:10px;margin-top:-5px;z-index:8;cursor:ns-resize;touch-action:none;color:var(--acc);font-size:7px;line-height:10px;text-align:center}
-.drk:before{content:'';position:absolute;left:0;right:0;top:2.75px;height:4.5px;border-radius:2px;background:var(--acc);box-shadow:0 0 0 1px #1a1206}
-.drk:hover:before,.drk.drag:before{box-shadow:0 0 0 1px #1a1206,0 0 8px var(--acc)}
+/* the dice range on the keys: the keys of the range tinted (their labels brighter), a bright bar on each edge */
+.key.inr{background:#5e2a0e;color:#e2b48c;cursor:grab}
+.key.inr.root{color:#ffc95c}.key.inr.c:not(.root){color:#ff9f43}
+.key.inr.out{color:#b98a66}
+.roll.dense .key.inr:not(.root):not(.c){color:transparent}
+.roll.rmove .key.inr{cursor:grabbing}
+.drk{position:absolute;left:0;width:var(--kw,44px);height:10px;margin-top:-5px;z-index:8;cursor:ns-resize;touch-action:none}
+.drk:before{content:'';position:absolute;left:0;right:0;top:2.5px;height:5px;border-radius:1px;background:#e8481f}
+.drk:hover:before,.drk.drag:before{box-shadow:0 0 8px #ff6a3d}
 </style></head>
 <body>
 <div class="drop" id="drop">Drop the .mid file here<small>up to 4 bars → A A′ B C · monophonic · quantised to 1/16 · into the riff shown</small></div>
@@ -527,7 +528,7 @@ body.dragging .drop{display:grid}
   <div class="hidden"><div class="hstrip" id="hstrip"></div><div class="lanebox" id="lane"></div><div id="cgen"></div><div id="advC"></div></div>
 </div></div>
 <div class="pop" id="pop"></div>
-<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>ghost: another riff at the same place in the form, in its colour (Ghosts turns them off)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · right-click a note = remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · ☰ next to Scale = which scales the list shows · + / − under the roll or Ctrl+wheel = zoom (row height), the wheel scrolls; Auto zoom (lit = on): shows the dice range with a row above and below; the orange bar with two knobs at the left of the keys = the dice range: drag a knob for an end, the bar to move it all; the next roll stays inside, your notes never move · ▲ / ▼ at the top or bottom of the roll = notes above or below the rows in view (faint: ghosts), a click scrolls to them · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Notes / Duration / Velocity / Ratchets above the roll: edit one value per note as bars, drag them (their dice ranges under Advanced) · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, the lock keeps it when you roll · 🔊 = sound on / off, ⚙ = volume, delay, reverb · each riff picks its sound in its header (Bass, Lead, Square, Keys); the drums play a built-in kit on the GM notes · note names follow the DAW in ⚙ (FL Studio: middle C = MIDI 60 = C5) · Surprise (under Advanced, default 15%) = how often a roll breaks the rules · Similarity (in Dice) = how close A′, B and C stay to A on their next roll; not on A · keys 1–4 = part · Space = dice (the part shown), Shift+Space = the small All next to the dice (all parts) · Play walks the whole form; ⟲ Loop with a bar selected repeats that bar · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
+<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>ghost: another riff at the same place in the form, in its colour (Ghosts turns them off)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · right-click a note = remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · ☰ next to Scale = which scales the list shows · + / − under the roll or Ctrl+wheel = zoom (row height), the wheel scrolls; Auto zoom (lit = on): shows the dice range with a row above and below; the orange block on the keys = the dice range: drag its top or bottom edge, or drag it to move (inside the rows in view; zoom out for a wider range); the next roll stays inside, your notes never move · ▲ / ▼ at the top or bottom of the roll = notes above or below the rows in view (faint: ghosts), a click scrolls to them · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Notes / Duration / Velocity / Ratchets above the roll: edit one value per note as bars, drag them (their dice ranges under Advanced) · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, the lock keeps it when you roll · 🔊 = sound on / off, ⚙ = volume, delay, reverb · each riff picks its sound in its header (Bass, Lead, Square, Keys); the drums play a built-in kit on the GM notes · note names follow the DAW in ⚙ (FL Studio: middle C = MIDI 60 = C5) · Surprise (under Advanced, default 15%) = how often a roll breaks the rules · Similarity (in Dice) = how close A′, B and C stay to A on their next roll; not on A · keys 1–4 = part · Space = dice (the part shown), Shift+Space = the small All next to the dice (all parts) · Play walks the whole form; ⟲ Loop with a bar selected repeats that bar · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
 <script src="midinja-core.js"></script>
 
 <script>
@@ -1407,54 +1408,52 @@ function noteAtY(y, chromatic) {
 // the dice range brackets: drag the top (High) or the bottom (Low) in the key column, by semitone rows; zoom,
 // scroll and Auto zoom never move them, and they never move notes (the next roll uses them). One undo step
 const rowTopOf = note => { const [, hi] = viewSpan(T); return (hi - note) * zoomOf(T).rowH; };
-// the slider: the bar from the top of the High row to the bottom of the Low row, a cap on each line; an end out
-// of view is simply scrolled away like the rows (Auto zoom keeps both in view)
+// the dice range edges: a bar on the top line of the High row and on the bottom line of the Low row
 function placeSlider() {
-  const t = document.querySelector('#grid .drt'), kh = document.querySelector('#grid .drk.hi'), kl = document.querySelector('#grid .drk.lo');
-  if (!t) return;
-  const y1 = rowTopOf(S.highNote), y2 = rowTopOf(S.lowNote) + zoomOf(T).rowH;
-  t.style.top = y1 + 'px'; t.style.height = (y2 - y1) + 'px'; kh.style.top = y1 + 'px'; kl.style.top = y2 + 'px';
-  kh.title = `Dice range top: ${nn(S.highNote)}, drag`; kl.title = `Dice range bottom: ${nn(S.lowNote)}, drag`;
-  // the slider sits in the middle of the free part of the key column, left of the labels and badges
-  const g = $('grid'), keys = g.querySelectorAll('.key'); let free = Infinity;
-  const k = g.getBoundingClientRect().width / g.offsetWidth || 1, gl = g.getBoundingClientRect().left;
-  keys.forEach(kk => { const r = document.createRange(); r.selectNodeContents(kk); const x = (r.getBoundingClientRect().left - gl) / k; if (x > 0 && x < free) free = x; });
-  g.style.setProperty('--sx', (isFinite(free) ? Math.max(12, Math.min(free / 2, 35)) : 16) + 'px');
-  t.title = `Dice range ${nn(S.lowNote)}–${nn(S.highNote)}: drag the bar to move it all, the knobs to change its ends`;
+  const kh = document.querySelector('#grid .drk.hi'), kl = document.querySelector('#grid .drk.lo');
+  if (!kh) return;
+  kh.style.top = rowTopOf(S.highNote) + 'px'; kl.style.top = rowTopOf(S.lowNote) + zoomOf(T).rowH + 'px';
+  kh.title = `Dice range top: ${nn(S.highNote)} · drag the edge (the orange block on the keys is the dice range)`;
+  kl.title = `Dice range bottom: ${nn(S.lowNote)} · drag the edge (the orange block on the keys is the dice range)`;
 }
 function shadeRange() {
-  document.querySelectorAll('#grid .key[data-note]').forEach(k => k.classList.toggle('oor', +k.dataset.note < S.lowNote || +k.dataset.note > S.highNote));
+  document.querySelectorAll('#grid .key[data-note]').forEach(k => { const n = +k.dataset.note, out = n < S.lowNote || n > S.highNote; k.classList.toggle('oor', out); k.classList.toggle('inr', !out && !T.drums && !T.poly); });
   document.querySelectorAll('#grid .cell[data-n]').forEach(c => c.classList.toggle('oor', +c.dataset.n < S.lowNote || +c.dataset.n > S.highNote));
 }
 function rangeSlider(g) {
   if (T.drums || T.poly) return;
-  const t = document.createElement('div'); t.className = 'drt'; t.onpointerdown = e => dragRange(e, t, 'mid'); g.appendChild(t);
   for (const m of ['hi', 'lo']) { const k = document.createElement('div'); k.className = 'drk ' + m; k.onpointerdown = e => dragRange(e, k, m); g.appendChild(k); }
   placeSlider();
 }
+// a press inside the block moves the whole range once the pointer has gone 4 px (a plain click stays a click)
+function keyDown(e) {
+  if (e.button !== 0 || T.drums || T.poly || !e.currentTarget.classList.contains('inr')) return;
+  dragRange(e, e.currentTarget, 'mid');
+}
 function dragRange(e, b, mode) {
   if (e.button !== 0) return;
-  e.preventDefault(); e.stopPropagation(); try { b.setPointerCapture(e.pointerId); } catch { /* a pointer the browser no longer tracks */ } b.classList.add('drag');
-  const vp = $('rollvp'), g = $('grid'), [lo, hi] = viewSpan(T), z = zoomOf(T), lo0 = S.lowNote, hi0 = S.highNote;
-  let lastY = e.clientY;
-  const y0 = e.clientY, st0 = vp.scrollTop;
+  e.preventDefault(); e.stopPropagation(); try { b.setPointerCapture(e.pointerId); } catch { /* a pointer the browser no longer tracks */ }
+  const vp = $('rollvp'), g = $('grid'), z = zoomOf(T), lo0 = S.lowNote, hi0 = S.highNote, y0 = e.clientY;
+  // the range stays inside the rows in view (zoom out first for a wider one)
+  const vr = vp.getBoundingClientRect(), shown = [...g.querySelectorAll('.key[data-note]')].filter(k => { const r = k.getBoundingClientRect(); return r.top >= vr.top - 1 && r.bottom <= vr.bottom + 1; }).map(k => +k.dataset.note);
+  const vTop = shown.length ? Math.max(...shown) : hi0, vBot = shown.length ? Math.min(...shown) : lo0; // rows fully in view
+  let lastY = y0, started = mode !== 'mid';
+  if (started) { b.classList.add('drag'); g.classList.add('rmove'); }
   const apply = () => {
     const k = g.getBoundingClientRect().height / g.offsetHeight || 1;
-    const d = -Math.round(((lastY - y0) / k + vp.scrollTop - st0) / z.rowH); // rows moved (scrolling counts)
-    if (mode === 'hi') T.highNote = Math.max(S.lowNote + 1, Math.min(S.lowNote + MAX_SPAN, 127, hi, hi0 + d));
-    else if (mode === 'lo') T.lowNote = Math.min(S.highNote - 1, Math.max(S.highNote - MAX_SPAN, 0, lo, lo0 + d));
-    else { // the bar: the whole range moves, its span kept
-      const dd = Math.max(lo - lo0, Math.min(hi - hi0, d));
-      T.lowNote = lo0 + dd; T.highNote = hi0 + dd;
-    }
+    const d = -Math.round((lastY - y0) / k / z.rowH); // rows moved
+    if (mode === 'hi') T.highNote = Math.max(S.lowNote + 1, Math.min(S.lowNote + MAX_SPAN, Math.max(vTop, hi0), hi0 + d));
+    else if (mode === 'lo') T.lowNote = Math.min(S.highNote - 1, Math.max(S.highNote - MAX_SPAN, Math.min(vBot, lo0), lo0 + d));
+    else { const dd = Math.max(Math.min(0, vBot - lo0), Math.min(Math.max(0, vTop - hi0), d)); T.lowNote = lo0 + dd; T.highNote = hi0 + dd; }
     placeSlider(); shadeRange();
     if ($('rshow')) $('rshow').textContent = shownRange();
   };
-  // near the top or bottom of the view the roll scrolls along
-  // (only once the pointer has moved towards that edge, so grabbing a knob that sits at the edge does not scroll)
-  const tick = setInterval(() => { const r = vp.getBoundingClientRect(); const d = lastY < r.top + 14 && lastY < y0 - 6 ? -1 : lastY > r.bottom - 14 && lastY > y0 + 6 ? 1 : 0; if (d) { vp.scrollTop += d * z.rowH; apply(); } }, 60);
-  const move = ev => { lastY = ev.clientY; apply(); };
-  const up = () => { clearInterval(tick); b.removeEventListener('pointermove', move); b.removeEventListener('pointerup', up); b.removeEventListener('pointercancel', up); b.classList.remove('drag'); if (S.lowNote !== lo0 || S.highNote !== hi0) push(); else render(); };
+  const move = ev => {
+    lastY = ev.clientY;
+    if (!started) { if (Math.abs(lastY - y0) < 4) return; started = true; g.classList.add('rmove'); }
+    apply();
+  };
+  const up = () => { b.removeEventListener('pointermove', move); b.removeEventListener('pointerup', up); b.removeEventListener('pointercancel', up); b.classList.remove('drag'); g.classList.remove('rmove'); if (S.lowNote !== lo0 || S.highNote !== hi0) push(); else if (started) render(); };
   b.addEventListener('pointermove', move); b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
 }
 // Auto zoom is a toggle: on, the view fits the notes; a click turns it on, or off (the view stays where it is)
@@ -1480,7 +1479,7 @@ function rollTools() {
     L.title = 'A click on an empty cell adds a note this long: the length of the last note added or resized. Drag right from an empty cell to draw a length, or drag the right edge of a note';
     st.appendChild(L);
   }
-  const t = document.createElement('span'); t.id = 'rshow'; t.title = 'The dice range is set by the orange bar with two knobs at the left of the keys; the roll scrolls over all notes';
+  const t = document.createElement('span'); t.id = 'rshow'; t.title = 'The dice range is the orange block on the keys; the roll scrolls over all notes';
   st.appendChild(t);
   if (T.poly) return;
   // the toggles, flush right on the edit-mode row
@@ -1673,7 +1672,9 @@ function renderRoll() {
     const k = document.createElement('div');
     const oor = note < S.lowNote || note > S.highNote;
     const keyRow = note === S.rootNote; // the octave KEY names
-    k.className = 'key' + (pc === 0 ? ' root' + (keyRow ? '' : ' oct') : '') + (inS ? '' : ' out') + (oor ? ' oor' : '') + (note % 12 === 0 ? ' c' : '');
+    const inr = !oor && !T.poly;
+    k.className = 'key' + (pc === 0 ? ' root' + (keyRow ? '' : ' oct') : '') + (inS ? '' : ' out') + (oor ? ' oor' : '') + (inr ? ' inr' : '') + (note % 12 === 0 ? ' c' : '');
+    if (!T.poly) k.onpointerdown = keyDown;
     if (keyRow) k.title = 'The root of KEY (' + nn(note) + ')';
     k.style.height = rowH + 'px';
     k.dataset.note = note;
@@ -1944,7 +1945,7 @@ function render() {
     const vs = document.createElement('select'); vs.className = 'sel xs'; vs.title = 'The sound of this riff in the preview (MIDI out and the export are not affected)';
     vs.innerHTML = Object.entries(VOICES).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join(''); vs.value = voiceOf(T);
     vs.onchange = () => { T.voice = vs.value; voiceOctave(T); hear(T, T.rootNote, 100, 2); push(); }; set.appendChild(vs); fsel(vs, '🎹');
-    const rg = document.createElement('span'); rg.textContent = `${nn(S.lowNote)}–${nn(S.highNote)}`; rg.title = 'The dice range of this riff: drag the orange bar and knobs at the left of the keys (the sound picked sets it by octave); the roll itself shows every note and scrolls'; set.appendChild(rg); }
+    const rg = document.createElement('span'); rg.textContent = `${nn(S.lowNote)}–${nn(S.highNote)}`; rg.title = 'The dice range of this riff: drag the orange block on the keys or its edges (the sound picked sets it by octave); the roll itself shows every note and scrolls'; set.appendChild(rg); }
 
   // arrangement and palette
   const A = $('arr'); A.innerHTML = '';
