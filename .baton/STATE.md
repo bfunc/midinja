@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-20 22:38 · opus-5.5@raptor#af93 · 3f44612
+Updated: 2026-10-21 09:01 · opus-5.5@raptor#af93 · 4c20e48
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -24,7 +24,7 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 - 2026-10-20 · Layout: controls back in one row above the roll (no right column); new tabs/track design; chords hidden for now · user decision
 - 2026-10-20 · Web preview hosting: none (no bfunc.cc, no GitHub Pages); local server or StackBlitz only · user decision
 - 2026-10-13 · Builds: only on GitHub Actions · user keeps the laptop free of toolchains
-- 2026-10-16 · Preview: a UI mockup, no sound · user decision
+- 2026-10-21 · Preview sound: the mockup plays through a browser synth (web/synth.js, ported from bfunc.cc deep-house-midi-generator): 🔊 on/off, ⚙ volume/delay/reverb, a sound per riff (Bass/Lead/Square/Keys), a GM drum kit, notes heard while editing · user decision
 - 2026-10-17 · Release: rolling "latest" pre-release from CI; a tagged release only after the user confirms it works in FL · user said "Defaults ok"
 - 2026-10-18 · New UI features go to the web mockup first (served on Home at localhost), into the JUCE app only after the user approves the mockup · user: "continue to ui tasks, for this only web maket"
 - 2026-10-19 · Chords per bar (option 2): the chord lane stays one continuous lane over the form; the Chords tab shows bar numbers and their chords only, no part controls; the part selector A/A′/B/C lives on Riff and Beats · the user chose it over per-part chords (option 1) the same day
