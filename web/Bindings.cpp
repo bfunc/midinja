@@ -44,6 +44,7 @@ GenSettings toSettings (const val& o)
     g.similarity = get (o, "similarity", g.similarity);
     g.degree = get (o, "degree", g.degree);
     g.startOnRoot = get (o, "startOnRoot", g.startOnRoot);
+    g.ending = get (o, "ending", g.ending);
     return g;
 }
 

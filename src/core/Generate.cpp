@@ -257,7 +257,7 @@ void randomPitches (Pattern& p, const std::vector<int>& positions, const Ctx& c,
 }
 
 // Musician rhythm: a motif cell repeated as A A' A B (B changes one hit), fitted to the count.
-std::vector<int> musicianPositions (Rng& rng, const Ctx& c, const std::vector<int>& freeSteps, int target)
+std::vector<int> musicianPositions (Rng& rng, const Ctx& c, const std::vector<int>& freeSteps, int target, const std::vector<char>& held)
 {
     if (target <= 0 || freeSteps.empty())
         return {};
@@ -267,7 +267,10 @@ std::vector<int> musicianPositions (Rng& rng, const Ctx& c, const std::vector<in
         isFree[(size_t) f] = 1;
     auto cellOf = [&] (int s) { return std::min (s / cell, cells - 1); };
 
-    const int perCell = std::clamp ((int) std::lround ((double) target / cells), 1, cell);
+    int heldCount = 0;
+    for (char h : held)
+        heldCount += h;
+    const int perCell = std::clamp ((int) std::lround ((double) (target + heldCount) / cells), 1, cell);
     std::vector<int> offs;
     {
         std::vector<int> all;
@@ -321,47 +324,128 @@ std::vector<int> musicianPositions (Rng& rng, const Ctx& c, const std::vector<in
         }
     }
 
-    // Fit to the count, changing A' and B first so the motif stays.
-    std::vector<int> order;
-    order.push_back (cells - 1);
-    for (int k = 1; k < cells - 1; ++k)
-        order.push_back (k);
-    if (cells > 1)
-        order.push_back (0);
-    if (cells == 1)
-        order = { 0 };
-
-    auto count = [&] { int t = 0; for (char x : chosen) t += x; return t; };
-    for (int k : order)
+    // Fit to the count. Ties go to B, then the A' cells, then A, so the motif stays. Held steps
+    // (a lock, the start-on-root pin) count as hits of their cell.
+    std::vector<int> rank ((size_t) cells, 0);
     {
-        while (count() > target)
-        {
-            std::vector<int> cand;
-            for (int s = 0; s < n; ++s)
-                if (chosen[(size_t) s] && cellOf (s) == k && s % cell != 0)
-                    cand.push_back (s);
-            if (cand.empty())
-                break;
-            chosen[(size_t) cand[(size_t) rng.range (0, (int) cand.size() - 1)]] = 0;
-        }
+        int r = 0;
+        rank[(size_t) cells - 1] = r++;
+        for (int k = 1; k < cells - 1; ++k)
+            rank[(size_t) k] = r++;
+        if (cells > 1)
+            rank[0] = r++;
     }
-    while (count() > target) // only cell starts are left
-        for (int s = n - 1; s >= 0 && count() > target; --s)
-            if (chosen[(size_t) s])
-                chosen[(size_t) s] = 0;
+    auto hitsIn = [&] (int k) {
+        int t = 0;
+        for (int s = 0; s < n; ++s)
+            if (cellOf (s) == k && (chosen[(size_t) s] || held[(size_t) s]))
+                ++t;
+        return t;
+    };
+    auto count = [&] { int t = 0; for (char x : chosen) t += x; return t; };
 
-    for (int k : order)
+    // Run: the last beat gets 3 or 4 hits, ending on its last steps, so the bar runs into the next.
+    std::vector<char> fixed ((size_t) n, 0);
+    const int last = cells - 1;
+    const bool run = c.g.ending == kEndRun && cells > 1;
+    if (run)
     {
-        if (count() >= target)
-            break;
+        const int want = perCell <= 1 || rng.unit() < 0.5f ? 3 : 4;
+        std::vector<int> fs;
+        int heldHere = 0;
+        for (int s = 0; s < n; ++s)
+            if (cellOf (s) == last)
+            {
+                chosen[(size_t) s] = 0;
+                heldHere += held[(size_t) s];
+                if (isFree[(size_t) s])
+                    fs.push_back (s);
+            }
+        int need = std::clamp (std::min (want, (int) fs.size() + heldHere) - heldHere, 0, std::min (target, (int) fs.size()));
+        std::vector<int> pick;
+        for (int j = 0; j < 2 && need > 0 && ! fs.empty(); ++j, --need)
+        {
+            pick.push_back (fs.back());
+            fs.pop_back();
+        }
+        for (int s : pickPositions (rng, fs, need))
+            pick.push_back (s);
+        for (int s : pick)
+            chosen[(size_t) s] = fixed[(size_t) s] = 1;
+    }
+    auto open = [&] (int k) { return ! (run && k == last); };
+
+    // Removes one hit from cell k (not its first step), or returns false.
+    auto takeFrom = [&] (int k) {
+        std::vector<int> cand;
+        for (int s = 0; s < n; ++s)
+            if (chosen[(size_t) s] && ! fixed[(size_t) s] && cellOf (s) == k && s % cell != 0)
+                cand.push_back (s);
+        if (cand.empty())
+            return false;
+        chosen[(size_t) cand[(size_t) rng.range (0, (int) cand.size() - 1)]] = 0;
+        return true;
+    };
+    auto roomIn = [&] (int k) {
         std::vector<int> cand;
         for (int s = 0; s < n; ++s)
             if (isFree[(size_t) s] && ! chosen[(size_t) s] && cellOf (s) == k)
                 cand.push_back (s);
-        const int need = target - count();
-        for (int s : pickPositions (rng, cand, need))
+        return cand;
+    };
+    // The open cell with the most (or fewest) hits that passes ok; -1 when none.
+    auto pickCell = [&] (bool most, auto ok) {
+        int best = -1, bestHits = 0;
+        for (int k = 0; k < cells; ++k)
+        {
+            if (! open (k) || ! ok (k))
+                continue;
+            const int h = hitsIn (k);
+            if (best < 0 || (most ? h > bestHits : h < bestHits) || (h == bestHits && rank[(size_t) k] < rank[(size_t) best]))
+                best = k, bestHits = h;
+        }
+        return best;
+    };
+    auto canTake = [&] (int k) {
+        for (int s = 0; s < n; ++s)
+            if (chosen[(size_t) s] && ! fixed[(size_t) s] && cellOf (s) == k && s % cell != 0)
+                return true;
+        return false;
+    };
+    auto hasRoom = [&] (int k) { return ! roomIn (k).empty(); };
+
+    while (count() > target)
+    {
+        const int k = pickCell (true, canTake);
+        if (k < 0 || ! takeFrom (k))
+            break;
+    }
+    while (count() > target) // only cell starts are left
+        for (int s = n - 1; s >= 0 && count() > target; --s)
+            if (chosen[(size_t) s] && ! fixed[(size_t) s])
+                chosen[(size_t) s] = 0;
+
+    while (count() < target)
+    {
+        const int k = pickCell (false, hasRoom);
+        if (k < 0)
+            break;
+        for (int s : pickPositions (rng, roomIn (k), 1))
             chosen[(size_t) s] = 1;
     }
+
+    // Even: no beat holds two hits more than another while that one has room.
+    if (! run)
+        for (int guard = 0; guard < n * 2; ++guard)
+        {
+            const int lo = pickCell (false, hasRoom);
+            const int hi = pickCell (true, canTake);
+            if (lo < 0 || hi < 0 || hitsIn (hi) - hitsIn (lo) < 2)
+                break;
+            takeFrom (hi);
+            for (int s : pickPositions (rng, roomIn (lo), 1))
+                chosen[(size_t) s] = 1;
+        }
 
     std::vector<int> out;
     for (int s = 0; s < n; ++s)
@@ -481,9 +565,15 @@ void pitches (Pattern& p, const std::vector<int>& positions, const Ctx& c, Rng& 
         randomPitches (p, positions, c, rng);
 }
 
-std::vector<int> positionsFor (Rng& rng, const Ctx& c, const std::vector<int>& free, int count)
+// After clearUnlocked every step still on is held (locked or pinned).
+std::vector<int> positionsFor (Rng& rng, const Ctx& c, const Pattern& p, const std::vector<int>& free, int count)
 {
-    return c.g.mode == kMusician ? musicianPositions (rng, c, free, count) : pickPositions (rng, free, count);
+    if (c.g.mode != kMusician)
+        return pickPositions (rng, free, count);
+    std::vector<char> held ((size_t) c.n, 0);
+    for (int s = 0; s < c.n; ++s)
+        held[(size_t) s] = p.steps[(size_t) s].on ? 1 : 0;
+    return musicianPositions (rng, c, free, count, held);
 }
 
 int clampSteps (Pattern& p)
@@ -535,7 +625,7 @@ void generate (Pattern& p, const GenSettings& g)
     const auto free = clearUnlocked (p, n, lockedOn);
     const int target = std::clamp (std::clamp (g.notes, 0, n) - lockedOn, 0, (int) free.size());
 
-    const auto positions = positionsFor (rng, c, free, target);
+    const auto positions = positionsFor (rng, c, p, free, target);
     for (int s : positions)
         p.steps[(size_t) s].on = true;
     pitches (p, positions, c, rng);
@@ -562,7 +652,7 @@ void generateRhythm (Pattern& p, const GenSettings& g)
 
     int lockedOn = 0;
     const auto free = clearUnlocked (p, n, lockedOn);
-    const auto positions = positionsFor (rng, c, free, (int) notes.size());
+    const auto positions = positionsFor (rng, c, p, free, (int) notes.size());
     for (size_t k = 0; k < positions.size(); ++k)
     {
         auto& st = p.steps[(size_t) positions[k]];

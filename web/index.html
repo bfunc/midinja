@@ -118,6 +118,7 @@ input.num{width:64px}
 .pop h4{margin:0 0 6px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px}
 .pop .grp{padding:4px 0}
 .beats #what,.beats #mutseg,.beats .knobs .kv{display:none}
+.endkv{flex-direction:column;align-items:flex-start;gap:3px}
 .beats .edge,.beats .gstrip{visibility:hidden} /* keep their space: the roll starts at the same height on every tab */
 .beats .advR{display:none}
 .beats .genrow .gen>.seg{display:none}
@@ -410,6 +411,7 @@ body.dragging .drop{display:grid}
           <div class="kv" title="How close A′ stays to A (next roll of A′): high changes only the last beat, low keeps just the shape. Ctrl+click resets"><div class="knob" id="kSimilarity"><i></i></div><div><span>Similarity</span><br><b id="vSimilarity"></b></div></div>
           <div class="kv" id="colorWrap"><div class="knob t" id="kColor"><i></i></div><div><span>Color</span><br><b id="vColor"></b></div></div>
           <div class="kv" title="How often the riff breaks the rules (next roll)"><div class="knob t" id="kSurprise"><i></i></div><div><span>Surprise</span><br><b id="vSurprise"></b></div></div>
+          <div class="kv endkv" title="How the bar ends (next roll). Even: the notes spread over the four beats. Run: the last beat gets 3 or 4 notes and runs into the next bar"><span>Ending</span><div class="seg small" id="endseg"><button data-e="0">Even</button><button data-e="1">Run</button></div></div>
           <button class="btn sm" id="rollAll" title="The same for all four parts: A, then A′ B C from it (Shift+Space). Locked parts stay">🎲 All</button>
         </div>
       </div>
@@ -515,7 +517,7 @@ const S = {
   mode: 1, root: 4, scale: 2, numSteps: 16, rate: 4, notes: 10, swing: 0.18,
   lenMin: 1, lenMax: 2, velMin: 70, velMax: 120, durMin: 50, durMax: 100, ovl: 'notes', kit: false, kitFocus: null,
   repeatsOn: false, repMin: 2, repMax: 3, repChance: 0.25, color: 0.4, surprise: 0.15, similarity: 0.65,
-  seed: 4821, adv: false, doRhythm: true, doNotes: true, mutate: false, mutAmt: 0.15, startOnRoot: true,
+  seed: 4821, adv: false, doRhythm: true, doNotes: true, mutate: false, mutAmt: 0.15, startOnRoot: true, ending: 0,
   cur: 0, sel: -1, tab: 0, csel: null,
 };
 const MAX_BARS = 4, MAX_SPAN = 36, MAX_LEN = 16; // MAX_LEN: a note holds a whole bar at most (16 sixteenths)
@@ -1761,6 +1763,7 @@ function render() {
   $('hPrev').disabled = histEnd <= PER_PAGE; $('hNext').disabled = histEnd >= versions.length;
   $('undo').disabled = ui <= 0; $('redo').disabled = ui >= undoStack.length - 1;
   $('rptpill').textContent = S.repeatsOn ? 'ON' : 'OFF'; $('rptpill').classList.toggle('on', S.repeatsOn); $('rptbox').classList.toggle('offbox', !S.repeatsOn);
+  document.querySelectorAll('#endseg button').forEach(b => b.classList.toggle('on', +b.dataset.e === S.ending));
   $('rootpill').textContent = S.startOnRoot ? 'ON' : 'OFF'; $('rootpill').classList.toggle('on', S.startOnRoot);
   fitW();
 }
@@ -2064,6 +2067,7 @@ document.querySelector('#mutseg button').onclick = () => {
 $('adv').onclick = () => { S.adv = !S.adv; render(); };
 $('rptpill').onclick = () => { S.repeatsOn = !S.repeatsOn; render(); };
 document.querySelectorAll('#ovseg button').forEach(b => b.onclick = () => { S.ovl = b.dataset.m; render(); });
+document.querySelectorAll('#endseg button').forEach(b => b.onclick = () => { S.ending = +b.dataset.e; render(); });
 $('rootpill').onclick = () => { S.startOnRoot = !S.startOnRoot; render(); };
 $('seed').onkeydown = e => { if (e.key === 'Enter') { S.seed = (+$('seed').value >>> 0) || 1; applyAll('roll', true); } };
 $('undo').onclick = () => ui > 0 && undoTo(ui - 1);

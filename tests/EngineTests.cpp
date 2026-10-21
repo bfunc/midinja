@@ -7,6 +7,7 @@
 #include "Scales.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdio>
 #include <fstream>
@@ -1018,6 +1019,55 @@ static void testMidiFile (const char* path)
     }
 }
 
+static void testEnding()
+{
+    auto beats = [] (const Pattern& p) {
+        std::array<int, 4> h {};
+        for (int s = 0; s < 16; ++s)
+            h[(size_t) s / 4] += p.steps[(size_t) s].on ? 1 : 0;
+        return h;
+    };
+    int evenFullLast = 0, runThree = 0, runFour = 0;
+    for (int root = 0; root < 2; ++root)
+        for (int notes = 4; notes <= 14; ++notes)
+            for (uint32_t seed = 1; seed <= 60; ++seed)
+            {
+                GenSettings g;
+                g.mode = kMusician;
+                g.seed = seed;
+                g.notes = notes;
+                g.startOnRoot = root == 1;
+                Pattern p;
+                p.numSteps = 16;
+                generate (p, g);
+                auto h = beats (p);
+                // Even: the last beat is full only when every other beat holds at least 3.
+                if (h[3] == 4)
+                {
+                    ++evenFullLast;
+                    CHECK (h[0] >= 3 && h[1] >= 3 && h[2] >= 3);
+                }
+                CHECK (*std::max_element (h.begin(), h.end()) - *std::min_element (h.begin(), h.end()) <= 1);
+
+                g.ending = kEndRun;
+                Pattern r;
+                r.numSteps = 16;
+                generate (r, g);
+                h = beats (r);
+                CHECK (h[3] >= 3);
+                CHECK (r.steps[15].on);
+                runThree += h[3] == 3;
+                runFour += h[3] == 4;
+                Pattern r2;
+                r2.numSteps = 16;
+                generate (r2, g);
+                for (int s = 0; s < 16; ++s)
+                    CHECK (r.steps[(size_t) s].on == r2.steps[(size_t) s].on && r.steps[(size_t) s].note == r2.steps[(size_t) s].note);
+            }
+    CHECK (runThree > 0 && runFour > 0);
+    std::printf ("ending: even full last beat %d, run 3/4 = %d/%d\n", evenFullLast, runThree, runFour);
+}
+
 int main (int argc, char** argv)
 {
     testScales();
@@ -1032,6 +1082,7 @@ int main (int argc, char** argv)
     testRhythmNotesMutate();
     testForm();
     testStartOnRoot();
+    testEnding();
     testDetectKey();
     testDocument();
     testChordsPerBar();
