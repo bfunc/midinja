@@ -731,7 +731,7 @@ function useTrack(id) {
 }
 // the roll's view: one height (VP_H); zoom = the row height; the rows span a wide range and scroll. Auto
 // zoom fits the track's own notes (2 rows below, 3 above) into that height; + −, wheel and scroll turn it off
-const VP_H = 336, EDGE = 18, VP_IN = VP_H - 2 * EDGE, ROW_MIN = 4, ROW_MAX = 36; // riffs: rows in VP_IN between two edge strips; short rows compact (.dense)
+const VP_H = 336, EDGE = 18, VP_IN = VP_H - 2 * EDGE, MAX_ROWS = 63, ROW_MIN = VP_IN / MAX_ROWS, ROW_MAX = 36; // riffs: rows in VP_IN between two edge strips, at most 63 in view (5 octaves + 3); short rows compact (.dense)
 const notesOf = t => t.parts.flatMap(p => p.steps.slice(0, p.numSteps).filter(s => s.on).map(s => s.note));
 const zoomOf = t => (t.zoom = t.zoom || { auto: true, rowH: 18, center: (t.lowNote + t.highNote) / 2 });
 // the rows: C1–C8 (GM names), wider when a note or the dice range lies outside
@@ -1399,7 +1399,7 @@ const autoZoomed = () => !T.drums && !T.poly && zoomOf(T).auto;
 // y (px from the top of the view, optional): the note there stays there (Ctrl+wheel); else the centre stays
 function zoomBy(f, y) {
   const z = zoomOf(T), h0 = z.rowH; z.auto = false;
-  z.rowH = Math.max(ROW_MIN, Math.min(ROW_MAX, Math.round(z.rowH * f)));
+  z.rowH = Math.max(ROW_MIN, Math.min(ROW_MAX, z.rowH * f < ROW_MIN + 0.5 ? ROW_MIN : Math.round(z.rowH * f)));
   if (y != null && z.rowH !== h0) { const at = z.center - (y - VP_IN / 2) / h0; z.center = at + (y - VP_IN / 2) / z.rowH; }
   render();
 }
@@ -1707,7 +1707,9 @@ function renderRoll() {
   box.classList.toggle('edged', !T.drums && !T.poly);
   if (!T.drums) { const [, hi] = viewSpan(T); vp.scrollTop = Math.max(0, (hi - z.center + 0.5) * rowH - VP_IN / 2); vpProg = vp.scrollTop; } else vp.scrollTop = 0;
   $('grid').closest('.gridw').style.setProperty('--sbw', (vp.offsetWidth - vp.clientWidth) + 'px');
-  ZB.children[0].disabled = z.rowH >= ROW_MAX; ZB.children[1].disabled = z.rowH <= ROW_MIN;
+  ZB.children[0].disabled = z.rowH >= ROW_MAX; ZB.children[1].disabled = z.rowH <= ROW_MIN + 0.01;
+  ZB.children[0].title = z.rowH >= ROW_MAX ? 'Zoomed in all the way' : 'Zoom in: taller rows, fewer notes in view (or Ctrl+wheel over the roll; notes stay as they are)';
+  ZB.children[1].title = z.rowH <= ROW_MIN + 0.01 ? `Zoomed out all the way: ${MAX_ROWS} rows fit (more would be unreadable); ▲ / ▼ above and below mark notes out of view` : 'Zoom out: shorter rows, more notes in view (or Ctrl+wheel over the roll; notes stay as they are)';
   if ($('rshow')) $('rshow').textContent = T.drums ? '' : shownRange();
   drawEdges(); // after the scroll is set
   box.querySelectorAll(':scope > .ovlay').forEach(o => o.remove());
