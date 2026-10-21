@@ -32,10 +32,12 @@ button{cursor:pointer}
 .gen{display:flex;align-items:center;gap:6px}
 .dice{width:38px;height:38px;border-radius:9px;border:0;background:var(--acc);color:#1a1206;font-size:31px;line-height:1;box-shadow:0 0 0 3px #ff9f4333;display:grid;place-items:center}
 .dice:active{transform:translateY(1px)}
-.dicegrp{display:flex;align-items:stretch;gap:4px}.dicegrp .dice{position:relative}
-.dpart{position:absolute;right:2px;bottom:1px;font-size:9px;font-weight:800;line-height:1;color:#1a1206;font-family:inherit}
-.diceall{min-width:30px;border:1px solid var(--line);border-radius:7px;background:transparent;color:var(--ink2);font-size:8.5px;font-weight:600;line-height:1.2;padding:0 4px;white-space:nowrap}
-.diceall:hover:not([disabled]){color:var(--ink);background:var(--pick)}
+.dicegrp{display:flex;align-items:stretch;height:38px;border-radius:9px;overflow:hidden;box-shadow:0 0 0 3px #ff9f4333}
+.dicegrp .dice{position:relative;width:48px;border-radius:0;box-shadow:none;font-size:27px;justify-items:start;align-items:start;padding:3px 0 0 4px}
+.dicegrp button:focus{outline:none}.dicegrp button:focus-visible{outline:2px solid var(--acc);outline-offset:-3px}.dicegrp .dice:focus-visible{outline-color:#1a1206}
+.dpart{position:absolute;right:3px;bottom:3px;padding:1px 3px;border-radius:4px;background:#1a1206;color:#ffd8ad;font-size:10px;font-weight:700;line-height:1.1;font-family:inherit;pointer-events:none}
+.diceall{width:36px;padding:0;border:0;border-left:1px solid #b5651d;border-radius:0;background:#ff9f4329;color:var(--acc);font-size:11px;font-weight:700;display:grid;place-items:center}
+.diceall:hover:not([disabled]){background:#ff9f4347}
 .diceall[disabled]{opacity:.35;cursor:default}
 .dice[disabled]{opacity:.35;cursor:default;box-shadow:none}
 .mutamt{display:inline-block;margin-left:5px;padding:0 5px;border-radius:999px;background:#ffffff14;color:var(--ink2);font-size:10px}
@@ -404,7 +406,7 @@ body.dragging .drop{display:grid}
       <div class="formrow"><div class="arr" id="arr"></div><div class="addcol" id="radd"></div></div>
       <div class="genrow">
         <div class="gen" id="riffGen">
-          <div class="dicegrp"><button class="dice" id="roll" title="Roll the part shown (Space)">⚄<span class="dpart" id="rollPart">A</span></button><button class="diceall" id="rollAll" title="The same for all four parts: A, then A′ B C from it (Shift+Space). Locked parts stay"><span id="rollAllLbl">A A′<br>B C</span></button></div>
+          <div class="dicegrp"><button class="dice" id="roll" title="Roll the part shown (Space)">⚄<span class="dpart" id="rollPart">A</span></button><button class="diceall" id="rollAll" title="The same for all four parts: A, then A′ B C from it (Shift+Space). Locked parts stay"><span id="rollAllLbl">All</span></button></div>
           <div class="seg small" id="what" title="What the dice change: Rhythm, Notes, both (a new riff), or Mutate">
             <button data-w="rhythm" title="New rhythm (keeps the pitches unless Notes is on too)">♩ Rhythm</button>
             <button data-w="notes" title="New pitches (keeps the rhythm unless Rhythm is on too)">♪ Notes</button>
@@ -449,7 +451,7 @@ body.dragging .drop{display:grid}
   <div class="hidden"><div class="hstrip" id="hstrip"></div><div class="lanebox" id="lane"></div><div id="cgen"></div><div id="advC"></div></div>
 </div></div>
 <div class="pop" id="pop"></div>
-<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>the other track (ghost)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · right-click a note = remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Notes / Duration / Velocity / Ratchets above the roll: edit one value per note as bars, drag them (their dice ranges under Advanced) · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, 🔒 keeps it when you roll · 🔊 = sound on / off, ⚙ = volume, delay, reverb · each riff picks its sound in its header (Bass, Lead, Square, Keys); the drums play a built-in kit on the GM notes · keys 1–4 = part · Space = dice (the part shown), Shift+Space = the small A A′ B C button next to it (all parts) · Play walks the whole form; ⟲ Loop with a bar selected repeats that bar · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
+<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>the other track (ghost)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · right-click a note = remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Notes / Duration / Velocity / Ratchets above the roll: edit one value per note as bars, drag them (their dice ranges under Advanced) · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, 🔒 keeps it when you roll · 🔊 = sound on / off, ⚙ = volume, delay, reverb · each riff picks its sound in its header (Bass, Lead, Square, Keys); the drums play a built-in kit on the GM notes · keys 1–4 = part · Space = dice (the part shown), Shift+Space = the small All next to the dice (all parts) · Play walks the whole form; ⟲ Loop with a bar selected repeats that bar · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
 <script src="midinja-core.js"></script>
 
 <script>
@@ -1542,7 +1544,6 @@ function render() {
     : T.poly ? (selChord() ? 'A new rhythm for the selected chord (Space)' : 'Select a chord in the lane first') : WHAT[op] + ' (Space). Locked notes stay; the riff plays a chord tone where a chord starts';
   $('rollAll').disabled = !op && !T.drums;
   $('rollPart').textContent = T.poly ? '' : T.drums ? DPARTS[S.cur].short : PARTS[S.cur];
-  $('rollAllLbl').innerHTML = T.drums ? DPARTS.map(d => d.short).slice(0, 3).join(' ') + '<br>' + DPARTS.map(d => d.short).slice(3).join(' ') : T.poly ? 'all' : 'A A′<br>B C';
   $('rollAll').title = T.drums ? 'All drum parts: other hats and fills for every drum part (Shift+Space). Locked parts stay' : T.poly ? 'Every unlocked chord (Shift+Space)' : 'All four parts: A, then A′ B C from it (Shift+Space). Locked parts stay. The big dice rolls only the part shown';
   drawers.forEach(d => d());
   const n = pat.numSteps;
@@ -2068,6 +2069,7 @@ const rekey = () => {
 $('scale').onchange = rekey;
 $('roll').onclick = () => apply(opOf());
 $('rollAll').onclick = () => applyAll(opOf());
+document.querySelectorAll('.dicegrp button').forEach(b => b.addEventListener('click', e => { if (e.detail) b.blur(); }));
 document.querySelectorAll('#what button').forEach(b => b.onclick = () => {
   if (S.mutate) { S.mutate = false; S.doRhythm = b.dataset.w === 'rhythm'; S.doNotes = b.dataset.w === 'notes'; }
   else if (b.dataset.w === 'rhythm') S.doRhythm = !S.doRhythm;
