@@ -259,6 +259,7 @@ input.num{width:64px}
 .note.chord.sel{background:var(--acc)}
 .note.chord.croot{box-shadow:inset 3px 0 0 #fff8}
 .note.ghost{z-index:1;background:#9aa1b2;opacity:.22;pointer-events:none;box-shadow:none;cursor:default}
+.note.ghost.rg{opacity:.28}
 .note .rh{position:absolute;right:-3px;top:-2px;bottom:-2px;width:10px;cursor:ew-resize;touch-action:none;z-index:3}
 .note .rh:after{content:'';position:absolute;right:4px;top:30%;bottom:30%;width:2px;border-radius:1px;background:#0004}
 @media (pointer:coarse){.note .rh{width:18px;right:-9px}} /* a finger needs a wider edge */
@@ -332,7 +333,6 @@ input.num{width:64px}
 .playb:focus{outline:none}.playb:focus-visible{outline:2px solid var(--acc2);outline-offset:3px}
 .playb.on{animation:plpulse var(--beat,.5s) ease-out infinite}
 @keyframes plpulse{0%{box-shadow:inset 0 1px 0 #ffffff59,inset 0 -2px 4px #0000002e,0 0 0 1px #00000059,0 0 18px 3px #5ad1c799}100%{box-shadow:inset 0 1px 0 #ffffff59,inset 0 -2px 4px #0000002e,0 0 0 1px #00000059,0 0 10px #5ad1c733}}
-@media (prefers-reduced-motion:reduce){.dsvg.spin{animation:none}.playb.on{animation:none;box-shadow:inset 0 1px 0 #ffffff59,0 0 0 1px #00000059,0 0 14px 2px #5ad1c766}}
 .btn.loopb{margin-left:6px;padding:0 8px}.btn.loopb.on{background:var(--pick);color:var(--acc2);font-weight:700}
 .btn.snd{margin-left:6px;font-size:13px;padding:0 7px}.btn.snd.off{opacity:.55}
 .sndl{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink2);margin:6px 0}.sndl span{width:52px}.sndl input{flex:1;accent-color:var(--acc2)}
@@ -478,7 +478,7 @@ body.dragging .drop{display:grid}
   <div class="hidden"><div class="hstrip" id="hstrip"></div><div class="lanebox" id="lane"></div><div id="cgen"></div><div id="advC"></div></div>
 </div></div>
 <div class="pop" id="pop"></div>
-<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>the other track (ghost)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · right-click a note = remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · + / − beside the top and bottom key = one more / one less row; Auto zoom (lit = on) shows just the notes, a click turns it on or off · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Notes / Duration / Velocity / Ratchets above the roll: edit one value per note as bars, drag them (their dice ranges under Advanced) · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, 🔒 keeps it when you roll · 🔊 = sound on / off, ⚙ = volume, delay, reverb · each riff picks its sound in its header (Bass, Lead, Square, Keys); the drums play a built-in kit on the GM notes · note names follow the DAW in ⚙ (FL Studio: middle C = MIDI 60 = C5) · keys 1–4 = part · Space = dice (the part shown), Shift+Space = the small All next to the dice (all parts) · Play walks the whole form; ⟲ Loop with a bar selected repeats that bar · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
+<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>ghost: another riff at the same place in the form, in its colour (Ghosts turns them off)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · right-click a note = remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · + / − beside the top and bottom key = one more / one less row; Auto zoom (lit = on) shows just the notes, a click turns it on or off · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Notes / Duration / Velocity / Ratchets above the roll: edit one value per note as bars, drag them (their dice ranges under Advanced) · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, 🔒 keeps it when you roll · 🔊 = sound on / off, ⚙ = volume, delay, reverb · each riff picks its sound in its header (Bass, Lead, Square, Keys); the drums play a built-in kit on the GM notes · note names follow the DAW in ⚙ (FL Studio: middle C = MIDI 60 = C5) · keys 1–4 = part · Space = dice (the part shown), Shift+Space = the small All next to the dice (all parts) · Play walks the whole form; ⟲ Loop with a bar selected repeats that bar · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
 <script src="midinja-core.js"></script>
 
 <script>
@@ -1408,6 +1408,11 @@ function rollTools() {
     z.title = on ? 'Auto zoom is on: the roll shows the notes (2 rows below the lowest, 3 above the highest). Click for the whole range' : 'Auto zoom: show the notes (2 rows below the lowest, 3 above the highest), as after a roll. + and − on the keys turn it off';
     z.onclick = () => { if (on) T.view = null; else fitView(); render(); };
     el.appendChild(z);
+    const others = riffs.filter(t => t !== T && t.on && t.arr.length).length;
+    const gb = document.createElement('button'); gb.className = 'btn xs' + (S.ghosts ? ' on' : ''); gb.textContent = 'Ghosts';
+    gb.title = (S.ghosts ? 'Ghosts on: ' : 'Ghosts off: ') + 'the notes of the other riffs at the same place in the form, faint in their colour (muted riffs stay hidden)' + (others ? '' : ' · no other riff to show');
+    gb.onclick = () => { S.ghosts = !S.ghosts; try { localStorage.setItem('midinja.ghosts', S.ghosts ? '1' : '0'); } catch { /* no storage */ } render(); };
+    el.appendChild(gb);
     const L = document.createElement('span'); L.textContent = 'length ' + lenValue(lastLen);
     L.title = 'A click on an empty cell adds a note this long: the length of the last note added or resized. Drag right from an empty cell to draw a length, or drag the right edge of a note';
     el.appendChild(L);
@@ -1621,7 +1626,7 @@ function renderRoll() {
     for (let s = 0; s < n; s++) {
       const c = document.createElement('div');
       c.className = 'cell' + (s % 4 === 0 ? ' beat' : '') + (!inS ? ' outrow' : pc === 0 ? ' rootrow' : r % 2 ? ' alt' : '') + (s === ph ? ' ph' : '');
-      c.style.height = rowH + 'px'; c.dataset.s = s;
+      c.style.height = rowH + 'px'; c.dataset.s = s; c.dataset.n = note;
       const st = pat.steps[s];
       const gh = ghosts.find(h => h.s === s && h.notes.includes(note));
       if (gh) { const d = document.createElement('div'); d.className = 'note ghost'; d.style.width = `calc(${gh.len * 100}% + ${gh.len - 1}px - 4px)`; c.appendChild(d); }
@@ -1690,6 +1695,7 @@ function renderRoll() {
     }
   }
 
+  drawRiffGhosts();
   const pl = $('play'); pl.innerHTML = '<i></i>';
   for (let s = 0; s < n; s++) { const i = document.createElement('i'); if (s === ph) i.className = 'on'; pl.appendChild(i); }
 
@@ -1703,6 +1709,30 @@ function renderRoll() {
   const sn = $('stepn'); sn.innerHTML = '<div></div>';
   for (let s = 0; s < n; s++) { const d = document.createElement('div'); d.innerHTML = `<span>${s % 4 === 0 ? s / 4 + 1 : '·'}</span>`; sn.appendChild(d); }
 
+}
+// ghost notes of the other riffs (like FL Studio): each unmuted riff shows the part it plays at the same
+// place in the form (its form loops when shorter; during Play the bar that sounds), faint in its colour,
+// under the notes and not clickable. Kept per browser
+try { S.ghosts = localStorage.getItem('midinja.ghosts') !== '0'; } catch { S.ghosts = true; }
+const ghostBar = () => timer ? Math.floor(Math.max(0, stepIdx - 1) / S.numSteps) : shownBar();
+let ghostAt = -1;
+function drawRiffGhosts() {
+  document.querySelectorAll('#grid .note.rg').forEach(d => d.remove());
+  ghostAt = ghostBar();
+  if (!S.ghosts || T.drums || T.poly || ghostAt < 0) return;
+  const cells = {};
+  document.querySelectorAll('#grid .cell[data-n]').forEach(c => { cells[c.dataset.s + ':' + c.dataset.n] = c; });
+  riffs.forEach(t => {
+    if (t === T || !t.on || !t.arr.length) return;
+    const p = t.parts[t.arr[ghostAt % t.arr.length]];
+    for (let st = 0; st < p.numSteps; st++) {
+      const x = p.steps[st], c = x.on && cells[st + ':' + x.note];
+      if (!c) continue;
+      const d = document.createElement('div'); d.className = 'note ghost rg';
+      d.style.width = `calc(${x.length * 100}% + ${x.length - 1}px - 4px)`; d.style.background = t.color;
+      c.prepend(d);
+    }
+  });
 }
 // during Play only the playhead and the bars playing change; nothing else is rebuilt, so open menus stay
 // open and clicks land. When the roll follows the playing part, the roll and the part marks update.
@@ -2307,6 +2337,7 @@ function tick() {
     if (S.sel < 0 && arr.length && playingPart() !== S.cur) { S.cur = playingPart(); refreshPat(); partMoved = true; }
   }
   if (partMoved) syncCur();
+  else if (moved && S.ghosts && ghostBar() !== ghostAt) drawRiffGhosts();
   if (moved) markPlay();
   timer = requestAnimationFrame(tick);
 }
