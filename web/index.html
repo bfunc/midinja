@@ -434,14 +434,15 @@ body.dragging .drop{display:grid}
 /* the dice range slider at the left of the keys: an orange bar from the top of the High row to the bottom of
    the Low row, a round knob at each end; the bar's middle moves the whole range */
 /* the dice range on the keys: the keys of the range tinted (their labels brighter), a bright bar on each edge */
-.key.inr{background:#5e2a0e;color:#e2b48c;cursor:grab}
-.key.inr.root{color:#ffc95c}.key.inr.c:not(.root){color:#ff9f43}
-.key.inr.out{color:#b98a66}
+.key.inr{background:linear-gradient(#ff9f433d,#ff9f433d),var(--panel);color:#ead0b3;cursor:grab} /* the dice button's tint: the accent at ~24 % on the keys */
+.key.inr.root{color:var(--acc);font-weight:700}.key.inr.c:not(.root),.key.inr.root.oct{color:#f6bf86} /* only KEY's own root row in the accent */
+.key.inr.out{color:#b7977a}
+.drblk{position:absolute;left:2px;width:calc(var(--kw,44px) - 4px);border:1px solid #ff9f4340;border-radius:4px;pointer-events:none;z-index:6} /* the block's outline, like the dice button's */
 .roll.dense .key.inr:not(.root):not(.c){color:transparent}
 .roll.rmove .key.inr{cursor:grabbing}
 .drk{position:absolute;left:0;width:var(--kw,44px);height:10px;margin-top:-5px;z-index:8;cursor:ns-resize;touch-action:none}
-.drk:before{content:'';position:absolute;left:0;right:0;top:2.5px;height:5px;border-radius:1px;background:#e8481f}
-.drk:hover:before,.drk.drag:before{box-shadow:0 0 8px #ff6a3d}
+.drk:before{content:'';position:absolute;left:5px;right:5px;top:3.5px;height:3px;border-radius:2px;background:var(--acc);box-shadow:0 0 6px #ff9f4366;transition:height .1s,top .1s}
+.drk:hover:before,.drk.drag:before{top:3px;height:4px;background:#ffb468;box-shadow:0 0 8px #ff9f4399}
 </style></head>
 <body>
 <div class="drop" id="drop">Drop the .mid file here<small>up to 4 bars → A A′ B C · monophonic · quantised to 1/16 · into the riff shown</small></div>
@@ -1410,9 +1411,11 @@ function noteAtY(y, chromatic) {
 const rowTopOf = note => { const [, hi] = viewSpan(T); return (hi - note) * zoomOf(T).rowH; };
 // the dice range edges: a bar on the top line of the High row and on the bottom line of the Low row
 function placeSlider() {
-  const kh = document.querySelector('#grid .drk.hi'), kl = document.querySelector('#grid .drk.lo');
+  const kh = document.querySelector('#grid .drk.hi'), kl = document.querySelector('#grid .drk.lo'), bl = document.querySelector('#grid .drblk');
   if (!kh) return;
-  kh.style.top = rowTopOf(S.highNote) + 'px'; kl.style.top = rowTopOf(S.lowNote) + zoomOf(T).rowH + 'px';
+  const y1 = rowTopOf(S.highNote), y2 = rowTopOf(S.lowNote) + zoomOf(T).rowH;
+  kh.style.top = y1 + 'px'; kl.style.top = y2 + 'px';
+  if (bl) { bl.style.top = y1 + 'px'; bl.style.height = (y2 - y1) + 'px'; }
   kh.title = `Dice range top: ${nn(S.highNote)} · drag the edge (the orange block on the keys is the dice range)`;
   kl.title = `Dice range bottom: ${nn(S.lowNote)} · drag the edge (the orange block on the keys is the dice range)`;
 }
@@ -1422,6 +1425,7 @@ function shadeRange() {
 }
 function rangeSlider(g) {
   if (T.drums || T.poly) return;
+  const bl = document.createElement('div'); bl.className = 'drblk'; g.appendChild(bl);
   for (const m of ['hi', 'lo']) { const k = document.createElement('div'); k.className = 'drk ' + m; k.onpointerdown = e => dragRange(e, k, m); g.appendChild(k); }
   placeSlider();
 }
