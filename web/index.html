@@ -273,6 +273,7 @@ input.num{width:64px}
 .ovbar .ovc .range{width:130px;margin:0 6px}
 .ovbar .ovc span{min-width:26px;text-align:center;font-variant-numeric:tabular-nums}
 .ovhint{color:var(--ink3);font-size:10.5px}
+.adv-off .ovc[data-m=dur],.adv-off .ovc[data-m=vel],.adv-off .ovc[data-m=rep] .range,.adv-off .ovc[data-m=rep] span[id^=lRep]{display:none!important} /* the edit modes are always there; their dice ranges only in Advanced */
 .beats #ovseg [data-m=dur],.beats #ovseg [data-m=rep]{display:none}
 .roll.ovl .note{opacity:.18!important;pointer-events:none}
 .ovlay{position:absolute;top:0;bottom:0;left:44px;right:0;z-index:5;cursor:ns-resize;touch-action:none}
@@ -377,7 +378,7 @@ body.dragging .drop{display:grid}
     <button class="btn" id="imp" title="Import a .mid file (or drop one on the page) into the Riff tab: up to 4 bars become A A′ B C">⤒ Import</button>
     <input type="file" id="impFile" accept=".mid,.midi,audio/midi" hidden>
     <button class="btn" id="exp" title="Save the arrangement as one .mid file: a track per tab that is on, each on its channel">⤓ Export</button>
-    <div class="tog" id="adv" title="Riff: length, seed, start on root, and the edit modes over the roll (Duration, Velocity, Ratchets; Drums: Velocity). Also the undo buttons"><div class="sw"></div>Advanced</div>
+    <div class="tog" id="adv" title="The dice ranges (Length, Duration, Velocity, Ratchets), seed, start on root, and the undo buttons"><div class="sw"></div>Advanced</div>
     <button class="btn" id="help" data-pop title="Legend and keyboard shortcuts">?</button>
     <button class="btn" id="gear" data-pop title="The preview sound (volume, delay, reverb) and the MIDI out port">⚙</button>
   </div>
@@ -418,7 +419,7 @@ body.dragging .drop{display:grid}
         <div class="advSeed"><h5>Seed</h5><input class="num" id="seed" title="The seed of the last roll. Type one and press Enter to roll the whole form from it"></div>
       </div>
       <div class="gridw">
-        <div class="ovbar advbox" id="ovbar">
+        <div class="ovbar" id="ovbar">
           <div class="seg xs" id="ovseg" title="What the roll edits: the notes, or one value per note as bars to drag (drag across several notes to draw them)"><button data-m="notes">Notes</button><button data-m="dur">Duration</button><button data-m="vel">Velocity</button><button data-m="rep">Ratchets</button></div>
           <div class="ovc" data-m="dur" title="The dice give each new note a duration in this range: the part of its length that sounds (100% = legato, low = a short pluck)">Dice <span id="lDurLo"></span><div class="range" id="rgDur"></div><span id="lDurHi"></span></div>
           <div class="ovc" data-m="vel" title="The dice give each new note (and each drum hit) a velocity in this range">Dice <span id="lVelLo"></span><div class="range" id="rgVel"></div><span id="lVelHi"></span></div>
@@ -441,7 +442,7 @@ body.dragging .drop{display:grid}
   <div class="hidden"><div class="hstrip" id="hstrip"></div><div class="lanebox" id="lane"></div><div id="cgen"></div><div id="advC"></div></div>
 </div></div>
 <div class="pop" id="pop"></div>
-<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>the other track (ghost)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Advanced: Duration / Velocity / Ratchets over the roll, drag the bars · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, 🔒 keeps it when you roll · 🔊 = sound on / off, ⚙ = volume, delay, reverb · each riff picks its sound in its header (Bass, Lead, Square, Keys); the drums play a built-in kit on the GM notes · keys 1–4 = part · Space = dice, Shift+Space = All · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
+<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>the other track (ghost)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Notes / Duration / Velocity / Ratchets above the roll: edit one value per note as bars, drag them (their dice ranges under Advanced) · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, 🔒 keeps it when you roll · 🔊 = sound on / off, ⚙ = volume, delay, reverb · each riff picks its sound in its header (Bass, Lead, Square, Keys); the drums play a built-in kit on the GM notes · keys 1–4 = part · Space = dice, Shift+Space = All · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
 <script src="midinja-core.js"></script>
 
 <script>
@@ -1877,7 +1878,7 @@ function noteDown(e, s) {
   for (const t in h) addEventListener(t, h[t], true);
 }
 // the edit mode shown: Notes outside Advanced, on Chords, and on Drums except Velocity
-const ovMode = () => !S.adv || T.poly ? 'notes' : T.drums && S.ovl !== 'vel' ? 'notes' : S.ovl;
+const ovMode = () => T.poly ? 'notes' : T.drums && S.ovl !== 'vel' ? 'notes' : S.ovl;
 // the note that sounds at step s of the part shown (its start, or -1)
 function noteAt(s) { for (let i = s; i >= 0; i--) if (pat.steps[i].on) return i + pat.steps[i].length > s ? i : -1; return -1; }
 // bars over the roll: one per note as wide as the note (riffs), one per hit inside its cell (drums)
