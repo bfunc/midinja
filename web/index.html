@@ -434,10 +434,11 @@ body.dragging .drop{display:grid}
 /* the dice range slider at the left of the keys: an orange bar from the top of the High row to the bottom of
    the Low row, a round knob at each end; the bar's middle moves the whole range */
 /* the dice range on the keys: the keys of the range tinted (their labels brighter), a bright bar on each edge */
-.key.inr{background:linear-gradient(#ff9f433d,#ff9f433d),var(--panel);color:#ead0b3;cursor:grab} /* the dice button's tint: the accent at ~24 % on the keys */
+.key.inr{color:#ead0b3;cursor:grab}
+.key em,.key .kl{position:relative;z-index:7} /* labels and badges above the range capsule */
 .key.inr.root{color:var(--acc);font-weight:700}.key.inr.c:not(.root),.key.inr.root.oct{color:#f6bf86} /* only KEY's own root row in the accent */
 .key.inr.out{color:#b7977a}
-.drblk{position:absolute;left:2px;width:calc(var(--kw,44px) - 4px);border:1px solid #ff9f4340;border-radius:4px;pointer-events:none;z-index:6} /* the block's outline, like the dice button's */
+.drblk{position:absolute;left:5px;width:calc(var(--kw,44px) - 10px);background:linear-gradient(#ff9f434d,#ff9f4338);border:1px solid #ff9f4340;border-radius:4px;pointer-events:none;z-index:6} /* one capsule: the fill and outline exactly as wide as the edge bars, the dice button's tint */
 .roll.dense .key.inr:not(.root):not(.c){color:transparent}
 .roll.rmove .key.inr{cursor:grabbing}
 .drk{position:absolute;left:0;width:var(--kw,44px);height:10px;margin-top:-5px;z-index:8;cursor:ns-resize;touch-action:none}
@@ -517,7 +518,7 @@ body.dragging .drop{display:grid}
         <div class="gstrip" id="gtop"></div>
         <div class="rollbox" id="rollbox"><div class="rollvp" id="rollvp"><div class="roll cols" id="grid"></div></div></div>
         <div class="cols steps" id="stepn"></div>
-        <div class="srow"><div class="zb" id="zb"><button id="zOut2">−−</button><button id="zOut">−</button><button id="zIn">+</button><button id="zIn2">++</button></div><div class="rstat" id="rstat"></div></div>
+        <div class="srow"><div class="zb" id="zb"><button id="zOut">−</button><button id="zIn">+</button></div><div class="rstat" id="rstat"></div></div>
         <div class="gstrip" id="gbot"></div>
         <div class="cols play" id="play"></div>
         <div class="msg" id="msg"></div>
@@ -1683,7 +1684,7 @@ function renderRoll() {
     k.style.height = rowH + 'px';
     k.dataset.note = note;
     const bd = inS ? degreeBadge(note) : null;
-    k.innerHTML = (bd && !T.poly ? `<em class="${bd[1]}">${bd[0]}</em>` : '') + nn(note);
+    k.innerHTML = (bd && !T.poly ? `<em class="${bd[1]}">${bd[0]}</em>` : '') + `<span class="kl">${nn(note)}</span>`;
     g.appendChild(k);
     for (let s = 0; s < n; s++) {
       const c = document.createElement('div');
@@ -1776,13 +1777,12 @@ function renderRoll() {
   box.classList.toggle('edged', !T.drums && !T.poly);
   if (!T.drums) { const [, hi] = viewSpan(T); vp.scrollTop = Math.max(0, (hi - z.center + 0.5) * rowH - VP_IN / 2); vpProg = vp.scrollTop; } else vp.scrollTop = 0;
   $('grid').closest('.gridw').style.setProperty('--sbw', (vp.offsetWidth - vp.clientWidth) + 'px');
-  { const inMax = z.rowH >= ROW_MAX - 0.01, outMax = z.rowH <= ROW_MIN + 0.01, rows = Math.round(VP_IN / z.rowH);
+  { const inMax = z.rowH >= ROW_MAX - 0.01, outMax = z.rowH <= ROW_MIN + 0.01;
     const tip = (b, dis, t) => { $(b).disabled = dis; $(b).title = t; };
     const outT = `Zoomed out all the way: ${MAX_ROWS} rows fit (more would be unreadable); ▲ / ▼ above and below mark notes out of view`;
-    tip('zIn', inMax, inMax ? 'Zoomed in all the way' : 'Zoom in a little: taller rows (or Ctrl+wheel over the roll; notes stay as they are)');
-    tip('zIn2', inMax, inMax ? 'Zoomed in all the way' : `Zoom in by an octave: about 12 rows fewer (now ${rows})`);
-    tip('zOut', outMax, outMax ? outT : 'Zoom out a little: shorter rows (or Ctrl+wheel over the roll; notes stay as they are)');
-    tip('zOut2', outMax, outMax ? outT : `Zoom out by an octave: about 12 rows more (now ${rows})`); }
+    tip('zIn', inMax, inMax ? 'Zoomed in all the way' : 'Zoom in: taller rows (or Ctrl+wheel over the roll; notes stay as they are)');
+    tip('zOut', outMax, outMax ? outT : 'Zoom out: shorter rows (or Ctrl+wheel over the roll; notes stay as they are)');
+  }
   if ($('rshow')) $('rshow').textContent = T.drums ? '' : shownRange();
   drawEdges(); // after the scroll is set
   box.querySelectorAll(':scope > .ovlay').forEach(o => o.remove());
@@ -2345,10 +2345,6 @@ $('grid').addEventListener('contextmenu', e => { if (!T.drums) e.preventDefault(
 const ZB = $('zb');
 $('zIn').onclick = () => zoomBy(1.25);
 $('zOut').onclick = () => zoomBy(0.8);
-// −− / ++: about an octave of rows at a time
-const zoomRows = d => { const z = zoomOf(T), rows = Math.round(VP_IN / z.rowH); z.auto = false; z.rowH = Math.max(ROW_MIN, Math.min(ROW_MAX, VP_IN / Math.max(1, rows + d))); render(); }; // exact row counts, not whole-pixel rows
-$('zIn2').onclick = () => zoomRows(-12);
-$('zOut2').onclick = () => zoomRows(12);
 $('rollvp').addEventListener('wheel', e => {
   if (!e.ctrlKey || T.drums) return; // the plain wheel scrolls
   e.preventDefault();
