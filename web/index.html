@@ -438,9 +438,8 @@ body.dragging .drop{display:grid}
 .drt:hover:before,.drt.drag:before{box-shadow:0 0 6px var(--acc)}
 .drt.drag{cursor:grabbing}
 .drk{position:absolute;left:1px;width:13px;height:13px;margin-top:-6.5px;border-radius:50%;background:var(--acc);border:2px solid #1a1206;box-shadow:0 0 0 1px #ff9f4366;z-index:8;cursor:ns-resize;touch-action:none}
+.drk.pin{background:#1a1206;border-color:var(--acc);color:var(--acc);font-size:7px;line-height:9px;text-align:center} /* the end lies beyond the view: hollow, with an arrow */
 .drk:hover,.drk.drag{box-shadow:0 0 0 1px #ff9f43aa,0 0 9px var(--acc)}
-.edgestrip .dre{position:absolute;top:1px;left:2px;width:calc(var(--kw,44px) - 4px);height:16px;padding:0 3px;border:1px solid var(--acc);border-radius:3px;background:#ff9f4318;color:var(--acc);font:600 9.5px/14px inherit;white-space:nowrap;overflow:hidden;cursor:pointer;pointer-events:auto;text-align:left}
-.edgestrip.dn .dre{top:auto;bottom:1px}
 </style></head>
 <body>
 <div class="drop" id="drop">Drop the .mid file here<small>up to 4 bars → A A′ B C · monophonic · quantised to 1/16 · into the riff shown</small></div>
@@ -527,7 +526,7 @@ body.dragging .drop{display:grid}
   <div class="hidden"><div class="hstrip" id="hstrip"></div><div class="lanebox" id="lane"></div><div id="cgen"></div><div id="advC"></div></div>
 </div></div>
 <div class="pop" id="pop"></div>
-<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>ghost: another riff at the same place in the form, in its colour (Ghosts turns them off)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · right-click a note = remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · ☰ next to Scale = which scales the list shows · + / − under the roll or Ctrl+wheel = zoom (row height), the wheel scrolls; Auto zoom (lit = on) fits the notes; the orange bar with two knobs at the left of the keys = the dice range: drag a knob for an end, the bar to move it all; the next roll stays inside, your notes never move · ▲ / ▼ at the top or bottom of the roll = notes above or below the rows in view (faint: ghosts), a click scrolls to them · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Notes / Duration / Velocity / Ratchets above the roll: edit one value per note as bars, drag them (their dice ranges under Advanced) · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, the lock keeps it when you roll · 🔊 = sound on / off, ⚙ = volume, delay, reverb · each riff picks its sound in its header (Bass, Lead, Square, Keys); the drums play a built-in kit on the GM notes · note names follow the DAW in ⚙ (FL Studio: middle C = MIDI 60 = C5) · Surprise (under Advanced, default 15%) = how often a roll breaks the rules · Similarity (in Dice) = how close A′, B and C stay to A on their next roll; not on A · keys 1–4 = part · Space = dice (the part shown), Shift+Space = the small All next to the dice (all parts) · Play walks the whole form; ⟲ Loop with a bar selected repeats that bar · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
+<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>ghost: another riff at the same place in the form, in its colour (Ghosts turns them off)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · right-click a note = remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · ☰ next to Scale = which scales the list shows · + / − under the roll or Ctrl+wheel = zoom (row height), the wheel scrolls; Auto zoom (lit = on): shows the dice range with a row above and below; the orange bar with two knobs at the left of the keys = the dice range: drag a knob for an end, the bar to move it all; the next roll stays inside, your notes never move · ▲ / ▼ at the top or bottom of the roll = notes above or below the rows in view (faint: ghosts), a click scrolls to them · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Notes / Duration / Velocity / Ratchets above the roll: edit one value per note as bars, drag them (their dice ranges under Advanced) · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, the lock keeps it when you roll · 🔊 = sound on / off, ⚙ = volume, delay, reverb · each riff picks its sound in its header (Bass, Lead, Square, Keys); the drums play a built-in kit on the GM notes · note names follow the DAW in ⚙ (FL Studio: middle C = MIDI 60 = C5) · Surprise (under Advanced, default 15%) = how often a roll breaks the rules · Similarity (in Dice) = how close A′, B and C stay to A on their next roll; not on A · keys 1–4 = part · Space = dice (the part shown), Shift+Space = the small All next to the dice (all parts) · Play walks the whole form; ⟲ Loop with a bar selected repeats that bar · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
 <script src="midinja-core.js"></script>
 
 <script>
@@ -745,10 +744,11 @@ const notesOf = t => t.parts.flatMap(p => p.steps.slice(0, p.numSteps).filter(s 
 const zoomOf = t => (t.zoom = t.zoom || { auto: true, rowH: 18, center: (t.lowNote + t.highNote) / 2 });
 // the rows: C1–C8 (GM names), wider when a note or the dice range lies outside
 function viewSpan(t) { const ns = notesOf(t); return [Math.min(24, t.lowNote, ...ns), Math.max(108, t.highNote, ...ns)]; }
+// Auto zoom: the dice range with one row of air above High and below Low (notes outside it are not fitted; the
+// ▲ / ▼ labels mark them); a big range shows what fits around its centre (knobs pinned), a tiny one at 36 px rows
 function autoFit(t) {
-  const z = zoomOf(t), ns = notesOf(t);
-  const lo = (ns.length ? Math.min(...ns) : t.lowNote) - 2, hi = (ns.length ? Math.max(...ns) : t.highNote) + 3;
-  z.rowH = Math.max(ROW_MIN, Math.min(ROW_MAX, Math.floor(VP_IN / (hi - lo + 1))));
+  const z = zoomOf(t), lo = t.lowNote - 1, hi = t.highNote + 1;
+  z.rowH = Math.max(ROW_MIN, Math.min(ROW_MAX, VP_IN / (hi - lo + 1)));
   z.center = (lo + hi) / 2;
 }
 function fitView(t = T) { if (!t.drums && !t.poly) { zoomOf(t).auto = true; } }
@@ -1406,12 +1406,22 @@ function noteAtY(y, chromatic) {
 // the dice range brackets: drag the top (High) or the bottom (Low) in the key column, by semitone rows; zoom,
 // scroll and Auto zoom never move them, and they never move notes (the next roll uses them). One undo step
 const rowTopOf = note => { const [, hi] = viewSpan(T); return (hi - note) * zoomOf(T).rowH; };
+// a knob whose end is out of view sits pinned at that edge of the visible rows (hollow, an arrow inside); the
+// bar covers only the visible part of the range
 function placeSlider() {
   const t = document.querySelector('#grid .drt'), kh = document.querySelector('#grid .drk.hi'), kl = document.querySelector('#grid .drk.lo');
   if (!t) return;
+  const vp = $('rollvp'), top = vp.scrollTop + 7, bot = vp.scrollTop + vp.clientHeight - 7;
   const y1 = rowTopOf(S.highNote), y2 = rowTopOf(S.lowNote) + zoomOf(T).rowH;
-  t.style.top = y1 + 'px'; t.style.height = (y2 - y1) + 'px'; kh.style.top = y1 + 'px'; kl.style.top = y2 + 'px';
-  kh.title = `Dice range top (now ${nn(S.highNote)}): drag`; kl.title = `Dice range bottom (now ${nn(S.lowNote)}): drag`;
+  let c1 = Math.max(top, Math.min(bot, y1)), c2 = Math.max(top, Math.min(bot, y2));
+  if ((c1 !== y1 || c2 !== y2) && c2 - c1 < 15) { if (c2 >= bot) c1 = c2 - 15; else c2 = c1 + 15; } // pinned knobs at one edge sit one above the other, never on top
+  t.style.top = Math.max(vp.scrollTop, y1) + 'px'; t.style.height = Math.max(0, Math.min(vp.scrollTop + vp.clientHeight, y2) - Math.max(vp.scrollTop, y1)) + 'px';
+  const pin = (k, y, c, name, note) => {
+    const off = y < top ? 'above' : y > bot ? 'below' : '';
+    k.style.top = c + 'px'; k.classList.toggle('pin', !!off); k.textContent = off ? (off === 'above' ? '▲' : '▼') : '';
+    k.title = `Dice range ${name}: ${nn(note)}${off ? ' (' + off + ' the view)' : ''}, drag`;
+  };
+  pin(kh, y1, c1, 'top', S.highNote); pin(kl, y2, c2, 'bottom', S.lowNote);
   t.title = `Dice range ${nn(S.lowNote)}–${nn(S.highNote)}: drag the bar to move it all, the knobs to change its ends`;
 }
 function shadeRange() {
@@ -1431,13 +1441,13 @@ function dragRange(e, b, mode) {
   let lastY = e.clientY;
   const y0 = e.clientY, st0 = vp.scrollTop;
   const apply = () => {
-    const k = g.getBoundingClientRect().height / g.offsetHeight || 1, rel = (lastY - g.getBoundingClientRect().top) / k;
-    const i = Math.round(rel / z.rowH); // the row line nearest the pointer
-    if (mode === 'hi') T.highNote = Math.max(S.lowNote + 1, Math.min(S.lowNote + MAX_SPAN, 127, hi, hi - i));
-    else if (mode === 'lo') T.lowNote = Math.min(S.highNote - 1, Math.max(S.highNote - MAX_SPAN, 0, lo, hi - i + 1));
-    else { // the bar: the whole range moves by rows, its span kept
-      const d = Math.max(lo - lo0, Math.min(hi - hi0, -Math.round(((lastY - y0) / k + vp.scrollTop - st0) / z.rowH)));
-      T.lowNote = lo0 + d; T.highNote = hi0 + d;
+    const k = g.getBoundingClientRect().height / g.offsetHeight || 1;
+    const d = -Math.round(((lastY - y0) / k + vp.scrollTop - st0) / z.rowH); // rows moved (scrolling counts)
+    if (mode === 'hi') T.highNote = Math.max(S.lowNote + 1, Math.min(S.lowNote + MAX_SPAN, 127, hi, hi0 + d));
+    else if (mode === 'lo') T.lowNote = Math.min(S.highNote - 1, Math.max(S.highNote - MAX_SPAN, 0, lo, lo0 + d));
+    else { // the bar: the whole range moves, its span kept
+      const dd = Math.max(lo - lo0, Math.min(hi - hi0, d));
+      T.lowNote = lo0 + dd; T.highNote = hi0 + dd;
     }
     placeSlider(); shadeRange();
     if ($('rshow')) $('rshow').textContent = shownRange();
@@ -1477,7 +1487,7 @@ function rollTools() {
   if (T.poly) return;
   // the toggles, flush right on the edit-mode row
   const on = autoZoomed(), z = document.createElement('button'); z.className = 'btn xs' + (on ? ' on' : ''); z.textContent = 'Auto zoom';
-  z.title = on ? 'Auto zoom is on: the roll fits the notes (2 rows below the lowest, 3 above the highest). + −, Ctrl+wheel or scrolling turn it off' : 'Auto zoom: fit the notes into the roll (2 rows below the lowest, 3 above the highest), as after a roll';
+  z.title = on ? 'Auto zoom is on: shows the dice range with a row above and below. + −, Ctrl+wheel or scrolling turn it off' : 'Auto zoom: shows the dice range with a row above and below';
   z.onclick = () => { zoomOf(T).auto = !on; render(); };
   el.appendChild(z);
   const others = riffs.filter(r => r !== T && r.on && r.arr.length).length;
@@ -1810,6 +1820,7 @@ function ghostList() {
 // edge strips: pinned to the top and bottom of the roll, a marker in each step with a note above (or below)
 // the rows in view; ghosts fainter. A click scrolls to the note (the zoom stays, Auto zoom turns off)
 function drawEdges() {
+  placeSlider();
   const box = $('rollbox'); box.querySelectorAll(':scope > .edgestrip').forEach(e => e.remove());
   if (T.drums || T.poly) return;
   const vp = $('rollvp'), z = zoomOf(T), [, hi] = viewSpan(T), n = pat.numSteps;
@@ -1830,14 +1841,6 @@ function drawEdges() {
   for (const dir of ['up', 'dn']) {
     const keys = Object.keys(marks[dir]);
     const el = document.createElement('div'); el.className = 'edgestrip ' + dir;
-    // a dice range end out of view: pinned over the key column, a click scrolls to it
-    for (const [note, name] of [[S.highNote, 'top'], [S.lowNote, 'bottom']]) {
-      if (seen(note) || above(note) !== (dir === 'up')) continue;
-      const m = document.createElement('button'); m.className = 'dre'; m.textContent = 'dice ' + (dir === 'up' ? '▲ ' : '▼ ') + nn(note);
-      m.title = `Dice range ${name} (${nn(note)}) is out of view: click to scroll to it`;
-      m.onclick = ev => { ev.stopPropagation(); const z2 = zoomOf(T); z2.auto = false; z2.center = note; render(); };
-      el.appendChild(m);
-    }
     for (const st of keys) {
       const m = marks[dir][st], b = document.createElement('button');
       b.className = 'gnote' + (m.own ? '' : ' gh'); const c0 = col[st], c1 = col[Math.min(n - 1, +st + m.len - 1)]; if (!c0 || !c1) continue;
