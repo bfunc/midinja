@@ -247,7 +247,64 @@ void variation (Pattern& p, const Pattern& a, const GenSettings& g)
     fitLengths (p);
 }
 
-// B: a new bar whose chord tones sit on the IV degree, with a rhythm that is not A's.
+// Similarity away from its default (0.65) moves B's rhythm towards A's (higher) or further from it (lower).
+// Its own rng, used only off the default, so the default riffs stay exactly as they were.
+constexpr float kSimDefault = 0.65f;
+bool atDefault (float s) { return std::abs (s - kSimDefault) < 1e-6f; }
+
+void shapeTowards (Pattern& p, const Pattern& a, int n, float s, uint32_t seed)
+{
+    Rng rng (seed);
+    auto noteNear = [&] (int i) {
+        for (int d = 1; d < n; ++d)
+        {
+            if (i - d >= 0 && p.steps[(size_t) (i - d)].on) return i - d;
+            if (i + d < n && p.steps[(size_t) (i + d)].on) return i + d;
+        }
+        return -1;
+    };
+    if (s > kSimDefault)
+    {
+        const float q = (s - kSimDefault) / (1.0f - kSimDefault) * 0.85f;
+        for (int i = 1; i < n; ++i)
+        {
+            auto& st = p.steps[(size_t) i];
+            const bool want = a.steps[(size_t) i].on;
+            if (st.locked || st.on == want || rng.unit() >= q)
+                continue;
+            if (want)
+            {
+                const int j = noteNear (i);
+                if (j < 0)
+                    continue;
+                st = p.steps[(size_t) j];
+                st.length = 1;
+                st.locked = false;
+            }
+            else
+                st = Step {};
+        }
+    }
+    else
+    {
+        const float q = (kSimDefault - s) / kSimDefault * 0.6f;
+        for (int i = 1; i < n; ++i)
+        {
+            auto& st = p.steps[(size_t) i];
+            if (st.locked || ! st.on || ! a.steps[(size_t) i].on || rng.unit() >= q)
+                continue;
+            const int to = i + (rng.unit() < 0.5f ? -1 : 1);
+            if (to < 1 || to >= n || p.steps[(size_t) to].on || p.steps[(size_t) to].locked || a.steps[(size_t) to].on)
+                continue;
+            p.steps[(size_t) to] = st;
+            st = Step {};
+        }
+    }
+    fitLengths (p);
+}
+
+// B: a new bar whose chord tones sit on the IV degree, with a rhythm that is not A's (Similarity: closer
+// to A's or further away).
 void contrast (Pattern& p, const Pattern& a, const GenSettings& g)
 {
     GenSettings g2 = g;
@@ -263,10 +320,14 @@ void contrast (Pattern& p, const Pattern& a, const GenSettings& g)
         if (! sameRhythm (p, a, n))
             break;
     }
+    const float s = std::clamp (g.similarity, 0.0f, 1.0f);
+    if (! atDefault (s))
+        shapeTowards (p, a, n, s, g.seed ^ 0x42534D49u);
 }
 
 // C: on the V chord (or ii / vii when the scale has no fifth), with A's rhythm and new notes so
-// the loop feels whole, or a new bar; then the cadence to the tonic.
+// the loop feels whole, or a new bar; then the cadence to the tonic. Similarity sets how often it keeps
+// A's rhythm: 15% at 0, 60% at the default 0.65, 95% at 1.
 void closing (Pattern& p, const Pattern& a, const GenSettings& g)
 {
     Rng rng (g.seed ^ 0x43434343u);
@@ -275,7 +336,9 @@ void closing (Pattern& p, const Pattern& a, const GenSettings& g)
     GenSettings g2 = g;
     g2.seed = rng.next();
     g2.degree = partDegree (kPartC, g.scale);
-    if (rng.unit() < 0.6f && lastOn (a) >= 0)
+    const float s = std::clamp (g.similarity, 0.0f, 1.0f);
+    const float keepA = atDefault (s) ? 0.6f : s < kSimDefault ? 0.15f + 0.45f * s / kSimDefault : 0.6f + 0.35f * (s - kSimDefault) / (1.0f - kSimDefault);
+    if (rng.unit() < keepA && lastOn (a) >= 0)
     {
         copyFrom (p, a, n);
         generateNotes (p, g2);

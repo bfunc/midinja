@@ -147,7 +147,7 @@ MidinjaEditor::MidinjaEditor (MidinjaProcessor& p)
                [] (double v) { return juce::String ((int) std::lround (v * 100)) + "%"; }, 0.18, [this] { proc.publish(); });
     setupKnob (similarity, [this] { return (double) sess.doc.gen.similarity; }, [this] (double v) { sess.doc.gen.similarity = (float) v; },
                [] (double v) { return juce::String ((int) std::lround (v * 100)) + "%"; }, 0.65, nullptr);
-    similarity.setTooltip (u8 ("How close A\xE2\x80\xB2 stays to A (next roll of A\xE2\x80\xB2): high changes only the last beat, low keeps just the shape. Ctrl+click resets"));
+    similarity.setTooltip (u8 ("How close A\xE2\x80\xB2, B and C stay to A on their next roll: A\xE2\x80\xB2 changes less, B keeps more of A's rhythm, C keeps A's rhythm more often. Ctrl+click resets"));
     setupKnob (color, [this] { return (double) sess.doc.gen.color; }, [this] (double v) { sess.doc.gen.color = (float) v; },
                [this] (double v) { return colorLabel() + kDot + juce::String ((int) std::lround (v * 100)) + "%"; }, 0.4, nullptr);
     setupKnob (surprise, [this] { return (double) sess.doc.gen.surprise; }, [this] (double v) { sess.doc.gen.surprise = (float) v; },

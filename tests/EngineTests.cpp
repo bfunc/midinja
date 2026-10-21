@@ -1085,6 +1085,51 @@ static void testRunParity()
     std::printf ("run parity: %zu riffs compared, %d diffs\n", h.size(), diffs);
 }
 
+// Similarity also shapes B (rhythm closer to A's when high) and C (keeps A's rhythm more often when
+// high); at the default 0.65 both stay exactly as before (testRunParity covers that too).
+static void testSimilarityBC()
+{
+    auto shared = [] (const Pattern& x, const Pattern& y) {
+        int k = 0;
+        for (int i = 0; i < 16; ++i)
+            k += x.steps[(size_t) i].on && y.steps[(size_t) i].on;
+        return k;
+    };
+    auto same = [] (const Pattern& x, const Pattern& y) {
+        for (int i = 0; i < 16; ++i)
+            if (x.steps[(size_t) i].on != y.steps[(size_t) i].on)
+                return false;
+        return true;
+    };
+    int sharedLo = 0, sharedHi = 0, keepLo = 0, keepHi = 0, defaultSame = 0, runs = 0;
+    for (uint32_t seed = 1; seed <= 300; ++seed)
+    {
+        GenSettings g;
+        g.mode = kMusician;
+        g.seed = seed;
+        g.notes = 6 + (int) (seed % 7);
+        Pattern a;
+        a.numSteps = 16;
+        generate (a, g);
+        auto part = [&] (int k, float s) { GenSettings gs = g; gs.similarity = s; Pattern p; p.numSteps = 16; generatePart (p, k, a, gs); return p; };
+        sharedLo += shared (part (kPartB, 0.0f), a);
+        sharedHi += shared (part (kPartB, 1.0f), a);
+        keepLo += same (part (kPartC, 0.0f), a);
+        keepHi += same (part (kPartC, 1.0f), a);
+        GenSettings gd = g; Pattern d1; d1.numSteps = 16; generatePart (d1, kPartB, a, gd);
+        Pattern d2 = part (kPartB, 0.65f);
+        bool eq = true;
+        for (int i = 0; i < 16; ++i)
+            eq &= d1.steps[(size_t) i] == d2.steps[(size_t) i];
+        defaultSame += eq;
+        ++runs;
+    }
+    CHECK (defaultSame == runs);
+    CHECK (sharedHi > sharedLo);
+    CHECK (keepHi > keepLo);
+    std::printf ("similarity: B shared onsets with A %d (0.0) vs %d (1.0); C keeps A's rhythm %d vs %d of %d\n", sharedLo, sharedHi, keepLo, keepHi, runs);
+}
+
 int main (int argc, char** argv)
 {
     testScales();
@@ -1101,6 +1146,7 @@ int main (int argc, char** argv)
     testStartOnRoot();
     testEnding();
     testRunParity();
+    testSimilarityBC();
     testDetectKey();
     testDocument();
     testChordsPerBar();

@@ -387,7 +387,7 @@ input.num{width:64px}
 .formrow .arr{grid-auto-rows:34px}
 .ggrp{display:flex;position:relative;padding-left:14px}.ggrp>small{position:absolute;top:-17px;color:var(--ink3);font-size:10px;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap}
 .ggrp+.ggrp{border-left:1px solid var(--line);padding-left:14px}
-.simkv{padding-left:12px;border-left:1px solid var(--line)}.simkv.dimk{opacity:.4}
+.simkv{margin-left:6px}.simkv.dimk{opacity:.4}
 .beats #gRhy,.beats #gNotes,.beats #simWrap,.poly #simWrap{display:none}
 .genrow{display:flex;align-items:center;gap:14px;padding:24px 14px 10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap;min-height:54px}
 .genrow .knobs{flex-wrap:nowrap;gap:12px}
@@ -442,7 +442,6 @@ body.dragging .drop{display:grid}
       <div class="thead">
         <div class="tname" id="tname"></div>
         <div class="pal" id="pal" title="The part the roll edits; every bar of the form with that part changes with it"></div>
-        <div class="kv simkv" id="simWrap"><div class="knob" id="kSimilarity"><i></i></div><div><span>Similarity</span><br><b id="vSimilarity"></b></div></div>
         <div class="sp"></div>
         <div class="insp"><h4 class="iname" id="inspName"></h4><div class="cinsp" id="cinsp"></div></div>
         <div class="tabset" id="tset"></div>
@@ -455,6 +454,7 @@ body.dragging .drop{display:grid}
             <button data-w="rhythm" title="New rhythm (keeps the pitches unless Notes is on too)">♩ Rhythm</button>
             <button data-w="notes" title="New pitches (keeps the rhythm unless Rhythm is on too)">♪ Notes</button>
           </div>
+          <div class="kv simkv" id="simWrap"><div class="knob" id="kSimilarity"><i></i></div><div><span>Similarity</span><br><b id="vSimilarity"></b></div></div>
         </div></div>
         <div class="ggrp" id="gRhy"><small>Rhythm</small><div class="gen knobs">
           <div class="kv" title="How many steps get a note (next roll). Ctrl+click resets"><div class="knob" id="kDensity"><i></i></div><div><span>Density</span><br><b id="vDensity"></b></div></div>
@@ -496,7 +496,7 @@ body.dragging .drop{display:grid}
   <div class="hidden"><div class="hstrip" id="hstrip"></div><div class="lanebox" id="lane"></div><div id="cgen"></div><div id="advC"></div></div>
 </div></div>
 <div class="pop" id="pop"></div>
-<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>ghost: another riff at the same place in the form, in its colour (Ghosts turns them off)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · right-click a note = remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · + / − under the roll or Ctrl+wheel = zoom (row height), the wheel scrolls; Auto zoom (lit = on) fits the notes; the dice range is under Advanced and never moves your notes · ▲ / ▼ at the top or bottom of the roll = notes above or below the rows in view (faint: ghosts), a click scrolls to them · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Notes / Duration / Velocity / Ratchets above the roll: edit one value per note as bars, drag them (their dice ranges under Advanced) · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, 🔒 keeps it when you roll · 🔊 = sound on / off, ⚙ = volume, delay, reverb · each riff picks its sound in its header (Bass, Lead, Square, Keys); the drums play a built-in kit on the GM notes · note names follow the DAW in ⚙ (FL Studio: middle C = MIDI 60 = C5) · keys 1–4 = part · Space = dice (the part shown), Shift+Space = the small All next to the dice (all parts) · Play walks the whole form; ⟲ Loop with a bar selected repeats that bar · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
+<template id="legendT"><div class="legend"><span><i style="background:var(--acc)"></i>note</span><span class="mo"><i style="background:var(--acc2)"></i>colour note of the scale</span><span><i style="outline:2px solid var(--lock);outline-offset:-2px"></i>locked note</span><span><i style="background:#9aa1b2;opacity:.3"></i>ghost: another riff at the same place in the form, in its colour (Ghosts turns them off)</span><span><i style="background:transparent;border-top:2px solid var(--acc2);border-radius:50% 50% 0 0;height:5px"></i>augmented-second pair</span><span>click = add (the last length) / remove · right-click a note = remove · drag right from an empty cell = draw a length · drag a note's right edge = length (up to a bar) · drag a note up or down = pitch (Alt = chromatic, locks the note) · Shift+click = lock · + / − under the roll or Ctrl+wheel = zoom (row height), the wheel scrolls; Auto zoom (lit = on) fits the notes; the dice range is under Advanced and never moves your notes · ▲ / ▼ at the top or bottom of the roll = notes above or below the rows in view (faint: ghosts), a click scrolls to them · the bright part of a note sounds (its duration), the dim tail is silent; a ratcheted note shows its hits · Notes / Duration / Velocity / Ratchets above the roll: edit one value per note as bars, drag them (their dice ranges under Advanced) · chord lane: drag a chord to move it, drag its edge for the length, snap one beat, double-click empty lane to add, Del removes, 🔒 keeps it when you roll · 🔊 = sound on / off, ⚙ = volume, delay, reverb · each riff picks its sound in its header (Bass, Lead, Square, Keys); the drums play a built-in kit on the GM notes · note names follow the DAW in ⚙ (FL Studio: middle C = MIDI 60 = C5) · Similarity (in Dice) = how close A′, B and C stay to A on their next roll; not on A · keys 1–4 = part · Space = dice (the part shown), Shift+Space = the small All next to the dice (all parts) · Play walks the whole form; ⟲ Loop with a bar selected repeats that bar · tracks loop their own forms (1–4 bars) · Drums: click = hit / remove, Shift+click = lock, right-click = soft / normal / accent; the dashed crash comes from the fill of the bar before</span></div></template>
 <script src="midinja-core.js"></script>
 
 <script>
@@ -988,7 +988,7 @@ function rollMono(k, op, p) {
   const g = settings();
   g.seed = newSeed();
   g.degree = degreeOf(k);
-  if (k === 1 && op === 'roll') { const q = core.part(1, p, parts[0], g); q.simSeed = g.seed; return q; }
+  if (k === 1 && op === 'roll') return core.part(1, p, parts[0], g);
   if (op === 'roll' && k > 1 && g.degree === core.partDegree(k, S.scale)) return core.part(k, p, parts[0], g);
   return core.run(op, p, g, 0.15);
 }
@@ -1215,22 +1215,11 @@ function derivePart(tab, k) {
     return true;
   }
   const s = settings(); s.seed = newSeed(); s.degree = core.partDegree(k, S.scale);
-  const q = core.part(k, tab.parts[k], tab.parts[0], s); if (k === 1) q.simSeed = s.seed;
+  const q = core.part(k, tab.parts[k], tab.parts[0], s);
   fitBar(q, tab);
   tab.parts[k] = q;
   rebase(q);
   return true;
-}
-// Similarity acts at once: A′ (in the form, unlocked) is built again from A with its own seed, so only the
-// knob changes it; one undo step when the knob is let go
-let simDirty = false;
-const simActive = () => !T.drums && !T.poly && arr.includes(1) && hasNotes(parts[0]);
-function simLive() {
-  if (!simActive() || locks[1] || !hasNotes(parts[1])) return;
-  const s = settings(); s.seed = parts[1].simSeed ?? newSeed(); s.degree = core.partDegree(1, S.scale);
-  const q = core.part(1, parts[1], parts[0], s); q.simSeed = s.seed;
-  fitBar(q, T); parts[1] = q; rebase(q);
-  simDirty = true; refreshPat(); render();
 }
 // a voice puts the riff in its octave (whole octaves, so the melody stays): the root of Bass in MIDI 36–47
 // (FL "3"), Keys 60–71 (a piano's middle, range up to the 80s), Lead and Square 72–83 (FL "6"); KEY − / + still move it
@@ -1337,7 +1326,7 @@ function range(id, min, max, get, set, fmt) {
 const drawers = [
   knob('kDensity', () => S.notes, v => S.notes = v, 1, 16, 1, v => Math.min(v, S.numSteps) + ' / ' + S.numSteps),
   knob('kSwing', () => S.swing, v => S.swing = v, 0, 1, 0.01, v => Math.round(v * 100) + '%'),
-  knob('kSimilarity', () => S.similarity, v => { S.similarity = v; simLive(); }, 0, 1, 0.05, v => Math.round(v * 100) + '%', () => { if (simDirty) { simDirty = false; push(); } }),
+  knob('kSimilarity', () => S.similarity, v => { S.similarity = v; }, 0, 1, 0.05, v => Math.round(v * 100) + '%'),
   knob('kColor', () => S.color, v => S.color = v, 0, 1, 0.05, v => colorLabel() + ' · ' + Math.round(v * 100) + '%'),
   knob('kSurprise', () => S.surprise, v => S.surprise = v, 0, 1, 0.05, v => Math.round(v * 100) + '%'),
   range('rgLen', 1, MAX_LEN, () => [S.lenMin, S.lenMax], ([a, b]) => { S.lenMin = a; S.lenMax = b; }, lenValue),
@@ -1798,8 +1787,10 @@ function render() {
   $('root').value = S.root;
   $('seed').value = S.seed;
   $('colorWrap').title = colorWords();
-  $('simWrap').classList.toggle('dimk', !simActive() || !!locks[1]);
-  $('simWrap').title = !simActive() ? 'Similarity affects A′, and there is no A′ in the form: ▾ on a bar puts it there' : locks[1] ? 'Similarity affects A′, which is locked' : 'Similarity affects A′: how close it stays to A. Turning it builds A′ again at once (high: only the last beat changes, low: just the shape stays). Ctrl+click resets';
+  const simOn = !T.drums && !T.poly && S.cur !== 0;
+  $('simWrap').classList.toggle('dimk', !simOn);
+  $('simWrap').title = !simOn ? 'Similarity: how close A′, B and C stay to A when you roll them. A is the source, so it doesn’t apply'
+    : 'Similarity (next roll of ' + PARTS[S.cur] + '): how close it stays to A. ' + (S.cur === 1 ? 'High: only the last beat changes; low: just the shape stays' : S.cur === 2 ? 'High: B keeps more of A’s rhythm (on the IV chord); low: a rhythm of its own' : 'High: C usually keeps A’s rhythm with new notes; low: a new bar') + '. Applies on the dice, All, or when the part is built from A. Ctrl+click resets';
 
   renderDice();
   const n = pat.numSteps;

@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-21 18:20 · opus-5.5@home#ea79 · 61c9a22
+Updated: 2026-10-21 18:43 · opus-5.5@home#ea79 · (this commit)
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -32,7 +32,7 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 - 2026-10-21 · Ghost notes: a riff's roll shows the other unmuted riffs faintly in their colour, the part each plays at the same place in the form (looping when shorter; during Play what sounds), not clickable, outside the zoom not drawn; "Ghosts" toggle next to Auto zoom, on by default, kept per browser · user (like FL Studio)
 - 2026-10-21 · Animations: reduced-motion ignored for the Play pulse and dice spin, by user choice · Home has Windows animation effects off and the user wants to see both
 - 2026-10-21 · Play-time UI: during Play only the playhead and the playing bars update (the roll redraws when it follows a new part); nothing is locked except Import, which stops Play first · user: menus closed and clicks got lost during Play
-- 2026-10-21 · Similarity: sits next to the part chips; turning it rebuilds A′ (in the form, unlocked) at once with A′'s own seed (back to the same value = the same A′); dimmed with "affects A′" when there is no A′ · user approved
+- 2026-10-21 · Similarity: a roll-time setting in the Dice group (no live rebuild); applies when A′, B or C is rolled or built from A: A′ as before, B keeps more of A's rhythm when high (less when low), C keeps A's rhythm 15 % → 60 % → 95 % over 0 → 0.65 → 1; dimmed on A; at the default 0.65 the engine is bit-exact with before · user approved (knob unclear, live rebuild stuttered)
 - 2026-10-21 · Mutate: gone from the UI (button, %, tooltips); the core function stays · user approved
 - 2026-10-21 · Generator row: groups with captions: Dice (dice + All, Rhythm/Notes) · Rhythm (Density, Swing, Ending) · Notes (Color, Surprise) · user approved
 - 2026-10-21 · Dropdowns: app-styled menus (dark, orange highlight, arrow keys, focus ring for the keyboard only) instead of native selects; the 🎹 icon only on the voice button; the model for the JUCE PopupMenu · user approved
