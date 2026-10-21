@@ -1,5 +1,5 @@
 # Midinja · Baton
-Updated: 2026-10-21 18:16 · opus-5.5@home#ea79 · 128db04
+Updated: 2026-10-21 18:20 · opus-5.5@home#ea79 · (this commit)
 What the project is and how to build it: README.md. This file is only the current state.
 Sources: gh pr, gh run (CI)
 
@@ -27,7 +27,7 @@ Older feature decisions (roll, scales, locks, chords, tabs, MIDI out…): docs/d
 - 2026-10-21 · Look: plain panels, no wells or cutouts anywhere; the dice + All split button sits on the flat generator row; Play is a standalone teal disc (SVG play / stop, inner highlight, a glow that pulses on the beat while playing, none with reduced motion); isometric SVG dice (web/dice.svg) that spins on a roll · user: «это просто как-то криво, убирай закругления, сделай красивую кнопку Play и всё»
 - 2026-10-21 · Alignment: one control height and one centre line per row (captions like BPM, Key, Dice, Rhythm, Ending sit above, out of the flow), checked by measuring centres · user
 - 2026-10-21 · Roll view: one fixed height (336 px); zoom = row height 4–36 px via + − (status row under the ruler, left; the info at its right) or Ctrl+wheel (anchored on the note under the cursor); the rows (C1–C8 GM, wider if needed) scroll; Auto zoom (toggle) fits every note of the track; + −, Ctrl+wheel or scroll turn it off; view controls never edit notes · user: «pianoroll всегда fix size, только zoom меняется»
-- 2026-10-21 · Out-of-view notes: like the old Chords ghost rows: an 18 px row above and below the scrolling rows (the roll stays 336 px; rows never sit under it) with a dashed label per step, "▲ C8" / "▼ F#2 B3", in the track colour, ghosts of other riffs fainter; a click scrolls to the note (zoom stays, Auto zoom off) · user: «у нас раньше был ещё 1 ряд…», then «выглядит как баг», «сделай как раньше»
+- 2026-10-21 · Out-of-view notes: like the old Chords ghost rows: an 18 px row above and below the scrolling rows (the roll stays 336 px; rows never sit under it) with a dashed label per step placed exactly over or under the note (its start and length), "▲ C8" / "▼ F#2 B3", in the track colour, ghosts of other riffs fainter; a click scrolls to the note (zoom stays, Auto zoom off) · user: «у нас раньше был ещё 1 ряд…», then «выглядит как баг», «сделай как раньше»
 - 2026-10-21 · Dice range: Low / High under Advanced (and set by the sound's octave); changing it never moves notes, notes outside it stay (no folding on edits or on a scale change) · user: «уменьшение range меняет ноты»
 - 2026-10-21 · Ghost notes: a riff's roll shows the other unmuted riffs faintly in their colour, the part each plays at the same place in the form (looping when shorter; during Play what sounds), not clickable, outside the zoom not drawn; "Ghosts" toggle next to Auto zoom, on by default, kept per browser · user (like FL Studio)
 - 2026-10-21 · Animations: reduced-motion ignored for the Play pulse and dice spin, by user choice · Home has Windows animation effects off and the user wants to see both

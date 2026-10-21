@@ -249,7 +249,7 @@ input.num{width:64px}
 .rollbox.edged{padding:18px 0} /* a row above and below the rows for the notes out of view (never over a note) */
 .edgestrip{position:absolute;left:0;right:0;height:18px;z-index:6;pointer-events:none}
 .edgestrip.up{top:0;border-bottom:1px solid var(--line)}.edgestrip.dn{bottom:0;border-top:1px solid var(--line)}
-.edgestrip .gnote{top:1px;margin-left:1px;cursor:pointer;pointer-events:auto;border-color:var(--c);background:color-mix(in srgb,var(--c) 9%,transparent);font-family:inherit;text-align:left}
+.edgestrip .gnote{top:1px;cursor:pointer;pointer-events:auto;border-color:var(--c);background:color-mix(in srgb,var(--c) 9%,transparent);font-family:inherit;text-align:left}
 .edgestrip.dn .gnote{top:auto;bottom:1px}
 .edgestrip .gnote.gh{opacity:.45}.edgestrip .gnote:hover{color:var(--ink);background:color-mix(in srgb,var(--c) 22%,transparent)}
 .zb button{width:16px;height:14px;padding:0;border-radius:4px;font-size:11px;line-height:12px;background:var(--panel2);border:1px solid var(--line2);color:var(--ink2);cursor:pointer}
@@ -1580,7 +1580,7 @@ function renderRoll() {
   const rowH = T.drums ? Math.floor(VP_H / DRUMS.length) : zoomOf(T).rowH;
   const ph = shownPlayStep();
   const g = $('grid'); g.innerHTML = '';
-  $('grid').parentElement.style.setProperty('--kw', T.drums ? '44px' : '70px');
+  $('grid').closest('.gridw').style.setProperty('--kw', T.drums ? '44px' : '70px');
   rollTools();
   const chordPc = T.drums ? -1 : SCALES[S.scale].intervals[degreeOf(S.cur)];
   const chordName0 = T.drums ? '' : numeral(degreeOf(S.cur));
@@ -1684,8 +1684,8 @@ function renderRoll() {
   g.classList.toggle('dense', !T.drums && rowH < 10);
   vp.style.height = (T.drums ? VP_H : VP_IN) + 'px';
   box.classList.toggle('edged', !T.drums && !T.poly);
-  if (!T.drums) { const [, hi] = viewSpan(T); vpProg = performance.now(); vp.scrollTop = Math.max(0, (hi - z.center + 0.5) * rowH - VP_IN / 2); } else vp.scrollTop = 0;
-  $('grid').parentElement.parentElement.parentElement.style.setProperty('--sbw', (vp.offsetWidth - vp.clientWidth) + 'px');
+  if (!T.drums) { const [, hi] = viewSpan(T); vp.scrollTop = Math.max(0, (hi - z.center + 0.5) * rowH - VP_IN / 2); vpProg = vp.scrollTop; } else vp.scrollTop = 0;
+  $('grid').closest('.gridw').style.setProperty('--sbw', (vp.offsetWidth - vp.clientWidth) + 'px');
   ZB.children[0].disabled = z.rowH >= ROW_MAX; ZB.children[1].disabled = z.rowH <= ROW_MIN;
   if ($('rshow')) $('rshow').textContent = T.drums ? '' : shownRange();
   drawEdges(); // after the scroll is set
@@ -1737,26 +1737,29 @@ function drawEdges() {
   const seen = note => { const y = (hi - note + 0.5) * z.rowH - vp.scrollTop; return y >= 0 && y <= vp.clientHeight; };
   const above = note => (hi - note + 0.5) * z.rowH - vp.scrollTop < 0;
   const marks = { up: {}, dn: {} };
-  const add = (s, note, own, color, who) => {
+  const add = (s, note, own, color, who, len) => {
     if (seen(note)) return;
-    const m = (marks[above(note) ? 'up' : 'dn'][s] = marks[above(note) ? 'up' : 'dn'][s] || { own: false, notes: [], color });
-    m.notes.push(note); m.who = m.who || []; m.who.push(who);
+    const m = (marks[above(note) ? 'up' : 'dn'][s] = marks[above(note) ? 'up' : 'dn'][s] || { own: false, notes: [], color, len: 1 });
+    m.notes.push(note); m.who = m.who || []; m.who.push(who); m.len = Math.max(m.len, len);
     if (own && !m.own) { m.own = true; m.color = color; }
   };
-  for (let st = 0; st < n; st++) { const x = pat.steps[st]; if (x.on) add(st, x.note, true, T.color, ''); }
-  for (const g of ghostList()) add(g.s, g.note, false, g.color, g.name);
+  for (let st = 0; st < n; st++) { const x = pat.steps[st]; if (x.on) add(st, x.note, true, T.color, '', x.length); }
+  for (const g of ghostList()) add(g.s, g.note, false, g.color, g.name, g.len);
+  // label boxes from the cells themselves: the same left and width as a note bar of that start and length
+  const gr = $('grid').getBoundingClientRect(), kk = gr.width / ($('grid').offsetWidth || 1) || 1, col = {}; // fractional columns: exact, not rounded offsets
+  document.querySelectorAll('#grid .cell[data-s]').forEach(c => { if (!(c.dataset.s in col)) { const r = c.getBoundingClientRect(); col[c.dataset.s] = [(r.left - gr.left) / kk, r.width / kk]; } });
   for (const dir of ['up', 'dn']) {
     const keys = Object.keys(marks[dir]);
     const el = document.createElement('div'); el.className = 'edgestrip ' + dir;
-    const cols = document.createElement('div'); cols.style.cssText = 'position:absolute;top:0;bottom:0;left:var(--kw,44px);right:var(--sbw,0)'; el.appendChild(cols);
     for (const st of keys) {
       const m = marks[dir][st], b = document.createElement('button');
-      b.className = 'gnote' + (m.own ? '' : ' gh'); b.style.left = `${st / n * 100}%`; b.style.width = `calc(${100 / n}% - 2px)`; b.style.setProperty('--c', m.color);
+      b.className = 'gnote' + (m.own ? '' : ' gh'); const c0 = col[st], c1 = col[Math.min(n - 1, +st + m.len - 1)]; if (!c0 || !c1) continue;
+      b.style.left = (c0[0] + 2) + 'px'; b.style.width = Math.max(14, c1[0] + c1[1] - c0[0] - 4) + 'px'; b.style.setProperty('--c', m.color);
       const names = [...new Set(m.notes)].sort((a, c) => dir === 'up' ? a - c : c - a);
       b.title = `${m.own ? '' : 'Ghost: '}${names.map(nn).join(', ')} ${dir === 'up' ? 'above' : 'below'} the rows in view${m.own ? '' : ' (' + [...new Set(m.who)].join(', ') + ')'} · click to scroll to ${names.length > 1 ? 'them' : 'it'}`;
       b.textContent = (dir === 'up' ? '▲ ' : '▼ ') + names.map(nn).join(' ');
       b.onclick = e => { e.stopPropagation(); const z2 = zoomOf(T); z2.auto = false; z2.center = names[0] + (dir === 'up' ? -1 : 1) * Math.max(0, VP_IN / 2 / z2.rowH - 2); render(); };
-      cols.appendChild(b);
+      el.appendChild(b);
     }
     box.appendChild(el);
   }
@@ -2263,9 +2266,10 @@ $('rollvp').addEventListener('wheel', e => {
   const r = $('rollvp').getBoundingClientRect(), k = r.height / $('rollvp').offsetHeight || 1;
   zoomBy(e.deltaY < 0 ? 1.25 : 0.8, (e.clientY - r.top) / k);
 }, { passive: false });
-let vpProg = 0;
+let vpProg = -1; // the scroll the last render set: its own scroll event is not the user's
 $('rollvp').addEventListener('scroll', () => {
-  if (T.drums || performance.now() - vpProg < 120) return;
+  if (T.drums || Math.abs($('rollvp').scrollTop - vpProg) < 0.5) return;
+  vpProg = -1;
   const vp = $('rollvp'), z = zoomOf(T), [, hi] = viewSpan(T);
   z.auto = false; z.center = hi + 0.5 - (vp.scrollTop + VP_IN / 2) / z.rowH;
   const az = [...document.querySelectorAll('#rtools .btn')].find(b => b.textContent === 'Auto zoom'); if (az) az.classList.remove('on');
